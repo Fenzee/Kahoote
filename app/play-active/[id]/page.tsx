@@ -351,7 +351,7 @@ export default function PlayActiveGamePage({
   //   try {
   //     await supabase
   //       .from("game_sessions")
-  //       .update({ 
+  //       .update({
   //         status: "finished",
   //         ended_at: new Date().toISOString(),
   //        })
@@ -364,40 +364,40 @@ export default function PlayActiveGamePage({
   // };
 
   const submitQuiz = async () => {
-  if (!gameState) return;
+    if (!gameState) return;
 
-  // Pastikan semua pertanyaan dijawab
-  const unansweredQuestions = gameState.questions.filter(
-    (question) => !playerAnswers.has(question.id)
-  );
-  if (unansweredQuestions.length > 0) {
-    const firstUnansweredIndex = gameState.questions.findIndex(
+    // Pastikan semua pertanyaan dijawab
+    const unansweredQuestions = gameState.questions.filter(
       (question) => !playerAnswers.has(question.id)
     );
-    setCurrentQuestionIndex(firstUnansweredIndex);
-    return;
-  }
+    if (unansweredQuestions.length > 0) {
+      const firstUnansweredIndex = gameState.questions.findIndex(
+        (question) => !playerAnswers.has(question.id)
+      );
+      setCurrentQuestionIndex(firstUnansweredIndex);
+      return;
+    }
 
-  try {
-    // Tandai sesi selesai
-    await supabase
-      .from("game_sessions")
-      .update({ status: "finished", ended_at: new Date().toISOString() })
-      .eq("id", gameState.sessionId);
+    try {
+      // Tandai sesi selesai
+      await supabase
+        .from("game_sessions")
+        .update({ status: "finished", ended_at: new Date().toISOString() })
+        .eq("id", gameState.sessionId);
 
-    // Hitung skor peserta
-    const { data, error } = await supabase.rpc("calculate_score", {
-      session_id_input: gameState.sessionId,
-      participant_id_input: gameState.participantId,
-    });
+      // Hitung skor peserta
+      const { data, error } = await supabase.rpc("calculate_score", {
+        session_id_input: gameState.sessionId,
+        participant_id_input: gameState.participantId,
+      });
 
-    if (error) console.error("Error kalkulasi skor:", error);
-  } catch (error) {
-    console.error("Gagal submit kuis:", error);
-  }
+      if (error) console.error("Error kalkulasi skor:", error);
+    } catch (error) {
+      console.error("Gagal submit kuis:", error);
+    }
 
-  router.push(`/results/${resolvedParams.id}?participant=${participantId}`);
-};
+    router.push(`/results/${resolvedParams.id}?participant=${participantId}`);
+  };
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -465,8 +465,6 @@ export default function PlayActiveGamePage({
               </Badge>
             )}
 
-            
-            
             <Badge
               variant="secondary"
               className={`${
@@ -485,74 +483,10 @@ export default function PlayActiveGamePage({
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-white/95 backdrop-blur-sm mb-6">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-medium">Progress Quiz</span>
-                <span className="text-sm text-purple-600">
-                  Dijawab: {answeredCount} dari {totalQuestions} pertanyaan
-                </span>
-              </div>
-              <Progress
-                value={(answeredCount / totalQuestions) * 100}
-                className="w-full h-3 mb-4"
-              />
-
-              <div className="flex flex-wrap gap-2 mb-4">
-                {gameState.questions.map((_, index) => (
-                  <Button
-                    key={index}
-                    onClick={() => navigateToQuestion(index)}
-                    variant={
-                      index === currentQuestionIndex ? "default" : "outline"
-                    }
-                    size="sm"
-                    className={`w-10 h-10 p-0 ${
-                      playerAnswers.has(gameState.questions[index].id)
-                        ? "bg-green-100 border-green-500 text-green-700"
-                        : ""
-                    }`}
-                  >
-                    {playerAnswers.has(gameState.questions[index].id) ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <Circle className="w-4 h-4" />
-                    )}
-                  </Button>
-                ))}
-              </div>
-
-              <div className="flex justify-between items-center">
-                <Button
-                  onClick={() => navigateToQuestion(currentQuestionIndex - 1)}
-                  disabled={currentQuestionIndex === 0}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Prev
-                </Button>
-
-                <span className="text-sm text-gray-600">
-                  Soal ke {currentQuestionIndex + 1} dari {totalQuestions}
-                </span>
-
-                <Button
-                  onClick={() => navigateToQuestion(currentQuestionIndex + 1)}
-                  disabled={currentQuestionIndex === totalQuestions - 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="flex w-full justify-center gap-4">
+          {/* Soal */}
           {currentQuestion && (
-            <Card className="bg-white/95 backdrop-blur-sm mb-6">
+            <Card className="bg-white/95 backdrop-blur-sm mb-6 w-[60%]">
               <CardHeader>
                 <CardTitle className="text-2xl text-center">
                   {currentQuestion.question_text}
@@ -619,39 +553,84 @@ export default function PlayActiveGamePage({
             </Card>
           )}
 
-          <Card className="bg-white/95 backdrop-blur-sm">
-            <CardContent className="p-8 text-center">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Selesaikan Quiz
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {answeredCount === totalQuestions
-                  ? "Semua pertanyaan sudah dijawab! Klik tombol di bawah untuk menyelesaikan quiz."
-                  : `Ada ${
-                      totalQuestions - answeredCount
-                    } pertanyaan yang belum dijawab.`}
-              </p>
-              <Button
-                onClick={submitQuiz}
-                size="lg"
-                className={`${
-                  answeredCount === totalQuestions
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "bg-orange-600 hover:bg-orange-700"
-                } text-white`}
-              >
+          {/* Navbar soal */}
+          <Card className="bg-white/95 backdrop-blur-sm mb-6 w-[30%]">
+            <CardContent className="flex flex-col p-6 h-full">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-sm font-medium">Progress Quiz</span>
+                <span className="text-sm text-gray-600">
+                  Soal ke {currentQuestionIndex + 1} dari {totalQuestions}
+                </span>
+              </div>
+              <Progress
+                value={(answeredCount / totalQuestions) * 100}
+                className="w-full h-3 mb-4"
+              />
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                {gameState.questions.map((_, index) => (
+                  <Button
+                    key={index}
+                    onClick={() => navigateToQuestion(index)}
+                    variant={
+                      index === currentQuestionIndex ? "default" : "outline"
+                    }
+                    size="sm"
+                    className={`w-10 h-10 p-0 ${
+                      playerAnswers.has(gameState.questions[index].id)
+                        ? "bg-green-100 border-green-500 text-green-700"
+                        : ""
+                    }`}
+                  >
+                    {playerAnswers.has(gameState.questions[index].id) ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <Circle className="w-4 h-4" />
+                    )}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="flex w-full justify-center items-center">
+          <Card className="flex justify-center items-center bg-white/95 backdrop-blur-sm">
+            <CardContent className="flex items-center justify-center p-2">
+              <div className="flex justify-between items-center gap-2">
+                <Button
+                  onClick={() => navigateToQuestion(currentQuestionIndex - 1)}
+                  disabled={currentQuestionIndex === 0}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Prev
+                </Button>
+
                 {answeredCount === totalQuestions ? (
-                  <>
-                    <Trophy className="w-5 h-5 mr-2" />
-                    Selesaikan Quiz
-                  </>
+                  <Button
+                    onClick={submitQuiz}
+                    size="sm"
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    Selesai
+                  </Button>
                 ) : (
-                  <>
-                    <ChevronRight className="w-5 h-5 mr-2" />
-                    ke soal yang Belum Dijawab
-                  </>
+                  <span className="text-sm text-purple-600">
+                    Dijawab: {answeredCount} dari {totalQuestions} pertanyaan
+                  </span>
                 )}
-              </Button>
+
+                <Button
+                  onClick={() => navigateToQuestion(currentQuestionIndex + 1)}
+                  disabled={currentQuestionIndex === totalQuestions - 1}
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
