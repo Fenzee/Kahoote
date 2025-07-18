@@ -86,7 +86,7 @@ export default function RegisterPage() {
                 <Gamepad2 className="w-6 h-6 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                MyLessons
+                GolekQuiz
               </span>
             </Link>
             <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2">
@@ -277,7 +277,7 @@ export default function RegisterPage() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                     disabled={loading}
                   >
                     {loading ? "Memproses..." : "Daftar Sekarang"}

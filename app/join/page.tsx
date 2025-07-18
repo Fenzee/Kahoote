@@ -234,23 +234,6 @@ export default function JoinPage() {
                 </div>
               ))}
             </div>
-
-            <div className="mt-12 p-6 bg-white/10 rounded-2xl backdrop-blur-sm">
-              <div className="text-center mb-4">
-                <div className="text-3xl font-bold">DEMO12</div>
-                <div className="text-blue-200">Coba kode ini untuk demo</div>
-              </div>
-              <div className="flex items-center justify-center space-x-4 text-sm">
-                <div className="flex items-center space-x-1">
-                  <Users className="w-4 h-4" />
-                  <span>12 pemain</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Clock className="w-4 h-4" />
-                  <span>Menunggu</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -323,14 +306,6 @@ export default function JoinPage() {
                         </div>
                         {getStatusInfo(session.status).description}
                       </div>
-                    </div>
-                  )}
-
-                  {joinCode.length === 6 && !session && !isValidating && (
-                    <div className="text-center p-4 bg-red-50 border border-red-200 rounded-xl">
-                      <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-                      <p className="text-red-600 font-medium">Kode tidak valid atau sesi tidak ditemukan</p>
-                      <p className="text-red-500 text-sm mt-1">Coba "DEMO12" untuk demo</p>
                     </div>
                   )}
                 </div>
