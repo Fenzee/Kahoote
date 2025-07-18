@@ -83,7 +83,7 @@ export default function HostGamePage({
   const resolvedParams = use(params);
   const { user } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [copied, setCopied] = useState(false);
@@ -401,7 +401,7 @@ export default function HostGamePage({
         });
       }
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -625,16 +625,16 @@ export default function HostGamePage({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p>Menyiapkan game...</p>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+  //         <p>Menyiapkan game...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (error) {
     return (
