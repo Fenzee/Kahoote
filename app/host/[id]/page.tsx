@@ -89,6 +89,9 @@ export default function HostGamePage({
   const [copied, setCopied] = useState(false);
   const [showTimeSetup, setShowTimeSetup] = useState(false);
   const [totalTimeMinutes, setTotalTimeMinutes] = useState<number>(10);
+  const [isJoining, setIsJoining] = useState(false);
+
+  // const [isJoining, setIsJoining] = useState<number>(10);
   const [error, setError] = useState<{
     type:
       | "permission"
@@ -104,9 +107,11 @@ export default function HostGamePage({
   // const [countdown, setCountdown] = useState<number | null>(null);
   const [countdownLeft, setCountdownLeft] = useState<number | null>(null);
   const countdownDuration = 10; // 10 detik
-
+  const [hostParticipantId, setHostParticipantId] = useState<string | null>(
+    null
+  );
+  // const [countdownLeft, setCountdownLeft] = useState<number | null>(null);
   // const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   useEffect(() => {
     if (user && !gameSession && !hasCreatedSession.current) {
       hasCreatedSession.current = true;
@@ -116,7 +121,7 @@ export default function HostGamePage({
 
   useEffect(() => {
     if (!user) {
-      router.push("/");
+      router.push("/dashboard");
     }
   }, [user, router]);
 
@@ -169,6 +174,38 @@ export default function HostGamePage({
       return () => clearInterval(interval);
     }
   }, [gameSession, router]);
+
+  useEffect(() => {
+    if (
+      gameSession?.countdown_started_at &&
+      hostParticipantId &&
+      gameSession.status === "waiting"
+    ) {
+      const startTime = new Date(gameSession.countdown_started_at).getTime();
+      const now = Date.now();
+      const diff = Math.ceil((startTime + 5000 - now) / 1000); // 5 detik countdown
+
+      if (diff <= 0) {
+        router.push(
+          `/play-active/${resolvedParams.id}?participant=${hostParticipantId}`
+        );
+      } else {
+        setCountdownLeft(diff);
+        const interval = setInterval(() => {
+          setCountdownLeft((prev) => {
+            if (prev && prev > 1) return prev - 1;
+
+            clearInterval(interval);
+            router.push(
+              `/play-active/${resolvedParams.id}?participant=${hostParticipantId}`
+            );
+            return 0;
+          });
+        }, 1000);
+        return () => clearInterval(interval);
+      }
+    }
+  }, [gameSession?.countdown_started_at, hostParticipantId]);
 
   const fetchQuizAndCreateSession = async () => {
     try {
@@ -417,40 +454,6 @@ export default function HostGamePage({
     setShowTimeSetup(true);
   };
 
-  //   const startCountdownBeforeGame = async () => {
-  //   if (!gameSession || !totalTimeMinutes) return;
-
-  //   setCountdownLeft(countdownDuration);
-  //   let secondsLeft = countdownDuration;
-
-  //   const interval = setInterval(() => {
-  //     secondsLeft -= 1;
-  //     setCountdownLeft(secondsLeft);
-
-  //     if (secondsLeft <= 0) {
-  //       clearInterval(interval);
-
-  //       // Countdown selesai -> baru update Supabase
-  //       supabase
-  //         .from("game_sessions")
-  //         .update({
-  //           countdown_started_at: new Date().toISOString(),
-  //           started_at: new Date().toISOString(),
-  //           status: "active",
-  //           total_time_minutes: totalTimeMinutes,
-  //         })
-  //         .eq("id", gameSession.id)
-  //         .then(({ error }) => {
-  //           if (error) {
-  //             console.error("Gagal memulai game:", error);
-  //           } else {
-  //             router.push(`/game/${gameSession.id}`);
-  //           }
-  //         });
-  //     }
-  //   }, 1000);
-  // };
-
   const startCountdownBeforeGame = async () => {
     if (!gameSession || !totalTimeMinutes) return;
 
@@ -491,6 +494,116 @@ export default function HostGamePage({
       }
     }, 1000);
   };
+
+  const joinAsHostAndStartCountdown = async () => {
+  if (!gameSession) return;
+
+  setIsJoining(true);
+  setError(null);
+
+  try {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setError({
+        type: "unknown",
+        message: "Gagal memuat quiz",
+        details: "tidak ada user yang terautentikasi",
+      });
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile) {
+      setError({
+        type: "unknown",
+        message: "Gagal memuat quiz",
+        details: "tidak ada profil yang ditemukan",
+      });
+      return;
+    }
+
+    // Insert participant jika belum
+    const { data: existing } = await supabase
+      .from("game_participants")
+      .select("id")
+      .eq("session_id", gameSession.id)
+      .eq("nickname", profile.username)
+      .maybeSingle();
+
+    let participantId = existing?.id;
+
+    if (!participantId) {
+      const { data: newParticipant } = await supabase
+        .from("game_participants")
+        .insert({
+          session_id: gameSession.id,
+          user_id: user.id,
+          nickname: profile.username,
+        })
+        .select()
+        .single();
+
+      participantId = newParticipant.id;
+    }
+
+    // === START COUNTDOWN ===
+    const countdownDuration = 10;
+    const now = new Date();
+    const startedTime = new Date(now.getTime() + countdownDuration * 1000);
+
+    const { error: updateError } = await supabase
+      .from("game_sessions")
+      .update({
+        countdown_started_at: now.toISOString(),
+        started_at: startedTime.toISOString(),
+        status: "active",
+        total_time_minutes: totalTimeMinutes,
+      })
+      .eq("id", gameSession.id);
+
+    if (updateError) {
+      setError({
+        type: "unknown",
+        message: "Gagal memulai countdown",
+        details: "Gagal menyimpan waktu mulai",
+      });
+      return;
+    }
+
+    setHostParticipantId(participantId);
+    setCountdownLeft(countdownDuration); // untuk ditampilkan di UI
+
+    let secondsLeft = countdownDuration;
+    const interval = setInterval(() => {
+      secondsLeft -= 1;
+      setCountdownLeft(secondsLeft);
+
+      if (secondsLeft <= 0) {
+        clearInterval(interval);
+        router.push(`/play-active/${gameSession.id}?participant=${participantId}`);
+      }
+    }, 1000);
+  } catch (err) {
+    console.error(err);
+    setError({
+      type: "unknown",
+      message: "Gagal memuat quiz",
+      details: "Terjadi kesalahan saat bergabung sebagai host",
+    });
+  } finally {
+    setIsJoining(false);
+  }
+};
+
 
   const endSession = async () => {
     if (!gameSession) return;
@@ -791,7 +904,7 @@ export default function HostGamePage({
                       Set Quiz Time Limit
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="flex gap-6">
+                  <CardContent className="flex flex-col gap-6">
                     {/* Form input waktu dan tombol mulai game */}
                     <div className="flex-1 space-y-3">
                       <Label
@@ -815,19 +928,35 @@ export default function HostGamePage({
                         placeholder="Masukkan waktu dalam menit"
                       />
                     </div>
-                    <div className="flex flex-col flex-1 items-center justify-end space-x-2">
-                      <Button
-                        onClick={startCountdownBeforeGame}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                        disabled={
-                          gameSession.participants.length === 0 ||
-                          !totalTimeMinutes ||
-                          totalTimeMinutes < 1
-                        }
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        Mulai Game ({totalTimeMinutes} menit)
-                      </Button>
+                    <div className="flex gap-2">
+                      <div className="flex flex-1 items-center justify-center space-x-2">
+                        <Button
+                          onClick={startCountdownBeforeGame}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          disabled={
+                            gameSession.participants.length === 0 ||
+                            !totalTimeMinutes ||
+                            totalTimeMinutes < 1
+                          }
+                        >
+                          <Play className="w-4 h-4 mr-2" />
+                          Mulai Game ({totalTimeMinutes} menit)
+                        </Button>
+                      </div>
+                      <div className="flex flex-1 items-center justify-center space-x-2">
+                        {gameSession?.status === "waiting" &&
+                          !gameSession?.countdown_started_at && (
+                            <Button
+                              onClick={joinAsHostAndStartCountdown}
+                              disabled={isJoining}
+                              className="w-full bg-green-600 hover:bg-green-700"
+                            >
+                              {isJoining
+                                ? "Memulai..."
+                                : "Ikut Bermain sebagai Host"}
+                            </Button>
+                          )}
+                      </div>
                     </div>
                   </CardContent>
                 </>

@@ -98,7 +98,7 @@ export default function GamePage({
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
-  // const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [isEnding, setIsEnding] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
 
@@ -332,7 +332,7 @@ const updateParticipantProgress = useCallback(async () => {
 
 const fetchGameData = useCallback(async () => {
   try {
-    // setLoading(true);
+    setLoading(true);
 
      const session = await fetchGameSession();
     const questions = await fetchQuestions(session.quiz_id);
@@ -344,7 +344,7 @@ const fetchGameData = useCallback(async () => {
     console.error("Error fetching game data:", error);
     toast.error("Gagal memuat data game");
   } finally {
-    // setLoading(false);
+    setLoading(false);
   }
 }, [fetchGameSession, fetchQuestions, updateParticipantProgress]);
 
@@ -499,16 +499,16 @@ const setupRealTimeSubscription = useCallback(() => {
     );
   }
 
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-  //       <div className="text-center text-white">
-  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-  //         <p className="text-lg">Memuat kontrol game...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-lg">Memuat kontrol game...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!gameSession) {
     return (
