@@ -91,6 +91,7 @@ export type Database = {
           points: number
           order_index: number
           created_at: string
+          image_url: string | null
         }
         Insert: {
           id?: string
@@ -100,6 +101,7 @@ export type Database = {
           points: number
           order_index: number
           created_at?: string
+          image_url?: string | null
         }
         Update: {
           id?: string
@@ -109,6 +111,7 @@ export type Database = {
           points?: number
           order_index?: number
           created_at?: string
+          image_url?: string | null
         }
       }
       answers: {
@@ -120,6 +123,7 @@ export type Database = {
           color: string
           order_index: number
           created_at: string
+          image_url: string | null
         }
         Insert: {
           id?: string
@@ -129,6 +133,7 @@ export type Database = {
           color: string
           order_index: number
           created_at?: string
+          image_url?: string | null
         }
         Update: {
           id?: string
@@ -138,6 +143,7 @@ export type Database = {
           color?: string
           order_index?: number
           created_at?: string
+          image_url?: string | null
         }
       }
       game_sessions: {

@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
-import { ArrowLeft, Plus, Trash2, Clock, Trophy, Slack, Info } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Clock, Trophy, Slack, Info, Image as ImageIcon } from "lucide-react"
 import Link from "next/link"
+import ImageUpload from "@/components/ui/image-upload"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -46,6 +47,7 @@ interface Answer {
   text: string
   isCorrect: boolean
   color: string
+  image_url?: string | null
 }
 
 interface Question {
@@ -53,6 +55,7 @@ interface Question {
   text: string
   timeLimit: number
   points: number
+  image_url?: string | null
   answers: Answer[]
 }
 
@@ -112,12 +115,14 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
             time_limit,
             points,
             order_index,
+            image_url,
             answers (
               id,
               answer_text,
               is_correct,
               color,
-              order_index
+              order_index,
+              image_url
             )
           )
         `)
@@ -142,6 +147,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
             text: q.question_text,
             timeLimit: q.time_limit,
             points: q.points,
+            image_url: q.image_url,
             answers: q.answers
               .sort((a, b) => a.order_index - b.order_index)
               .map((a) => ({
@@ -149,6 +155,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                 text: a.answer_text,
                 isCorrect: a.is_correct,
                 color: a.color,
+                image_url: a.image_url,
               })),
           })),
       }
@@ -217,12 +224,13 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
       id: `new_${Date.now()}`,
       text: "",
       timeLimit: 20,
-      points: 1000,
+      points: 10,
+      image_url: null,
       answers: [
-        { id: `new_${Date.now()}_1`, text: "", isCorrect: true, color: answerColors[0] },
-        { id: `new_${Date.now()}_2`, text: "", isCorrect: false, color: answerColors[1] },
-        { id: `new_${Date.now()}_3`, text: "", isCorrect: false, color: answerColors[2] },
-        { id: `new_${Date.now()}_4`, text: "", isCorrect: false, color: answerColors[3] },
+        { id: `new_${Date.now()}_1`, text: "", isCorrect: true, color: answerColors[0], image_url: null },
+        { id: `new_${Date.now()}_2`, text: "", isCorrect: false, color: answerColors[1], image_url: null },
+        { id: `new_${Date.now()}_3`, text: "", isCorrect: false, color: answerColors[2], image_url: null },
+        { id: `new_${Date.now()}_4`, text: "", isCorrect: false, color: answerColors[3], image_url: null },
       ],
     }
 
@@ -272,6 +280,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                   text: "",
                   isCorrect: false,
                   color: answerColors[q.answers.length % answerColors.length],
+                  image_url: null,
                 },
               ],
             }
@@ -332,6 +341,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
               question_text: question.text,
               time_limit: question.timeLimit,
               points: question.points,
+              image_url: question.image_url,
               order_index: i,
             })
             .select()
@@ -345,6 +355,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
             answer_text: answer.text,
             is_correct: answer.isCorrect,
             color: answer.color,
+            image_url: answer.image_url,
             order_index: index,
           }))
 
@@ -359,6 +370,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
               question_text: question.text,
               time_limit: question.timeLimit,
               points: question.points,
+              image_url: question.image_url,
               order_index: i,
             })
             .eq("id", question.id)
@@ -374,6 +386,7 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                 answer_text: answer.text,
                 is_correct: answer.isCorrect,
                 color: answer.color,
+                image_url: answer.image_url,
                 order_index: j,
               })
               .eq("id", answer.id)
@@ -471,36 +484,36 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Quiz Info */}
+        {/* Quiz Info */}
           <Card className="shadow-lg border-blue-200 mb-8">
             <CardHeader className="bg-blue-50/50 border-b border-blue-100 rounded-t-lg">
               <CardTitle className="text-blue-800">Informasi Quiz</CardTitle>
-            </CardHeader>
+          </CardHeader>
             <CardContent className="p-6 space-y-6">
               {/* Title */}
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-gray-700 font-medium">
                   Judul Quiz *
                 </Label>
-                <Input
-                  id="title"
-                  value={quiz.title}
-                  onChange={(e) => updateQuiz("title", e.target.value)}
-                  placeholder="Masukkan judul quiz..."
+              <Input
+                id="title"
+                value={quiz.title}
+                onChange={(e) => updateQuiz("title", e.target.value)}
+                placeholder="Masukkan judul quiz..."
                   required
                   className="border-blue-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
+              />
+            </div>
 
               {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-gray-700 font-medium">
                   Deskripsi (Opsional)
                 </Label>
-                <Textarea
-                  id="description"
-                  value={quiz.description || ""}
-                  onChange={(e) => updateQuiz("description", e.target.value)}
+              <Textarea
+                id="description"
+                value={quiz.description || ""}
+                onChange={(e) => updateQuiz("description", e.target.value)}
                   placeholder="Jelaskan tentang quiz ini..."
                   rows={3}
                   className="border-blue-300 focus:border-blue-500 focus:ring-blue-500"
@@ -592,14 +605,14 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                     </div>
                   </AlertDescription>
                 </Alert>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Questions */}
+        {/* Questions */}
           <Card className="shadow-lg border-blue-200">
             <CardHeader className="bg-blue-50/50 border-b border-blue-100 rounded-t-lg">
-              <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                 <CardTitle className="text-blue-800">Pertanyaan Quiz</CardTitle>
                 <Button
                   onClick={addQuestion}
@@ -630,18 +643,18 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                           <h3 className="font-medium text-gray-800">
                             Pertanyaan {qIndex + 1}
                           </h3>
-                          <Button
+                    <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={() => removeQuestion(question.id)}
+                      size="sm"
+                      onClick={() => removeQuestion(question.id)}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                          >
+                    >
                             <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                    </Button>
+                </div>
 
                         <div className="space-y-4">
-                          {/* Question Text */}
+                                          {/* Question Text */}
                           <div>
                             <Label htmlFor={`q-${question.id}`} className="text-sm text-gray-600">
                               Teks Pertanyaan
@@ -656,19 +669,28 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                               className="mt-1"
                             />
                           </div>
+                          
+                          {/* Question Image */}
+                          <div>
+                            <ImageUpload
+                              imageUrl={question.image_url || null}
+                              onImageChange={(url) => updateQuestion(question.id, "image_url", url)}
+                              label="Gambar Pertanyaan (Opsional)"
+                            />
+                          </div>
 
                           {/* Time & Points */}
                           <div className="grid grid-cols-2 gap-4">
-                            <div>
+                  <div>
                               <Label htmlFor={`time-${question.id}`} className="text-sm text-gray-600">
                                 Waktu (detik)
-                              </Label>
-                              <Input
+                    </Label>
+                    <Input
                                 id={`time-${question.id}`}
-                                type="number"
+                      type="number"
                                 min="5"
                                 max="120"
-                                value={question.timeLimit}
+                      value={question.timeLimit}
                                 onChange={(e) =>
                                   updateQuestion(
                                     question.id,
@@ -676,19 +698,19 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                                     parseInt(e.target.value) || 20
                                   )
                                 }
-                                className="mt-1"
-                              />
-                            </div>
-                            <div>
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
                               <Label htmlFor={`points-${question.id}`} className="text-sm text-gray-600">
-                                Poin
-                              </Label>
-                              <Input
+                      Poin
+                    </Label>
+                    <Input
                                 id={`points-${question.id}`}
-                                type="number"
+                      type="number"
                                 min="100"
                                 step="100"
-                                value={question.points}
+                      value={question.points}
                                 onChange={(e) =>
                                   updateQuestion(
                                     question.id,
@@ -696,38 +718,90 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                                     parseInt(e.target.value) || 1000
                                   )
                                 }
-                                className="mt-1"
-                              />
-                            </div>
-                          </div>
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
 
                           <Separator />
 
-                          {/* Answers */}
+                {/* Answers */}
                           <div className="space-y-3">
                             <Label className="text-sm text-gray-600">Jawaban</Label>
                             {question.answers.map((answer, aIndex) => (
-                              <div
-                                key={answer.id}
+                      <div
+                        key={answer.id}
                                 className="flex items-center space-x-3"
                               >
-                                <div
+                                                                <div
                                   className="w-4 h-4 rounded-full shrink-0"
                                   style={{ backgroundColor: answer.color }}
                                 ></div>
-                                <Input
-                                  value={answer.text}
-                                  onChange={(e) =>
-                                    updateAnswer(
-                                      question.id,
-                                      answer.id,
-                                      "text",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder={`Jawaban ${aIndex + 1}`}
-                                  className="flex-1"
-                                />
+                                <div className="flex-1 space-y-2">
+                                  <Input
+                                    value={answer.text}
+                                    onChange={(e) =>
+                                      updateAnswer(
+                                        question.id,
+                                        answer.id,
+                                        "text",
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder={`Jawaban ${aIndex + 1}`}
+                                    className="w-full"
+                                  />
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs"
+                                      onClick={() => {
+                                        const fileInput = document.createElement('input');
+                                        fileInput.type = 'file';
+                                        fileInput.accept = 'image/*';
+                                        fileInput.onchange = async (e) => {
+                                          const file = (e.target as HTMLInputElement).files?.[0];
+                                          if (file) {
+                                            const { uploadImage } = await import('@/lib/upload-image');
+                                            const url = await uploadImage(file);
+                                            if (url) {
+                                              updateAnswer(question.id, answer.id, "image_url", url);
+                                            }
+                                          }
+                                        };
+                                        fileInput.click();
+                                      }}
+                                    >
+                                      <ImageIcon className="h-3 w-3 mr-1" />
+                                      {answer.image_url ? 'Ganti Gambar' : 'Tambah Gambar'}
+                                    </Button>
+                                    
+                                    {answer.image_url && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-xs text-red-500 hover:text-red-700"
+                                        onClick={() => updateAnswer(question.id, answer.id, "image_url", null)}
+                                      >
+                                        Hapus Gambar
+                                      </Button>
+                                    )}
+                                  </div>
+                                  
+                                  {answer.image_url && (
+                                    <div className="relative h-20 w-20 rounded-md overflow-hidden border border-gray-200">
+                                      <img 
+                                        src={answer.image_url} 
+                                        alt={`Gambar untuk jawaban ${aIndex + 1}`}
+                                        className="object-cover w-full h-full"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
                                 <div className="flex items-center space-x-2">
                                   <div className="flex items-center space-x-1">
                                     <input
@@ -777,17 +851,17 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
                 </div>
               </ScrollArea>
 
-              {/* Add Question Button */}
+          {/* Add Question Button */}
               <div className="text-center mt-6 pt-4 border-t border-gray-200">
-                <Button
-                  onClick={addQuestion}
-                  variant="outline"
+            <Button
+              onClick={addQuestion}
+              variant="outline"
                   className="border-dashed border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600 bg-transparent"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Tambah Pertanyaan
-                </Button>
-              </div>
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Tambah Pertanyaan
+            </Button>
+          </div>
             </CardContent>
           </Card>
         </div>

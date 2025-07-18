@@ -12,9 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Slack, Globe, Lock, Info, Plus, Trash2, Brain } from "lucide-react";
+import { ArrowLeft, Slack, Globe, Lock, Info, Plus, Trash2, Brain, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ImageUpload from "@/components/ui/image-upload";
+import { uploadImage } from "@/lib/upload-image";
 import {
   Select,
   SelectContent,
@@ -62,6 +64,7 @@ type Question = {
   question_text: string;
   time_limit: number;
   points: number;
+  image_url: string | null;
   answers: Answer[];
 };
 
@@ -70,6 +73,7 @@ type Answer = {
   answer_text: string;
   is_correct: boolean;
   color: string;
+  image_url: string | null;
 };
 
 const defaultQuestion: Question = {
@@ -77,11 +81,12 @@ const defaultQuestion: Question = {
   question_text: "",
   time_limit: 20,
   points: 10,
+  image_url: null,
   answers: [
-    { id: crypto.randomUUID(), answer_text: "", is_correct: true, color: "#e74c3c" },
-    { id: crypto.randomUUID(), answer_text: "", is_correct: false, color: "#3498db" },
-    { id: crypto.randomUUID(), answer_text: "", is_correct: false, color: "#2ecc71" },
-    { id: crypto.randomUUID(), answer_text: "", is_correct: false, color: "#f1c40f" },
+    { id: crypto.randomUUID(), answer_text: "", is_correct: true, color: "#e74c3c", image_url: null },
+    { id: crypto.randomUUID(), answer_text: "", is_correct: false, color: "#3498db", image_url: null },
+    { id: crypto.randomUUID(), answer_text: "", is_correct: false, color: "#2ecc71", image_url: null },
+    { id: crypto.randomUUID(), answer_text: "", is_correct: false, color: "#f1c40f", image_url: null },
   ],
 };
 
@@ -143,6 +148,7 @@ export default function CreateQuizPage() {
               time_limit: question.time_limit,
               points: question.points,
               order_index: i,
+              image_url: question.image_url,
             })
             .select()
             .single();
@@ -156,6 +162,7 @@ export default function CreateQuizPage() {
             is_correct: answer.is_correct,
             color: answer.color,
             order_index: index,
+            image_url: answer.image_url,
           }));
           
           const { error: answersError } = await supabase
@@ -199,13 +206,13 @@ export default function CreateQuizPage() {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
   };
 
-  const updateQuestion = (id: string, field: string, value: string | number) => {
+  const updateQuestion = (id: string, field: string, value: string | number | null) => {
     setQuestions((prev) =>
       prev.map((q) => (q.id === id ? { ...q, [field]: value } : q))
     );
   };
 
-  const updateAnswer = (questionId: string, answerId: string, field: string, value: string | boolean) => {
+  const updateAnswer = (questionId: string, answerId: string, field: string, value: string | boolean | null) => {
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === questionId
@@ -233,6 +240,7 @@ export default function CreateQuizPage() {
                   answer_text: "",
                   is_correct: false,
                   color: defaultColors[q.answers.length % defaultColors.length],
+                  image_url: null,
                 },
               ],
             }
@@ -718,6 +726,15 @@ export default function CreateQuizPage() {
                                 />
                               </div>
 
+                              {/* Question Image */}
+                              <div>
+                                <ImageUpload
+                                  imageUrl={question.image_url}
+                                  onImageChange={(url) => updateQuestion(question.id, "image_url", url)}
+                                  label="Gambar Pertanyaan (Opsional)"
+                                />
+                              </div>
+
                               {/* Time & Points */}
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -776,19 +793,70 @@ export default function CreateQuizPage() {
                                       className="w-4 h-4 rounded-full shrink-0"
                                       style={{ backgroundColor: answer.color }}
                                     ></div>
-                                    <Input
-                                      value={answer.answer_text}
-                                      onChange={(e) =>
-                                        updateAnswer(
-                                          question.id,
-                                          answer.id,
-                                          "answer_text",
-                                          e.target.value
-                                        )
-                                      }
-                                      placeholder={`Jawaban ${aIndex + 1}`}
-                                      className="flex-1"
-                                    />
+                                    <div className="flex-1 space-y-2">
+                                      <Input
+                                        value={answer.answer_text}
+                                        onChange={(e) =>
+                                          updateAnswer(
+                                            question.id,
+                                            answer.id,
+                                            "answer_text",
+                                            e.target.value
+                                          )
+                                        }
+                                        placeholder={`Jawaban ${aIndex + 1}`}
+                                        className="w-full"
+                                      />
+                                      
+                                      <div className="flex items-center gap-2">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-7 px-2 text-xs"
+                                          onClick={() => {
+                                            const fileInput = document.createElement('input');
+                                            fileInput.type = 'file';
+                                            fileInput.accept = 'image/*';
+                                            fileInput.onchange = async (e) => {
+                                              const file = (e.target as HTMLInputElement).files?.[0];
+                                              if (file) {
+                                                const url = await uploadImage(file);
+                                                if (url) {
+                                                  updateAnswer(question.id, answer.id, "image_url", url);
+                                                }
+                                              }
+                                            };
+                                            fileInput.click();
+                                          }}
+                                        >
+                                          <ImageIcon className="h-3 w-3 mr-1" />
+                                          {answer.image_url ? 'Ganti Gambar' : 'Tambah Gambar'}
+                                        </Button>
+                                        
+                                        {answer.image_url && (
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 px-2 text-xs text-red-500 hover:text-red-700"
+                                            onClick={() => updateAnswer(question.id, answer.id, "image_url", null)}
+                                          >
+                                            Hapus Gambar
+                                          </Button>
+                                        )}
+                                      </div>
+                                      
+                                      {answer.image_url && (
+                                        <div className="relative h-20 w-20 rounded-md overflow-hidden border border-gray-200">
+                                          <img 
+                                            src={answer.image_url} 
+                                            alt={`Gambar untuk jawaban ${aIndex + 1}`}
+                                            className="object-cover w-full h-full"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
                                     <div className="flex items-center space-x-2">
                                       <div className="flex items-center space-x-1">
                                         <input
