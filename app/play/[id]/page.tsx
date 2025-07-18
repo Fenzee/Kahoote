@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { Users, Trophy, AlertCircle, Play } from "lucide-react";
 import { use } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 
 interface GameSession {
   id: string;
@@ -278,9 +279,9 @@ export default function PlayGamePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center text-gray-700">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className="text-lg">Memuat game...</p>
         </div>
       </div>
@@ -289,13 +290,13 @@ export default function PlayGamePage({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Card className="w-full max-w-md shadow-lg rounded-xl">
           <CardContent className="p-8 text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={() => router.push("/join")}>
+            <Button onClick={() => router.push("/join")} className="bg-purple-600 hover:bg-purple-700">
               Kembali ke Join
             </Button>
           </CardContent>
@@ -306,13 +307,13 @@ export default function PlayGamePage({
 
   if (!gameSession || !quiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Card className="w-full max-w-md shadow-lg rounded-xl">
           <CardContent className="p-8 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Game tidak ditemukan
             </h2>
-            <Button onClick={() => router.push("/join")}>
+            <Button onClick={() => router.push("/join")} className="bg-purple-600 hover:bg-purple-700">
               Kembali ke Join
             </Button>
           </CardContent>
@@ -322,200 +323,155 @@ export default function PlayGamePage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE]">
+    <div className="min-h-screen bg-white text-gray-900">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <Trophy className="w-5 h-5 text-purple-600" />
-            </div>
-            <span className="text-2xl font-bold text-white">MyLessons</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="secondary" className="bg-white/20 text-white">
-              <Users className="w-3 h-3 mr-1" />
-              {participants.length} pemain
-            </Badge>
-            <Badge
-              variant="secondary"
-              className={`${
-                gameSession.status === "waiting"
-                  ? "bg-yellow-500"
-                  : gameSession.status === "active"
-                  ? "bg-green-500"
-                  : "bg-red-500"
-              } text-white`}
-            >
-              {gameSession.status === "waiting"
-                ? "Menunggu"
+      <header className="flex items-center justify-between px-4 py-4 md:px-6 lg:px-8 border-b">
+        <Link href="#" className="flex items-center gap-2 font-bold text-lg" prefetch={false}>
+          <Trophy className="h-6 w-6 text-purple-600" />
+          <span>GolekQuiz</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-gray-100 text-gray-700">
+            <Users className="w-3 h-3 mr-1" />
+            {participants.length} pemain
+          </Badge>
+          <Badge
+            className={`${
+              gameSession.status === "waiting"
+                ? "bg-purple-600"
                 : gameSession.status === "active"
-                ? "Aktif"
-                : "Selesai"}
-            </Badge>
-          </div>
+                ? "bg-green-500"
+                : "bg-red-500"
+            } text-white`}
+          >
+            {gameSession.status === "waiting"
+              ? "Menunggu"
+              : gameSession.status === "active"
+              ? "Aktif"
+              : "Selesai"}
+          </Badge>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 pb-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Quiz Info */}
-          <Card className="bg-white/95 backdrop-blur-sm mb-6">
-            <CardHeader>
-              <CardTitle className="text-2xl text-center">
-                {quiz.title}
-              </CardTitle>
-              {quiz.description && (
-                <p className="text-gray-600 text-center">{quiz.description}</p>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="bg-purple-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {quiz.questions.length}
-                  </div>
-                  <div className="text-sm text-gray-600">Pertanyaan</div>
+      <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16 space-y-8">
+        {/* Quiz Info */}
+        <Card className="bg-white shadow-lg rounded-xl p-6">
+          <CardHeader className="pb-4 px-0 pt-0">
+            <CardTitle className="text-xl font-semibold text-center">
+              {quiz.title}
+            </CardTitle>
+            {quiz.description && (
+              <p className="text-gray-600 text-center text-sm">{quiz.description}</p>
+            )}
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <div className="text-3xl font-bold text-purple-600">
+                  {quiz.questions.length}
                 </div>
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {participants.length}
-                  </div>
-                  <div className="text-sm text-gray-600">Pemain</div>
-                </div>
-                <div className="bg-green-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-green-600">
-                    {gameSession.total_time_minutes || "—"}
-                  </div>
-                  <div className="text-sm text-gray-600">Menit Total</div>
-                </div>
+                <div className="text-sm text-gray-600">Pertanyaan</div>
               </div>
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="text-3xl font-bold text-blue-600">
+                  {participants.length}
+                </div>
+                <div className="text-sm text-gray-600">Pemain</div>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="text-3xl font-bold text-green-600">
+                  {gameSession.total_time_minutes || "-"}
+                </div>
+                <div className="text-sm text-gray-600">Menit Total</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Game Status */}
+        {gameSession.status === "waiting" && countdownLeft === null && (
+          <Card className="bg-white shadow-lg rounded-xl p-6 text-center">
+            <CardContent className="px-0 pb-0 space-y-6">
+              <div className="flex justify-center">
+                <Play className="w-24 h-24 text-purple-600" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
+                Menunggu Host Memulai Game
+              </h2>
+              <p className="text-base text-gray-600">
+                Game akan dimulai sebentar lagi...
+              </p>
+              <p className="text-lg font-semibold text-purple-600">
+                Game PIN: {gameSession.game_pin}
+              </p>
             </CardContent>
           </Card>
+        )}
 
-          {/* Game Status */}
-          {gameSession.status === "waiting" && countdownLeft === null && (
-            <Card className="bg-white/95 backdrop-blur-sm mb-6">
+        {gameSession.status === "active" &&
+          countdownLeft !== null &&
+          countdownLeft > 0 && (
+            <Card className="bg-white shadow-lg rounded-xl p-6">
               <CardContent className="p-8 text-center">
-                <div className="animate-pulse">
-                  <Play className="w-16 h-16 text-purple-600 mx-auto mb-4" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Menunggu Host Memulai Game
+                <h2 className="text-4xl font-bold text-purple-700 mb-2">
+                  Mulai dalam {countdownLeft} detik...
                 </h2>
-                <p className="text-gray-600 mb-4">
-                  Game akan dimulai sebentar lagi...
-                </p>
-                <div className="bg-purple-50 rounded-lg p-4">
-                  <p className="text-purple-800 font-medium">
-                    Game PIN: {gameSession.game_pin}
-                  </p>
-                </div>
+                <p className="text-gray-600">Bersiaplah!</p>
               </CardContent>
             </Card>
           )}
 
-          {gameSession.status === "active" &&
-            countdownLeft !== null &&
-            countdownLeft > 0 && (
-              <Card className="bg-white/95 backdrop-blur-sm mb-6">
-                <CardContent className="p-8 text-center">
-                  <h2 className="text-4xl font-bold text-purple-700 mb-2">
-                    Mulai dalam {countdownLeft} detik...
-                  </h2>
-                  <p className="text-gray-600">Bersiaplah!</p>
-                </CardContent>
-              </Card>
+        {/* Leaderboard */}
+        <Card className="bg-white shadow-lg rounded-xl p-6">
+          <CardHeader className="pb-4 px-0 pt-0">
+            <CardTitle className="text-xl font-semibold">
+              Waiting room
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            {participants.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Belum ada pemain yang bergabung</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {participants.map((participant, index) => (
+                  <div
+                    key={participant.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                      index === 0
+                        ? "bg-yellow-50"
+                        : index === 1
+                        ? "bg-gray-50"
+                        : index === 2
+                        ? "bg-orange-50"
+                        : "bg-gray-50"
+                    }`}
+                  >
+                    <Avatar className="h-10 w-10 border-2 border-yellow-300">
+                      <AvatarImage
+                        src={`https://robohash.org/${encodeURIComponent(
+                          participant.nickname
+                        )}.png`}
+                        alt={participant.nickname}
+                      />
+                      <AvatarFallback className="bg-white text-purple-600 text-sm font-semibold">
+                        {getInitials(participant.nickname)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className={`font-medium text-gray-800 ${
+                      participant.id === participantId ? "italic underline" : ""
+                    }`}>
+                      {participant.nickname}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
-
-          {/* Leaderboard */}
-          <Card className="bg-white/95 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-center space-x-2">
-                {/* <Trophy className="w-5 h-5" /> */}
-                <span>Waiting room</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {participants.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Belum ada pemain yang bergabung</p>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  {participants.map((participant, index) => (
-                    <div
-                      key={participant.id}
-                      className={`flex mt-0 items-center p-4 rounded-lg ${
-                        index === 0
-                          ? "bg-yellow-50 border-2 border-yellow-200"
-                          : index === 1
-                          ? "bg-gray-50 border-2 border-gray-200"
-                          : index === 2
-                          ? "bg-orange-50 border-2 border-orange-200"
-                          : "bg-gray-50"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        {/* <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                            index === 0
-                              ? "bg-yellow-500"
-                              : index === 1
-                              ? "bg-gray-500"
-                              : index === 2
-                              ? "bg-orange-500"
-                              : "bg-purple-500"
-                          }`}
-                        >
-                          {index + 1}
-                        </div> */}
-                        <div>
-                          <Avatar className="h-10 w-10">
-                            {/* <AvatarImage
-                            src="/placeholder.svg"
-                            alt={user.email || ""}
-                          /> */}
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage
-                                src={`https://robohash.org/${encodeURIComponent(
-                                  participant.nickname
-                                )}.png`}
-                                alt={participant.nickname}
-                              />
-                              <AvatarFallback className="bg-white text-purple-600 text-sm font-semibold">
-                                {getInitials(participant.nickname)}
-                              </AvatarFallback>
-                            </Avatar>
-                          </Avatar>
-                        </div>
-                        <div className="flex flex-col">
-                          {participant.id === participantId ? (
-                            <div className="font-medium rounded p-2 italic underline">
-                              {participant.nickname}
-                            </div>
-                          ) : (
-                            <span className="font-medium">
-                              {participant.nickname}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {/* <div className="text-right">
-                        <div className="font-bold text-lg">
-                          {participant.score}
-                        </div>
-                        <div className="text-xs text-gray-500">poin</div>
-                      </div> */}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

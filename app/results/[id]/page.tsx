@@ -22,6 +22,8 @@ import {
   BarChart3,
   CheckCircle,
   XCircle,
+  HelpCircle,
+  LayoutDashboard,
 } from "lucide-react";
 
 interface GameSession {
@@ -172,7 +174,7 @@ export default function ResultsPage({
       //   ...session,
       //   quiz: session.quizzes[0], 
       // } as GameSession);
-      setGameSession(session as GameSession);
+      setGameSession(session as unknown as GameSession);
 
 
       const userIsHost = user ? session.host_id === user.id : false;
@@ -395,9 +397,9 @@ export default function ResultsPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center text-gray-700">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className="text-lg">Memuat hasil...</p>
         </div>
       </div>
@@ -406,15 +408,15 @@ export default function ResultsPage({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-        <Card className="bg-white/95 backdrop-blur-sm max-w-md mx-4">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Card className="w-full max-w-md shadow-lg rounded-xl">
           <CardContent className="p-6 text-center">
-            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4 animate-pulse" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Terjadi Kesalahan
             </h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={() => router.push("/join")}>Kembali</Button>
+            <Button onClick={() => router.push("/join")} className="bg-purple-600 hover:bg-purple-700">Kembali</Button>
           </CardContent>
         </Card>
       </div>
@@ -423,8 +425,8 @@ export default function ResultsPage({
 
   if (!gameSession) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-        <Card className="bg-white/95 backdrop-blur-sm max-w-md mx-4">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Card className="w-full max-w-md shadow-lg rounded-xl">
           <CardContent className="p-6 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Hasil tidak ditemukan
@@ -432,7 +434,7 @@ export default function ResultsPage({
             <p className="text-gray-600 mb-4">
               Sesi game tidak valid atau sudah berakhir.
             </p>
-            <Button onClick={() => router.push("/join")}>Kembali</Button>
+            <Button onClick={() => router.push("/join")} className="bg-purple-600 hover:bg-purple-700">Kembali</Button>
           </CardContent>
         </Card>
       </div>
@@ -442,389 +444,348 @@ export default function ResultsPage({
   const topThree = participants.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE]">
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              🏆 Hasil Game
-            </h1>
-            <p className="text-white/80">{gameSession.quiz.title}</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            {isHost ? (
-              <>
-                <Button
-                  onClick={exportResults}
-                  variant="secondary"
-                  size="sm"
-                  className="bg-white/20 text-white hover:bg-white/30"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
-                <Button
-                  onClick={() => router.push("/dashboard")}
-                  variant="secondary"
-                  size="sm"
-                  className="bg-white/20 text-white hover:bg-white/30"
-                >
-                  <Home className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
-              </>
-            ) : (
-              <>
-                {personalStats && (
-                  <Button
-                    onClick={shareResults}
-                    variant="secondary"
-                    size="sm"
-                    className="bg-white/20 text-white hover:bg-white/30"
-                  >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Bagikan
-                  </Button>
-                )}
-                <Button
-                  onClick={() => router.push("/join")}
-                  variant="secondary"
-                  size="sm"
-                  className="bg-white/20 text-white hover:bg-white/30"
-                >
-                  <Home className="w-4 h-4 mr-2" />
-                  Main Lagi
-                </Button>
-              </>
-            )}
+    <div className="min-h-screen bg-white text-gray-900 relative overflow-hidden">
+      {/* Confetti Animation Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-10 left-1/4 w-4 h-4 bg-yellow-500 rounded-full animate-confetti-fall-slow"></div>
+        <div className="absolute -top-10 left-1/3 w-3 h-3 bg-purple-500 rounded-full animate-confetti-fall-medium"></div>
+        <div className="absolute -top-10 left-1/2 w-5 h-5 bg-blue-500 rounded-full animate-confetti-fall-fast"></div>
+        <div className="absolute -top-10 left-2/3 w-4 h-4 bg-green-500 rounded-full animate-confetti-fall-slow"></div>
+        <div className="absolute -top-10 left-3/4 w-3 h-3 bg-red-500 rounded-full animate-confetti-fall-medium"></div>
+        <div className="absolute -top-10 left-10 w-2 h-2 bg-pink-500 rounded-full animate-confetti-fall-fast"></div>
+        <div className="absolute -top-10 right-10 w-6 h-6 bg-indigo-500 rounded-full animate-confetti-fall-slow"></div>
+        <div className="absolute -top-10 right-1/4 w-3 h-3 bg-yellow-300 rounded-full animate-confetti-fall-medium"></div>
+        <div className="absolute -top-10 right-1/3 w-4 h-4 bg-purple-300 rounded-full animate-confetti-fall-fast"></div>
+        <div className="absolute -top-10 right-1/2 w-5 h-5 bg-blue-300 rounded-full animate-confetti-fall-slow"></div>
+        <div className="absolute -top-10 right-2/3 w-3 h-3 bg-green-300 rounded-full animate-confetti-fall-medium"></div>
+        <div className="absolute -top-10 right-3/4 w-4 h-4 bg-red-300 rounded-full animate-confetti-fall-fast"></div>
+      </div>
+
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-4 md:px-6 lg:px-8 border-b">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-6 w-6 text-purple-600 animate-bounce" />
+          <div className="flex flex-col">
+            <span className="font-bold text-lg">Hasil Game</span>
+            <span className="text-sm text-gray-500">{gameSession.quiz.title}</span>
           </div>
         </div>
+        <nav className="flex items-center gap-4">
+          {isHost ? (
+            <>
+              <Button
+                onClick={exportResults}
+                variant="outline"
+                className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-transparent transition-all hover:scale-105"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button
+                onClick={() => router.push("/dashboard")}
+                variant="outline"
+                className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-transparent transition-all hover:scale-105"
+              >
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
+            </>
+          ) : (
+            <>
+              {personalStats && (
+                <Button
+                  onClick={shareResults}
+                  variant="outline"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-transparent transition-all hover:scale-105"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Bagikan
+                </Button>
+              )}
+              <Button
+                onClick={() => router.push("/join")}
+                variant="outline"
+                className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-transparent transition-all hover:scale-105"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Main Lagi
+              </Button>
+            </>
+          )}
+        </nav>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {personalStats && !isHost && (
-            <Card className="bg-white/95 backdrop-blur-sm">
-              <CardHeader className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Trophy className="w-10 h-10 text-white" />
-                </div>
-                <CardTitle className="text-3xl">Hasil Anda</CardTitle>
-                <p className="text-gray-600">
-                  Selamat telah menyelesaikan game!
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-3xl font-bold text-purple-600">
-                      #{personalStats.rank}
-                    </div>
-                    <div className="text-sm text-gray-600">Peringkat</div>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-3xl font-bold text-green-600">
-                      {personalStats.total_points.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-gray-600">Total Poin</div>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {personalStats.correct_answers}/
-                      {personalStats.total_questions}
-                    </div>
-                    <div className="text-sm text-gray-600">Benar</div>
-                  </div>
-                  {/* <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-3xl font-bold text-orange-600">
-                      {personalStats.average_time}s
-                    </div>
-                    <div className="text-sm text-gray-600">Rata-rata</div>
-                  </div> */}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {topThree.length > 0 && (
-            <Card className="bg-white/95 backdrop-blur-sm">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl flex items-center justify-center">
-                  <Trophy className="w-6 h-6 mr-2 text-yellow-500" />
-                  Podium Pemenang
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-end justify-center space-x-4">
-                  {topThree[1] && (
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center mb-2">
-                        <Medal className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="bg-gray-100 rounded-lg p-4 h-24 flex flex-col justify-center">
-                        <div className="font-bold text-gray-800">
-                          {topThree[1].nickname}
-                        </div>
-                        <div className="text-2xl font-bold text-gray-600">
-                          {topThree[1].score.toLocaleString()}
-                        </div>
-                        <div className=" bg-yellow-500 text-white text-xs mt-1 rounded-full px-2 py-1">
-                          🥈 2nd
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {topThree[0] && (
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mb-2">
-                        <Trophy className="w-10 h-10 text-white" />
-                      </div>
-                      <div className="bg-yellow-50 rounded-lg p-4 h-32 flex flex-col justify-center border-2 border-yellow-300">
-                        <div className="font-bold text-yellow-800">
-                          {topThree[0].nickname}
-                        </div>
-                        <div className="text-3xl font-bold text-yellow-600">
-                          {topThree[0].score.toLocaleString()}
-                        </div>
-                        <div className="bg-yellow-500 text-white text-xs mt-1 rounded-full px-2 py-1">
-                          🥇 1st
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {topThree[2] && (
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-amber-600 to-amber-800 rounded-full flex items-center justify-center mb-2">
-                        <Award className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="bg-amber-50 rounded-lg p-4 h-24 flex flex-col justify-center">
-                        <div className="font-bold text-amber-800">
-                          {topThree[2].nickname}
-                        </div>
-                        <div className="text-2xl font-bold text-amber-600">
-                          {topThree[2].score.toLocaleString()}
-                        </div>
-                        <div className="bg-yellow-500 text-white text-xs mt-1 rounded-full px-2 py-1">
-                          🥉 3rd
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="bg-white/95 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                Leaderboard Lengkap ({participants.length} Pemain)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {participants.map((participant, index) => (
-                  <div
-                    key={participant.id}
-                    className={`flex items-center justify-between p-4 rounded-lg ${
-                      index < 3
-                        ? "bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200"
-                        : "bg-gray-50 hover:bg-gray-100"
-                    } transition-colors`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          index === 0
-                            ? "bg-yellow-500 text-white"
-                            : index === 1
-                            ? "bg-gray-400 text-white"
-                            : index === 2
-                            ? "bg-amber-600 text-white"
-                            : "bg-gray-200 text-gray-700"
-                        }`}
-                      >
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-900">
-                          {participant.nickname}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          Bergabung:{" "}
-                          {new Date(participant.joined_at).toLocaleTimeString(
-                            "id-ID"
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900">
-                        {participant.score.toLocaleString()}
-                      </div>
-                      <div className="text-sm text-gray-500">poin</div>
-                    </div>
-                  </div>
-                ))}
+      <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16 space-y-8">
+        {personalStats && !isHost && (
+          <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl hover:-translate-y-1">
+            <CardHeader className="text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <Trophy className="w-10 h-10 text-white animate-bounce" />
               </div>
-            </CardContent>
-          </Card>
-
-          {isHost && questionStats.length > 0 && (
-            <Card className="bg-white/95 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  Statistik Pertanyaan
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {questionStats.map((stat, index) => (
-                    <div
-                      key={stat.question_id}
-                      className="border rounded-lg p-4"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">
-                            Pertanyaan {index + 1}
-                          </h4>
-                          <p className="text-gray-600 text-sm">
-                            {stat.question_text}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="ml-4">
-                          {stat.points} poin
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-
-                        <div className="text-center">
-                          <div className="flex items-center justify-center mb-1">
-                            <Users className="w-4 h-4 text-blue-500 mr-1" />
-                            <span className="text-2xl font-bold text-blue-600">
-                              {stat.total_responses}
-                            </span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Total Jawaban
-                          </div>
-                        </div>
-
-                        <div className="text-center">
-                          <div className="flex items-center justify-center mb-1">
-                            <CheckCircle className="w-4 h-4 text-green-500 mr-1" />
-                            <span className="text-2xl font-bold text-green-600">
-                              {stat.correct_responses}
-                            </span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Jawaban Benar
-                          </div>
-                        </div>
-
-                        {/* <div className="text-center">
-                          <div className="flex items-center justify-center mb-1">
-                            <Clock className="w-4 h-4 text-orange-500 mr-1" />
-                            <span className="text-2xl font-bold text-orange-600">
-                              {stat.average_time}s
-                            </span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Rata-rata Waktu
-                          </div>
-                        </div> */}
-                      </div>
-
-                      {stat.total_responses > 0 && (
-                        <div className="mt-3">
-                          <div className="flex items-center justify-between text-sm mb-1">
-                            <span>Tingkat Kebenaran</span>
-                            <span>
-                              {Math.round(
-                                (stat.correct_responses /
-                                  stat.total_responses) *
-                                  100
-                              )}
-                              %
-                            </span>
-                          </div>
-                          <Progress
-                            value={
-                              (stat.correct_responses / stat.total_responses) *
-                              100
-                            }
-                            className="h-2"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="bg-white/95 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2" />
-                Ringkasan Game
-              </CardTitle>
+              <CardTitle className="text-3xl animate-fade-in">Hasil Anda</CardTitle>
+              <p className="text-gray-600">
+                Selamat telah menyelesaikan game!
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-blue-600">
-                    {participants.length}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-purple-50 rounded-lg transform transition-all hover:scale-105 hover:bg-purple-100">
+                  <div className="text-3xl font-bold text-purple-600 animate-number-pop">
+                    #{personalStats.rank}
                   </div>
-                  <div className="text-sm text-gray-600">Total Pemain</div>
+                  <div className="text-sm text-gray-600">Peringkat</div>
                 </div>
-
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <Target className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-green-600">
-                        {isHost ? questionStats.length : personalStats?.total_questions ?? 0}
-
+                <div className="text-center p-4 bg-green-50 rounded-lg transform transition-all hover:scale-105 hover:bg-green-100">
+                  <div className="text-3xl font-bold text-green-600 animate-number-pop">
+                    {personalStats.total_points.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-600">Total Pertanyaan</div>
+                  <div className="text-sm text-gray-600">Total Poin</div>
                 </div>
-
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <Trophy className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-purple-600">
-                    {participants.length > 0
-                      ? Math.max(
-                          ...participants.map((p) => p.score)
-                        ).toLocaleString()
-                      : 0}
+                <div className="text-center p-4 bg-blue-50 rounded-lg transform transition-all hover:scale-105 hover:bg-blue-100">
+                  <div className="text-3xl font-bold text-blue-600 animate-number-pop">
+                    {personalStats.correct_answers}/
+                    {personalStats.total_questions}
                   </div>
-                  <div className="text-sm text-gray-600">Skor Tertinggi</div>
-                </div>
-
-                <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <Clock className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-orange-600">
-                    {gameSession.ended_at && gameSession.started_at
-                      ? Math.round(
-                          (new Date(gameSession.ended_at).getTime() -
-                            new Date(gameSession.started_at).getTime()) /
-                            60000
-                        )
-                      : "N/A"}
-                  </div>
-                  <div className="text-sm text-gray-600">Durasi (menit)</div>
+                  <div className="text-sm text-gray-600">Benar</div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
+
+        {topThree.length > 0 && (
+          <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
+            <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center justify-center gap-2">
+              <Award className="w-6 h-6 text-yellow-500 animate-pulse" />
+              <CardTitle className="text-xl font-semibold">Podium Pemenang</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0 space-y-4">
+              <div className="flex items-end justify-center space-x-4">
+                {topThree[1] && (
+                  <div className="flex flex-col items-center text-center transform transition-all hover:scale-105">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center mb-2 animate-bounce-slow">
+                      <Medal className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="bg-gray-100 rounded-lg p-4 h-24 flex flex-col justify-center shadow-md hover:shadow-lg transition-shadow">
+                      <div className="font-bold text-gray-800">
+                        {topThree[1].nickname}
+                      </div>
+                      <div className="text-2xl font-bold text-gray-600 animate-number-pop">
+                        {topThree[1].score.toLocaleString()}
+                      </div>
+                      <Badge className="bg-yellow-100 text-yellow-700 mt-1">
+                        🥈 2nd
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                {topThree[0] && (
+                  <div className="flex flex-col items-center text-center transform transition-all hover:scale-105 z-10">
+                    <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mb-2 animate-bounce">
+                      <Trophy className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="bg-yellow-50 rounded-lg p-4 h-32 flex flex-col justify-center border-2 border-yellow-300 shadow-lg hover:shadow-xl transition-shadow">
+                      <div className="font-bold text-yellow-800">
+                        {topThree[0].nickname}
+                      </div>
+                      <div className="text-3xl font-bold text-yellow-600 animate-number-pop">
+                        {topThree[0].score.toLocaleString()}
+                      </div>
+                      <Badge className="bg-yellow-400 text-white mt-1">
+                        🥇 1st
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                {topThree[2] && (
+                  <div className="flex flex-col items-center text-center transform transition-all hover:scale-105">
+                    <div className="w-16 h-16 bg-gradient-to-br from-amber-600 to-amber-800 rounded-full flex items-center justify-center mb-2 animate-bounce-slow">
+                      <Award className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="bg-amber-50 rounded-lg p-4 h-24 flex flex-col justify-center shadow-md hover:shadow-lg transition-shadow">
+                      <div className="font-bold text-amber-800">
+                        {topThree[2].nickname}
+                      </div>
+                      <div className="text-2xl font-bold text-amber-600 animate-number-pop">
+                        {topThree[2].score.toLocaleString()}
+                      </div>
+                      <Badge className="bg-yellow-100 text-yellow-700 mt-1">
+                        🥉 3rd
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
+          <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
+            <Users className="w-5 h-5 text-gray-600" />
+            <CardTitle className="text-xl font-semibold">
+              Leaderboard Lengkap ({participants.length} Pemain)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="space-y-3">
+              {participants.map((participant, index) => (
+                <div
+                  key={participant.id}
+                  className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                    index < 3
+                      ? "bg-yellow-50 hover:bg-yellow-100"
+                      : "bg-gray-50 hover:bg-gray-100"
+                  } transform hover:scale-[1.01] hover:shadow-md ${
+                    participant.id === participantId ? "ring-2 ring-purple-400" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`font-bold text-lg ${
+                      index === 0 ? "text-yellow-800" : 
+                      index === 1 ? "text-gray-600" : 
+                      index === 2 ? "text-amber-800" : "text-gray-600"
+                    }`}>{index + 1}</span>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      index === 0 ? "bg-yellow-400 text-white" : 
+                      index === 1 ? "bg-gray-300 text-white" : 
+                      index === 2 ? "bg-amber-500 text-white" : "bg-gray-200 text-gray-700"
+                    }`}>
+                      {participant.nickname.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-800">
+                        {participant.nickname}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Bergabung: {new Date(participant.joined_at).toLocaleTimeString("id-ID")}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="font-bold text-lg text-gray-800 animate-number-pop">
+                    {participant.score.toLocaleString()} poin
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {isHost && questionStats.length > 0 && (
+          <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
+            <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-gray-600" />
+              <CardTitle className="text-xl font-semibold">
+                Statistik Pertanyaan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0 space-y-4">
+              {questionStats.map((stat, index) => (
+                <div
+                  key={stat.question_id}
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-semibold">Pertanyaan {index + 1}</h3>
+                    <Badge className="bg-gray-100 text-gray-700">
+                      {stat.points} poin
+                    </Badge>
+                  </div>
+                  <p className="text-gray-600 mb-4">{stat.question_text}</p>
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div className="p-3 bg-blue-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-blue-100">
+                      <Users className="w-6 h-6 text-blue-600 mb-1" />
+                      <div className="text-xl font-bold text-blue-600 animate-number-pop">
+                        {stat.total_responses}
+                      </div>
+                      <div className="text-sm text-gray-600">Total Jawaban</div>
+                    </div>
+                    <div className="p-3 bg-green-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-green-100">
+                      <CheckCircle className="w-6 h-6 text-green-600 mb-1" />
+                      <div className="text-xl font-bold text-green-600 animate-number-pop">
+                        {stat.correct_responses}
+                      </div>
+                      <div className="text-sm text-gray-600">Jawaban Benar</div>
+                    </div>
+                  </div>
+
+                  {stat.total_responses > 0 && (
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span>Tingkat Kebenaran</span>
+                        <span className="font-medium">
+                          {Math.round((stat.correct_responses / stat.total_responses) * 100)}%
+                        </span>
+                      </div>
+                      <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-green-500 to-green-400 animate-progress-bar" 
+                          style={{ 
+                            width: `${Math.round((stat.correct_responses / stat.total_responses) * 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
+          <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
+            <LayoutDashboard className="w-5 h-5 text-gray-600" />
+            <CardTitle className="text-xl font-semibold">Ringkasan Game</CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div className="p-4 bg-blue-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-blue-100">
+                <Users className="w-8 h-8 text-blue-600 mb-2" />
+                <div className="text-2xl font-bold text-blue-600 animate-number-pop">
+                  {participants.length}
+                </div>
+                <div className="text-sm text-gray-600">Total Pemain</div>
+              </div>
+
+              <div className="p-4 bg-green-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-green-100">
+                <HelpCircle className="w-8 h-8 text-green-600 mb-2" />
+                <div className="text-2xl font-bold text-green-600 animate-number-pop">
+                  {isHost ? questionStats.length : personalStats?.total_questions ?? 0}
+                </div>
+                <div className="text-sm text-gray-600">Total Pertanyaan</div>
+              </div>
+
+              <div className="p-4 bg-purple-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-purple-100">
+                <Trophy className="w-8 h-8 text-purple-600 mb-2" />
+                <div className="text-2xl font-bold text-purple-600 animate-number-pop">
+                  {participants.length > 0
+                    ? Math.max(
+                        ...participants.map((p) => p.score)
+                      ).toLocaleString()
+                    : 0}
+                </div>
+                <div className="text-sm text-gray-600">Skor Tertinggi</div>
+              </div>
+
+              <div className="p-4 bg-orange-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-orange-100">
+                <Clock className="w-8 h-8 text-orange-600 mb-2" />
+                <div className="text-2xl font-bold text-orange-600 animate-number-pop">
+                  {gameSession.ended_at && gameSession.started_at
+                    ? Math.round(
+                        (new Date(gameSession.ended_at).getTime() -
+                          new Date(gameSession.started_at).getTime()) /
+                          60000
+                      )
+                    : "0"}
+                </div>
+                <div className="text-sm text-gray-600">Durasi (menit)</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

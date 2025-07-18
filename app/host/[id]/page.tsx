@@ -638,7 +638,7 @@ export default function HostGamePage({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="mb-4">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
@@ -693,13 +693,13 @@ export default function HostGamePage({
               <Button
                 onClick={fetchQuizAndCreateSession}
                 variant="outline"
-                className="flex-1 bg-transparent"
+                className="flex-1 bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Coba Lagi
               </Button>
               <Button
                 onClick={() => router.push("/dashboard")}
-                className="flex-1"
+                className="flex-1 bg-purple-600 hover:bg-purple-700"
               >
                 Kembali ke Dashboard
               </Button>
@@ -723,13 +723,13 @@ export default function HostGamePage({
 
   if (!quiz || !gameSession) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Quiz tidak ditemukan
           </h2>
           <Link href="/dashboard">
-            <Button>Kembali ke Dashboard</Button>
+            <Button className="bg-purple-600 hover:bg-purple-700">Kembali ke Dashboard</Button>
           </Link>
         </div>
       </div>
@@ -739,284 +739,251 @@ export default function HostGamePage({
   const isCreator = quiz.creator_id === user?.id;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE]">
+    <div className="min-h-screen bg-white text-gray-900 relative">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 flex flex-row-reverse justify-between items-center space-x-4">
-            <Link href="/dashboard">
-              <Button
-                onClick={endSession}
-                variant="outline"
-                className="text-white border-white hover:bg-white hover:text-purple-600 bg-transparent"
-              >
-                <ArrowBigLeft className="w-4 h-4 mr-1" />
-                Back & end session
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                <Slack className="w-5 h-5 text-cyan-950" />
-              </div>
-              <span className="text-2xl font-bold text-white">MyLessons</span>
-            </div>
-          </div>
+      <header className="flex items-center justify-between px-4 py-4 md:px-6 lg:px-8 border-b">
+        <div className="flex items-center gap-2 font-bold text-lg">
+          <Play className="h-6 w-6 text-purple-600" />
+          <span>GolekQuiz</span>
         </div>
+        <Button
+          onClick={endSession}
+          variant="outline"
+          className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-transparent"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back & end session
+        </Button>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 pb-8">
-        <div className="flex flex-col gap-4">
-          {/* Game Info */}
-          <div className="space-y-5 md:space-y-0 md:grid md:grid-cols-2 md:grid-rows-2 md:gap-4">
-            <Card className="bg-white/95 backdrop-blur-sm md:col-start-1 md:row-start-1 md:col-end-2 md:row-end-2">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex flex-1 justify-between">
-                    <div>
-                      <CardTitle className="text-2xl text-gray-900 mb-2">
-                        {quiz.title}
-                      </CardTitle>
-                      {quiz.description && (
-                        <p className="text-gray-600 mb-3">{quiz.description}</p>
-                      )}
-                    </div>
-
-                    {/* Quiz Status and Creator Info */}
-                    <div className="flex flex-col items-center justify-center text-sm gap-1">
-                      <div className="flex items-center space-x-1 text-gray-600">
-                        <User className="w-3 h-3" />
-                        <span>Maker {quiz.profiles.username}</span>
-                      </div>
-                      <div className="flex flex-col items-center md:flex-row gap-1">
-                        <div
-                          className={`flex items-center space-x-1 px-2 py-1 rounded-full ${
-                            quiz.is_public
-                              ? "bg-green-100 text-green-800"
-                              : "bg-orange-100 text-orange-800"
-                          }`}
-                        >
-                          {quiz.is_public ? (
-                            <Globe className="w-3 h-3" />
-                          ) : (
-                            <Lock className="w-3 h-3" />
-                          )}
-                          <span>{quiz.is_public ? "Public" : "Private"}</span>
-                        </div>
-
-                        {isCreator && (
-                          <div className="flex items-center px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-                            Quiz Anda
-                          </div>
-                        )}
-
-                        {!isCreator && quiz.is_public && (
-                          <div className="flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                            Hosting Public Quizz
-                          </div>
-                        )}
-                      </div>
-                    </div>
+      <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column */}
+        <div className="space-y-8">
+          {/* Quiz Info Card */}
+          <Card className="bg-white shadow-lg rounded-xl p-6">
+            <CardHeader className="pb-4 px-0 pt-0">
+              <CardTitle className="text-xl font-semibold">{quiz.title}</CardTitle>
+              {quiz.description && (
+                <p className="text-gray-600 text-sm">{quiz.description}</p>
+              )}
+            </CardHeader>
+            <CardContent className="px-0 pb-0 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <div className="text-3xl font-bold text-purple-600">
+                    {quiz.questions.length}
                   </div>
+                  <div className="text-sm text-gray-600">Pertanyaan</div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="bg-purple-50 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {quiz.questions.length}
-                    </div>
-                    <div className="text-sm text-gray-600">Pertanyaan</div>
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="text-3xl font-bold text-blue-600">
+                    {gameSession.participants.length}
                   </div>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {gameSession.participants.length}
-                    </div>
-                    <div className="text-sm text-gray-600">Pemain</div>
-                  </div>
+                  <div className="text-sm text-gray-600">Pemain</div>
                 </div>
+              </div>
+              <div className="flex items-center justify-between text-sm text-gray-600 pt-4 border-t">
+                <div className="flex items-center gap-1">
+                  <User className="w-4 h-4" />
+                  <span>Maker {quiz.profiles.username}</span>
+                </div>
+                <div className="flex gap-2">
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    quiz.is_public
+                      ? "bg-green-100 text-green-700"
+                      : "bg-orange-100 text-orange-700"
+                  }`}>
+                    {quiz.is_public ? "Public" : "Private"}
+                  </div>
+
+                  {isCreator && (
+                    <div className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                      Quiz Anda
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Time Setup Card */}
+          <Card className="bg-white shadow-lg rounded-xl p-6">
+            {/* Countdown sedang berlangsung */}
+            {countdownLeft !== null && countdownLeft > 0 ? (
+              <CardContent className="p-8 text-center">
+                <h2 className="text-4xl font-bold text-purple-700 mb-2">
+                  Mulai dalam {countdownLeft} detik...
+                </h2>
+                <p className="text-gray-600">Bersiaplah!</p>
               </CardContent>
-            </Card>
-
-            {/* Game PIN */}
-            <Card className="bg-white/95 backdrop-blur-sm md:col-start-2 md:row-start-1 md:col-end-3 md:row-end-3">
-              <CardHeader>
-                <CardTitle className="text-center">Game PIN</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center flex flex-col gap-2">
-                  <div className="text-6xl font-bold text-purple-600 tracking-wider">
-                    {gameSession.game_pin}
-                  </div>
-                  <div>
-                    <Button
-                      onClick={copyGamePin}
-                      variant="outline"
-                      className="bg-transparent"
+            ) : (
+              <>
+                <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
+                  <Clock className="w-5 h-5 text-purple-600" />
+                  <CardTitle className="text-xl font-semibold">Set Quiz Time Limit</CardTitle>
+                </CardHeader>
+                <CardContent className="px-0 pb-0 space-y-4">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="totalTime"
+                      className="block text-sm font-medium text-gray-700"
                     >
-                      {copied ? (
-                        <>
-                          <Check className="w-4 h-4 mr-2" />
-                          Tersalin!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Salin PIN
-                        </>
-                      )}
+                      Total Quiz Time (minutes)
+                    </Label>
+                    <Input
+                      id="totalTime"
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={totalTimeMinutes}
+                      onChange={(e) =>
+                        setTotalTimeMinutes(
+                          Number.parseInt(e.target.value) || 1
+                        )
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
+                    <Button
+                      onClick={startCountdownBeforeGame}
+                      className="bg-purple-600 hover:bg-purple-700 text-white flex-1"
+                      disabled={
+                        gameSession.participants.length === 0 ||
+                        !totalTimeMinutes ||
+                        totalTimeMinutes < 1
+                      }
+                      size="lg"
+                    >
+                      <Play className="w-5 h-5 mr-2" />
+                      Mulai Game ({totalTimeMinutes} menit)
                     </Button>
+                    {gameSession?.status === "waiting" &&
+                      !gameSession?.countdown_started_at && (
+                        <Button
+                          onClick={joinAsHostAndStartCountdown}
+                          disabled={isJoining}
+                          size="lg"
+                          variant="outline"
+                          className="border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700 bg-transparent flex-1"
+                        >
+                          {isJoining
+                            ? "Memulai..."
+                            : "Ikut Bermain sebagai Host"}
+                        </Button>
+                      )}
                   </div>
-                  <div className="flex items-center justify-center">
-                    <div className="flex justify-center border-2 rounded-xl p-2">
-                      <QRCodeSVG
-                        value={`${window.location.origin}/join?pin=${gameSession.game_pin}`} // Ganti dengan URL join yang benar
-                        size={256}
-                        bgColor="#FFFFFF"
-                        fgColor="#4C1D95" // warna ungu tua
-                        level="H"
-                        // includeMargin
-                      />
-                    </div>
+                </CardContent>
+              </>
+            )}
+          </Card>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-8">
+          {/* Game PIN Card */}
+          <Card className="bg-white shadow-lg rounded-xl p-6 text-center">
+            <CardHeader className="pb-4 px-0 pt-0">
+              <CardTitle className="text-xl font-semibold">Game PIN</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0 space-y-6">
+              <div className="text-6xl font-extrabold text-purple-600">{gameSession.game_pin}</div>
+              <Button
+                onClick={copyGamePin}
+                variant="outline"
+                className="border-purple-300 text-purple-600 hover:bg-purple-50 bg-transparent"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Tersalin!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Salin PIN
+                  </>
+                )}
+              </Button>
+              <div className="flex justify-center py-4">
+                <div className="w-48 h-48 border border-gray-200 rounded-lg p-2">
+                  <QRCodeSVG
+                    value={`${window.location.origin}/join?pin=${gameSession.game_pin}`}
+                    size={180}
+                    bgColor="#FFFFFF"
+                    fgColor="#4C1D95"
+                    level="H"
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                Bagikan PIN atau scan QRCode kepada pemain untuk bergabung
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Players Card */}
+          <Card className="bg-white shadow-lg rounded-xl p-6">
+            <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2 justify-center text-center">
+              <Users className="w-5 h-5 text-gray-600" />
+              <CardTitle className="text-xl font-semibold">
+                Pemain ({gameSession.participants.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              {gameSession.participants.length === 0 ? (
+                <div className="text-center py-4">
+                  <div className="flex justify-center py-4">
+                    <Users className="w-24 h-24 text-gray-300" />
                   </div>
+                  <p className="text-lg font-medium text-gray-700">Menunggu pemain...</p>
                   <p className="text-sm text-gray-600">
-                    Bagikan PIN atau scan QRCode kepada pemain untuk bergabung
+                    Bagikan Game PIN untuk mengundang pemain bergabung
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Time Setup Modal */}
-            <Card className="mt-0 bg-white/95 backdrop-blur-sm border-2 border-purple-300 md:col-start-1 md:row-start-2 md:col-end-2 md:row-end-3">
-              {/* Countdown sedang berlangsung */}
-              {countdownLeft !== null && countdownLeft > 0 ? (
-                <CardContent className="p-8 text-center">
-                  <h2 className="text-4xl font-bold text-purple-700 mb-2">
-                    Mulai dalam {countdownLeft} detik...
-                  </h2>
-                  <p className="text-gray-600">Bersiaplah!</p>
-                </CardContent>
               ) : (
-                <>
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-purple-700">
-                      <Clock className="w-5 h-5 mr-2" />
-                      Set Quiz Time Limit
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-6">
-                    {/* Form input waktu dan tombol mulai game */}
-                    <div className="flex-1 space-y-3">
-                      <Label
-                        htmlFor="totalTime"
-                        className="text-sm font-medium text-gray-700"
-                      >
-                        Total Quiz Time (minutes)
-                      </Label>
-                      <Input
-                        id="totalTime"
-                        type="number"
-                        min="1"
-                        max="120"
-                        value={totalTimeMinutes}
-                        onChange={(e) =>
-                          setTotalTimeMinutes(
-                            Number.parseInt(e.target.value) || 1
-                          )
-                        }
-                        className="mt-1"
-                        placeholder="Masukkan waktu dalam menit"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex flex-1 items-center justify-center space-x-2">
-                        <Button
-                          onClick={startCountdownBeforeGame}
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          disabled={
-                            gameSession.participants.length === 0 ||
-                            !totalTimeMinutes ||
-                            totalTimeMinutes < 1
-                          }
-                        >
-                          <Play className="w-4 h-4 mr-2" />
-                          Mulai Game ({totalTimeMinutes} menit)
-                        </Button>
-                      </div>
-                      <div className="flex flex-1 items-center justify-center space-x-2">
-                        {gameSession?.status === "waiting" &&
-                          !gameSession?.countdown_started_at && (
-                            <Button
-                              onClick={joinAsHostAndStartCountdown}
-                              disabled={isJoining}
-                              className="w-full bg-green-600 hover:bg-green-700"
-                            >
-                              {isJoining
-                                ? "Memulai..."
-                                : "Ikut Bermain sebagai Host"}
-                            </Button>
-                          )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </>
-              )}
-            </Card>
-          </div>
-
-          {/* Participants */}
-          <div>
-            <Card className="bg-white/95 backdrop-blur-sm h-full">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="w-5 h-5 mr-2" />
-                  Pemain ({gameSession.participants.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {gameSession.participants.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Menunggu pemain...
-                    </h3>
-                    <p className="text-gray-600">
-                      Bagikan Game PIN untuk mengundang pemain bergabung
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {gameSession.participants.map((participant, index) => (
-                      <div
-                        key={participant.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                            {index + 1}
-                          </div>
-                          <span className="font-medium">
-                            {participant.nickname}
-                          </span>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {gameSession.participants.map((participant, index) => (
+                    <div
+                      key={participant.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {index + 1}
                         </div>
-                        <span className="text-sm text-gray-500">
-                          {new Date(participant.joined_at).toLocaleTimeString(
-                            "id-ID",
-                            {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
+                        <span className="font-medium">
+                          {participant.nickname}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                      <span className="text-sm text-gray-500">
+                        {new Date(participant.joined_at).toLocaleTimeString(
+                          "id-ID",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </main>
+
+      {/* Issue Notification - Bisa ditambahkan jika diperlukan */}
+      {/* <div className="fixed bottom-4 left-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm">
+        <AlertCircle className="w-4 h-4" />
+        <span>1 Issue</span>
+        <Button variant="ghost" size="sm" className="text-white hover:bg-red-700 p-1">
+          <HelpCircle className="w-4 h-4" />
+          <span className="sr-only">Dismiss</span>
+        </Button>
+      </div> */}
     </div>
   );
 }
