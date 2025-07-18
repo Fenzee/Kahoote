@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@babel/runtime": "^7.27.6",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
@@ -46,6 +47,7 @@
     "embla-carousel-react": "latest",
     "framer-motion": "^12.23.6",
     "input-otp": "latest",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
     "next-themes": "latest",

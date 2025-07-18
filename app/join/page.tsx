@@ -1,347 +1,382 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import type React from "react";
+
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { RefreshCw, LogIn, Users, Clock, Trophy, Zap, AlertCircle, Gamepad2, ArrowLeft, Play } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/lib/supabase";
+import { Slack, Users, ArrowBigLeft, X, Camera } from "lucide-react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 
-interface SessionInfo {
-  id: string;
-  status: string;
-  host_id: string;
-  current_question_index: number;
-  participant_count: number;
-  quizzes: {
-    id: string;
-    title: string;
-    description: string;
-    creator_id: string;
-    profiles: {
-      username: string;
-      full_name: string;
-    };
-  };
-}
+// Dynamically import jsQR for QR code scanning
+const jsQR = dynamic(() => import('jsqr'), { ssr: false });
 
-export default function JoinPage() {
-  const [joinCode, setJoinCode] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [session, setSession] = useState<SessionInfo | null>(null);
-  const [isValidating, setIsValidating] = useState(false);
+export default function JoinGamePage() {
+  const [gamePin, setGamePin] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannerError, setScannerError] = useState("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Mock user - in real app this would come from auth
-  const user = { id: "1", name: "Demo User" };
-
-  // Simulate session validation
+  // Auto-fill game PIN if provided in URL
   useEffect(() => {
-    const validateCode = async () => {
-      if (!joinCode || joinCode.length !== 6) {
-        setSession(null);
-        return;
-      }
+    const pinFromUrl = searchParams.get("pin");
+    if (pinFromUrl) {
+      setGamePin(pinFromUrl);
+    }
+  }, [searchParams]);
 
-      setIsValidating(true);
+  // Handle QR Scanner setup and teardown
+  useEffect(() => {
+    let animationFrame: number;
+    const scanQRCode = async () => {
+      if (!showScanner) return;
+      if (!videoRef.current || !canvasRef.current) return;
 
-      // Simulate API call
-      setTimeout(() => {
-        if (joinCode === "DEMO12") {
-          setSession({
-            id: "1",
-            status: "waiting",
-            host_id: "host1",
-            current_question_index: 0,
-            participant_count: 12,
-            quizzes: {
-              id: "quiz1",
-              title: "Pengetahuan Umum Indonesia",
-              description: "Quiz tentang sejarah, budaya, dan geografi Indonesia",
-              creator_id: "host1",
-              profiles: {
-                username: "quizmaster",
-                full_name: "Quiz Master",
-              },
-            },
+      try {
+        if (!stream) {
+          const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
           });
-        } else {
-          setSession(null);
-          if (joinCode.length === 6) {
-            toast.error("Kode tidak valid atau sesi tidak ditemukan");
+          
+          setStream(newStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = newStream;
+            await videoRef.current.play();
           }
         }
-        setIsValidating(false);
-      }, 1000);
+
+        // Make sure video is ready
+        if (videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) {
+          animationFrame = requestAnimationFrame(scanQRCode);
+          return;
+        }
+
+        const canvas = canvasRef.current;
+        const video = videoRef.current;
+        const context = canvas.getContext('2d');
+
+        if (context) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          
+          if (code) {
+            console.log("QR Code detected:", code.data);
+            processQRCode(code.data);
+            return;
+          }
+        }
+
+        animationFrame = requestAnimationFrame(scanQRCode);
+      } catch (err) {
+        console.error("Error accessing camera:", err);
+        setScannerError("Gagal mengakses kamera. Pastikan kamera diizinkan.");
+      }
     };
 
-    const timeoutId = setTimeout(validateCode, 500);
-    return () => clearTimeout(timeoutId);
-  }, [joinCode]);
+    if (showScanner) {
+      scanQRCode();
+    } else {
+      // Clean up when scanner is hidden
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
+    }
 
-  const handleJoin = async () => {
-    if (!user || !session) return;
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [showScanner, stream]);
 
-    setIsLoading(true);
-
-    // Simulate joining
-    setTimeout(() => {
-      toast.success("Berhasil bergabung dengan kuis!");
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case "waiting":
-        return {
-          color: "bg-yellow-500",
-          text: "Menunggu Dimulai",
-          icon: Clock,
-          description: "Kuis belum dimulai, menunggu host untuk memulai",
-        };
-      case "active":
-        return {
-          color: "bg-green-500",
-          text: "Sedang Berlangsung",
-          icon: Zap,
-          description: "Kuis sedang berlangsung, bergabung sekarang!",
-        };
-      case "paused":
-        return {
-          color: "bg-orange-500",
-          text: "Dijeda",
-          icon: AlertCircle,
-          description: "Kuis dijeda sementara oleh host",
-        };
-      default:
-        return {
-          color: "bg-gray-500",
-          text: "Unknown",
-          icon: AlertCircle,
-          description: "",
-        };
+  const processQRCode = (scannedText: string) => {
+    try {
+      let pin;
+      
+      // Check if it's a URL with PIN parameter
+      if (scannedText.includes('?pin=')) {
+        const url = new URL(scannedText);
+        pin = url.searchParams.get('pin');
+      } else if (scannedText.match(/^\d{6}$/)) {
+        // Check if it's a 6-digit PIN directly
+        pin = scannedText;
+      }
+      
+      if (pin && pin.match(/^\d{6}$/)) {
+        setGamePin(pin);
+        setShowScanner(false); // Close scanner after successful scan
+      } else {
+        setScannerError("QR code tidak valid. Pastikan QR code berisi PIN game yang benar.");
+      }
+    } catch (err) {
+      setScannerError("Gagal membaca QR code. Silakan coba lagi.");
+      console.error("QR scanner error:", err);
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        {/* Navigation */}
-        <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <Link href="/" className="flex items-center space-x-2">
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Gamepad2 className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  GolekQuiz
-                </span>
-              </Link>
-              <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2">
-                🎮 Join Quiz
-              </Badge>
-            </div>
-          </div>
-        </nav>
+  const joinGame = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gamePin.trim()) return;
 
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] p-4">
-          <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
-            <CardHeader className="text-center pb-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <LogIn className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-2xl font-bold">Login Diperlukan</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-muted-foreground mb-6">
-                Anda harus login terlebih dahulu untuk bergabung dengan kuis.
-              </p>
-            </CardContent>
-            <CardFooter>
-              <Link href="/auth" className="w-full">
-                <Button className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl">
-                  Login / Daftar
-                </Button>
-              </Link>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+    setLoading(true);
+    setError("");
+
+    try {
+      // Ambil user dari session
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setError("Kamu harus login untuk join game.");
+        return;
+      }
+
+      // Ambil username dari profile
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError || !profile) {
+        setError("Gagal mengambil username.");
+        return;
+      }
+
+      // Cek session game
+      const { data: session, error: sessionError } = await supabase
+        .from("game_sessions")
+        .select("id, status, quiz_id")
+        .eq("game_pin", gamePin.trim())
+        .eq("status", "waiting")
+        .single();
+
+      if (sessionError || !session) {
+        setError("Game PIN tidak valid atau game sudah dimulai");
+        return;
+      }
+
+      // Cek apakah username sudah dipakai
+      const { data: existingParticipant } = await supabase
+        .from("game_participants")
+        .select("id")
+        .eq("session_id", session.id)
+        .eq("nickname", profile.username)
+        .single();
+
+      if (existingParticipant) {
+        setError("Username kamu sudah dipakai di game ini.");
+        return;
+      }
+
+      // Join game dengan username
+      const { data: participant, error: participantError } = await supabase
+        .from("game_participants")
+        .insert({
+          session_id: session.id,
+          user_id: user.id,
+          nickname: profile.username,
+        })
+        .select()
+        .single();
+
+      if (participantError) throw participantError;
+
+      router.push(`/play/${session.id}?participant=${participant.id}`);
+    } catch (error: any) {
+      console.error("Error joining game:", error);
+      setError("Gagal bergabung ke game. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <Gamepad2 className="w-6 h-6 text-white" />
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <nav className="flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <Slack className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">GolekQuiz</span>
+          </Link>
+          <Link
+            href="/"
+            className="text-gray-600 hover:bg-white hover:text-purple-600 transition-colors flex items-center gap-1 px-3 py-2 rounded-lg"
+          >
+            <ArrowBigLeft />
+            Back
+          </Link>
+        </nav>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 pt-10 pb-16">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                {showScanner ? <Camera className="w-8 h-8 text-white" /> : <Users className="w-8 h-8 text-white" />}
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                GolekQuiz
-              </span>
-            </Link>
-            <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2">🎮 Join Quiz</Badge>
-          </div>
-        </div>
-      </nav>
-
-      <div className="flex min-h-[calc(100vh-64px)]">
-        {/* Left Side - Info */}
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-purple-600 p-12 text-white">
-          <div className="flex flex-col justify-center max-w-lg mx-auto">
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold mb-4">Bergabung dengan Quiz</h1>
-              <p className="text-xl text-blue-100">
-                Masukkan kode 6 karakter untuk bergabung dengan quiz yang sedang berlangsung
+              <CardTitle className="text-2xl text-gray-900">
+                {showScanner ? "Scan QR Code" : "Gabung Game"}
+              </CardTitle>
+              <p className="text-gray-600">
+                {showScanner ? "Arahkan kamera ke QR code untuk bergabung" : "Masukkan Game PIN untuk bergabung"}
               </p>
-            </div>
-
-            <div className="space-y-6">
-              {[
-                {
-                  icon: Users,
-                  title: "Multiplayer Real-time",
-                  description: "Main bersama pemain lain secara bersamaan",
-                },
-                {
-                  icon: Trophy,
-                  title: "Live Leaderboard",
-                  description: "Lihat ranking secara real-time",
-                },
-                {
-                  icon: Zap,
-                  title: "Instant Join",
-                  description: "Langsung masuk dengan kode quiz",
-                },
-              ].map((feature, index) => (
-                <div key={index} className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{feature.title}</h3>
-                    <p className="text-blue-100">{feature.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Join Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-8 lg:hidden">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                Bergabung dengan Quiz
-              </h1>
-              <p className="text-muted-foreground">Masukkan kode 6 karakter untuk bergabung</p>
-            </div>
-
-            <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm mb-6">
-              <CardHeader>
-                <CardTitle className="text-center text-2xl font-bold">Masukkan Kode</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
+            </CardHeader>
+            <CardContent>
+              {showScanner ? (
+                <div className="space-y-4">
                   <div className="relative">
-                    <Input
-                      id="join-code"
-                      value={joinCode}
-                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                      placeholder="ABCDEF"
-                      maxLength={6}
-                      className="uppercase text-center text-2xl tracking-[0.5em] font-bold h-16 border-2 focus:border-blue-500 rounded-xl"
-                    />
-                    {isValidating && (
-                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-
-                  {session && !isValidating && (
-                    <div className="border-2 border-blue-200 rounded-xl p-6 bg-gradient-to-r from-blue-50 to-purple-50">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-xl text-gray-900 mb-2">{session.quizzes.title}</h3>
-                          <p className="text-sm text-gray-600 mb-3">
-                            Dibuat oleh:{" "}
-                            {session.quizzes.profiles?.full_name || session.quizzes.profiles?.username || "Tanpa Nama"}
-                          </p>
-                        </div>
-                        <Badge className={`${getStatusInfo(session.status).color} text-white px-3 py-1`}>
-                          {getStatusInfo(session.status).text}
-                        </Badge>
-                      </div>
-
-                      <p className="text-sm text-gray-700 mb-6">
-                        {session.quizzes.description || "Tidak ada deskripsi"}
-                      </p>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                        <div className="flex items-center gap-2 p-3 bg-white/60 rounded-lg">
-                          <Users className="h-5 w-5 text-blue-500" />
-                          <span className="font-medium">{session.participant_count} pemain</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-3 bg-white/60 rounded-lg">
-                          <Trophy className="h-5 w-5 text-yellow-500" />
-                          <span className="font-medium">Pertanyaan {session.current_question_index + 1}</span>
-                        </div>
-                      </div>
-
-                      <div className="p-3 bg-white/80 rounded-lg text-sm text-gray-600 border-l-4 border-blue-500">
-                        <div className="flex items-center gap-2 mb-1">
-                          {getStatusInfo(session.status).icon({ className: "w-4 h-4" })}
-                          <span className="font-medium">Status:</span>
-                        </div>
-                        {getStatusInfo(session.status).description}
+                    <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                      <video 
+                        ref={videoRef} 
+                        className="w-full h-full object-cover"
+                        playsInline
+                      />
+                      <canvas 
+                        ref={canvasRef} 
+                        className="hidden"
+                      />
+                      <div className="absolute inset-0 border-2 border-white/50 rounded-lg pointer-events-none">
+                        <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-blue-500 rounded-tl-lg"></div>
+                        <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-blue-500 rounded-tr-lg"></div>
+                        <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-blue-500 rounded-bl-lg"></div>
+                        <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-blue-500 rounded-br-lg"></div>
                       </div>
                     </div>
+                    <button 
+                      onClick={() => setShowScanner(false)}
+                      className="absolute top-2 right-2 bg-white/80 p-1 rounded-full hover:bg-white"
+                      aria-label="Tutup scanner"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  
+                  {scannerError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-red-600 text-sm text-center">{scannerError}</p>
+                    </div>
                   )}
+                  
+                  <p className="text-sm text-center text-gray-500">
+                    Pastikan QR code terlihat jelas dan ada dalam jangkauan kamera
+                  </p>
+                  
+                  <Button
+                    type="button"
+                    onClick={() => setShowScanner(false)}
+                    className="w-full"
+                  >
+                    Input PIN Manual
+                  </Button>
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  onClick={handleJoin}
-                  disabled={!session || isLoading || isValidating}
-                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                      Bergabung...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-5 w-5 mr-2" />
-                      Bergabung dengan Quiz
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
+              ) : (
+                <form onSubmit={joinGame} className="space-y-6">
+                  <div className="space-y-6">
+                    <div className="relative">
+                      <Label htmlFor="gamePin" className="text-base font-medium">
+                        Game PIN
+                      </Label>
+                      <Input
+                        id="gamePin"
+                        type="text"
+                        value={gamePin}
+                        onChange={(e) =>
+                          setGamePin(e.target.value.replace(/\D/g, "").slice(0, 6))
+                        }
+                        placeholder="123456"
+                        className="mt-2 text-center text-2xl tracking-[0.5em] font-bold h-16 border-2 focus:border-blue-500 rounded-xl"
+                        maxLength={6}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-gray-300"></span>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                          <span className="px-2 text-gray-500 bg-white">atau</span>
+                        </div>
+                      </div>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setShowScanner(true)}
+                        className="mt-2 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        Scan QR Code
+                      </button>
+                    </div>
 
-            <div className="text-center text-sm text-muted-foreground">
-              <p>Belum punya kode? Minta host untuk membagikan kode atau QR code</p>
-              <div className="mt-4">
-                <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium">
-                  ← Kembali ke beranda
-                </Link>
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-red-600 text-sm text-center">{error}</p>
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      disabled={loading || !gamePin.trim()}
+                    >
+                      {loading ? "Bergabung..." : "Gabung Game"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600">
+                  Belum punya Game PIN?{" "}
+                  <Link
+                    href="/auth/register"
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Buat quiz sendiri
+                  </Link>
+                </p>
+                <div className="mt-4">
+                  <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium">
+                    ← Kembali ke beranda
+                  </Link>
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
