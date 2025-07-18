@@ -523,6 +523,11 @@ export default function Dashboard() {
             <span className="text-2xl font-bold text-white drop-shadow-md">GolekQuiz</span>
           </Link>
           <div className="flex items-center space-x-4">
+            <Link href="/join">
+              <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
+                Join Game
+              </Button>
+            </Link>
             <div className="flex items-center space-x-3 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm">
               <Avatar className="h-8 w-8 bg-white border-2 border-white">
                 <AvatarImage

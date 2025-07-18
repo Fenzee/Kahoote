@@ -567,7 +567,7 @@ export default function PlayActiveGamePage({
                 className="w-full h-3 mb-4"
               />
 
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="flex justify-center flex-wrap gap-2 mb-4">
                 {gameState.questions.map((_, index) => (
                   <Button
                     key={index}
@@ -576,17 +576,13 @@ export default function PlayActiveGamePage({
                       index === currentQuestionIndex ? "default" : "outline"
                     }
                     size="sm"
-                    className={`w-10 h-10 p-0 ${
+                    className={`w-10 h-10 p-0 rounded-full ${
                       playerAnswers.has(gameState.questions[index].id)
-                        ? "bg-green-100 border-green-500 text-green-700"
+                        ? "bg-green-300 border-green-500 text-green-700"
                         : ""
                     }`}
                   >
-                    {playerAnswers.has(gameState.questions[index].id) ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <Circle className="w-4 h-4" />
-                    )}
+                    {index + 1}
                   </Button>
                 ))}
               </div>
