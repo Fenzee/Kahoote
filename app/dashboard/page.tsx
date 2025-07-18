@@ -36,9 +36,18 @@ import {
   Lock,
   Menu,
   ChevronUp,
+  Filter,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface SupabaseQuizResponse {
   id: string;
@@ -47,6 +56,8 @@ interface SupabaseQuizResponse {
   created_at: string;
   creator_id: string;
   is_public: boolean;
+  category: string;
+  language: string;
   questions: Array<{
     id: string;
   }>;
@@ -63,6 +74,8 @@ interface NormalizedQuiz {
   created_at: string;
   is_public: boolean;
   creator_id: string;
+  category: string;
+  language: string;
   creator: {
     username: string;
     avatar_url: string | null;
@@ -84,7 +97,7 @@ interface SoloScore {
 }
 
 // Helper function to normalize quiz data from Supabase
-const normalizeQuiz = (quiz: SupabaseQuizResponse): NormalizedQuiz => {
+const normalizeQuiz = (quiz: any): NormalizedQuiz => {
   return {
     id: quiz.id,
     title: quiz.title,
@@ -92,6 +105,8 @@ const normalizeQuiz = (quiz: SupabaseQuizResponse): NormalizedQuiz => {
     created_at: quiz.created_at,
     is_public: quiz.is_public,
     creator_id: quiz.creator_id,
+    category: quiz.category || 'general',
+    language: quiz.language || 'id',
     creator: {
       username: quiz.profiles?.username || "Unknown User",
       avatar_url: quiz.profiles?.avatar_url || null,
@@ -99,6 +114,27 @@ const normalizeQuiz = (quiz: SupabaseQuizResponse): NormalizedQuiz => {
     questions: quiz.questions || [],
   };
 };
+
+// Kategori dan bahasa
+const categories = [
+  { value: "all", label: "Semua Kategori" },
+  { value: "general", label: "Umum" },
+  { value: "science", label: "Sains" },
+  { value: "math", label: "Matematika" },
+  { value: "history", label: "Sejarah" },
+  { value: "geography", label: "Geografi" },
+  { value: "language", label: "Bahasa" },
+  { value: "technology", label: "Teknologi" },
+  { value: "sports", label: "Olahraga" },
+  { value: "entertainment", label: "Hiburan" },
+  { value: "business", label: "Bisnis" },
+];
+
+const languages = [
+  { value: "all", label: "Semua Bahasa" },
+  { value: "id", label: "Indonesia" },
+  { value: "en", label: "Inggris" },
+];
 
 export default function Dashboard() {
   const { user, loading, signOut } = useAuth();
@@ -116,6 +152,8 @@ export default function Dashboard() {
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isNavOpen, setIsNavOpen] = useState(false); // State for bottom navigation
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [languageFilter, setLanguageFilter] = useState("all");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -156,7 +194,7 @@ export default function Dashboard() {
     try {
       setLoadingPublicQuizzes(true);
 
-      const { data: quizzesData, error: quizzesError } = await supabase
+      let query = supabase
         .from("quizzes")
         .select(
           `
@@ -166,6 +204,8 @@ export default function Dashboard() {
           created_at,
           creator_id,
           is_public,
+          category,
+          language,
           questions (
             id
           ),
@@ -175,7 +215,19 @@ export default function Dashboard() {
           )
         `
         )
-        .eq("is_public", true)
+        .eq("is_public", true);
+
+      // Tambahkan filter kategori jika dipilih
+      if (categoryFilter !== "all") {
+        query = query.eq("category", categoryFilter);
+      }
+
+      // Tambahkan filter bahasa jika dipilih
+      if (languageFilter !== "all") {
+        query = query.eq("language", languageFilter);
+      }
+
+      const { data: quizzesData, error: quizzesError } = await query
         .order("created_at", { ascending: false })
         .limit(20);
 
@@ -210,7 +262,7 @@ export default function Dashboard() {
     try {
       setLoadingMyQuizzes(true);
 
-      const { data: myQuizzesData, error: myQuizzesError } = await supabase
+      let query = supabase
         .from("quizzes")
         .select(
           `
@@ -220,6 +272,8 @@ export default function Dashboard() {
           created_at,
           creator_id,
           is_public,
+          category,
+          language,
           questions (
             id
           ),
@@ -229,7 +283,19 @@ export default function Dashboard() {
           )
         `
         )
-        .eq("creator_id", user.id)
+        .eq("creator_id", user.id);
+
+      // Tambahkan filter kategori jika dipilih
+      if (categoryFilter !== "all") {
+        query = query.eq("category", categoryFilter);
+      }
+
+      // Tambahkan filter bahasa jika dipilih
+      if (languageFilter !== "all") {
+        query = query.eq("language", languageFilter);
+      }
+
+      const { data: myQuizzesData, error: myQuizzesError } = await query
         .order("created_at", { ascending: false });
 
       if (myQuizzesError) {
@@ -372,6 +438,14 @@ export default function Dashboard() {
     }
   };
 
+  // Effect to refetch quizzes when filters change
+  useEffect(() => {
+    if (user) {
+      fetchPublicQuizzes();
+      fetchMyQuizzes();
+    }
+  }, [categoryFilter, languageFilter]);
+
   // Filter quizzes based on search term
   const filteredPublicQuizzes = publicQuizzes.filter(
     (quiz) =>
@@ -502,6 +576,25 @@ export default function Dashboard() {
       ),
     },
   ];
+
+  // Render category and language badges
+  const renderCategoryBadge = (category: string) => {
+    const categoryObj = categories.find(c => c.value === category);
+    return (
+      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+        {categoryObj?.label || "Umum"}
+      </Badge>
+    );
+  };
+
+  const renderLanguageBadge = (language: string) => {
+    const languageObj = languages.find(l => l.value === language);
+    return (
+      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+        {languageObj?.label || "Indonesia"}
+      </Badge>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-700 text-gray-900 relative overflow-hidden">

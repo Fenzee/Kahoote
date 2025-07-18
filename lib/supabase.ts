@@ -58,6 +58,8 @@ export type Database = {
           creator_id: string
           is_public: boolean
           created_at: string
+          category: string
+          language: string
         }
         Insert: {
           id?: string
@@ -66,6 +68,8 @@ export type Database = {
           creator_id: string
           is_public?: boolean
           created_at?: string
+          category?: string
+          language?: string
         }
         Update: {
           id?: string
@@ -74,6 +78,8 @@ export type Database = {
           creator_id?: string
           is_public?: boolean
           created_at?: string
+          category?: string
+          language?: string
         }
       }
       questions: {
