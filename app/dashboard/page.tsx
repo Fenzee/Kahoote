@@ -733,8 +733,8 @@ export default function Dashboard() {
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200 absolute z-40 w-full shadow-lg"
+                exit={{ opacity: 0, height: 0 }}  
+                className="mt-4 bg-white p-4 rounded-lg border border-gray-200 absolute z-40 w-full shadow-lg"
                 style={{ maxHeight: '60vh', overflowY: 'auto' }}
               >
                 <h3 className="text-sm font-medium text-gray-700 mb-3">Filter berdasarkan kategori:</h3>
