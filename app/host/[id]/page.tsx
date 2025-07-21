@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { use } from "react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Quiz {
   id: string;
@@ -55,7 +56,11 @@ interface GameSession {
     id: string;
     nickname: string;
     joined_at: string;
+    profiles: {
+      avatar_url: string | null;
+    };
   }>;
+
 }
 
 interface SupabaseQuizResponse {
@@ -81,17 +86,14 @@ export default function HostGamePage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
-  // const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [copied, setCopied] = useState(false);
   const [showTimeSetup, setShowTimeSetup] = useState(false);
   const [totalTimeMinutes, setTotalTimeMinutes] = useState<number>(10);
   const [isJoining, setIsJoining] = useState(false);
-
-  // const [isJoining, setIsJoining] = useState<number>(10);
   const [error, setError] = useState<{
     type:
       | "permission"
@@ -102,16 +104,17 @@ export default function HostGamePage({
     message: string;
     details?: string;
   } | null>(null);
-
   const hasCreatedSession = useRef(false);
-  // const [countdown, setCountdown] = useState<number | null>(null);
   const [countdownLeft, setCountdownLeft] = useState<number | null>(null);
   const countdownDuration = 10; // 10 detik
   const [hostParticipantId, setHostParticipantId] = useState<string | null>(
     null
   );
-  // const [countdownLeft, setCountdownLeft] = useState<number | null>(null);
-  // const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [userProfile, setUserProfile] = useState<{
+    username: string;
+    avatar_url: string | null;
+  } | null>(null);
+
   useEffect(() => {
     if (user && !gameSession && !hasCreatedSession.current) {
       hasCreatedSession.current = true;
@@ -122,6 +125,9 @@ export default function HostGamePage({
   useEffect(() => {
     if (!user) {
       router.push("/dashboard");
+    }
+    if (user) {
+      fetchUserProfile();
     }
   }, [user, router]);
 
@@ -206,6 +212,33 @@ export default function HostGamePage({
       }
     }
   }, [gameSession?.countdown_started_at, hostParticipantId]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return;
+      }
+
+      setUserProfile(data);
+    } catch (error) {
+      console.error("Error in fetchUserProfile:", error);
+    }
+  };
+
+  const displayName = useMemo(() => {
+    if (userProfile?.username) return userProfile.username;
+    if (user && user.email) return user.email.split("@")[0];
+    return "User";
+  }, [userProfile, user]);
 
   const fetchQuizAndCreateSession = async () => {
     try {
@@ -413,7 +446,16 @@ export default function HostGamePage({
 
       const { data, error } = await supabase
         .from("game_participants")
-        .select("id, nickname, joined_at")
+        .select(
+          `
+          id, 
+          nickname,
+          joined_at,
+          profiles (
+          avatar_url
+          )
+          `
+        )
         .eq("session_id", gameSession.id)
         .order("joined_at", { ascending: true });
 
@@ -496,114 +538,115 @@ export default function HostGamePage({
   };
 
   const joinAsHostAndStartCountdown = async () => {
-  if (!gameSession) return;
+    if (!gameSession) return;
 
-  setIsJoining(true);
-  setError(null);
+    setIsJoining(true);
+    setError(null);
 
-  try {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      setError({
-        type: "unknown",
-        message: "Gagal memuat quiz",
-        details: "tidak ada user yang terautentikasi",
-      });
-      return;
-    }
+      if (!user) {
+        setError({
+          type: "unknown",
+          message: "Gagal memuat quiz",
+          details: "tidak ada user yang terautentikasi",
+        });
+        return;
+      }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile) {
-      setError({
-        type: "unknown",
-        message: "Gagal memuat quiz",
-        details: "tidak ada profil yang ditemukan",
-      });
-      return;
-    }
-
-    // Insert participant jika belum
-    const { data: existing } = await supabase
-      .from("game_participants")
-      .select("id")
-      .eq("session_id", gameSession.id)
-      .eq("nickname", profile.username)
-      .maybeSingle();
-
-    let participantId = existing?.id;
-
-    if (!participantId) {
-      const { data: newParticipant } = await supabase
-        .from("game_participants")
-        .insert({
-          session_id: gameSession.id,
-          user_id: user.id,
-          nickname: profile.username,
-        })
-        .select()
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
         .single();
 
-      participantId = newParticipant.id;
-    }
+      if (!profile) {
+        setError({
+          type: "unknown",
+          message: "Gagal memuat quiz",
+          details: "tidak ada profil yang ditemukan",
+        });
+        return;
+      }
 
-    // === START COUNTDOWN ===
-    const countdownDuration = 10;
-    const now = new Date();
-    const startedTime = new Date(now.getTime() + countdownDuration * 1000);
+      // Insert participant jika belum
+      const { data: existing } = await supabase
+        .from("game_participants")
+        .select("id")
+        .eq("session_id", gameSession.id)
+        .eq("nickname", profile.username)
+        .maybeSingle();
 
-    const { error: updateError } = await supabase
-      .from("game_sessions")
-      .update({
-        countdown_started_at: now.toISOString(),
-        started_at: startedTime.toISOString(),
-        status: "active",
-        total_time_minutes: totalTimeMinutes,
-      })
-      .eq("id", gameSession.id);
+      let participantId = existing?.id;
 
-    if (updateError) {
+      if (!participantId) {
+        const { data: newParticipant } = await supabase
+          .from("game_participants")
+          .insert({
+            session_id: gameSession.id,
+            user_id: user.id,
+            nickname: profile.username,
+          })
+          .select()
+          .single();
+
+        participantId = newParticipant.id;
+      }
+
+      // === START COUNTDOWN ===
+      const countdownDuration = 10;
+      const now = new Date();
+      const startedTime = new Date(now.getTime() + countdownDuration * 1000);
+
+      const { error: updateError } = await supabase
+        .from("game_sessions")
+        .update({
+          countdown_started_at: now.toISOString(),
+          started_at: startedTime.toISOString(),
+          status: "active",
+          total_time_minutes: totalTimeMinutes,
+        })
+        .eq("id", gameSession.id);
+
+      if (updateError) {
+        setError({
+          type: "unknown",
+          message: "Gagal memulai countdown",
+          details: "Gagal menyimpan waktu mulai",
+        });
+        return;
+      }
+
+      setHostParticipantId(participantId);
+      setCountdownLeft(countdownDuration); // untuk ditampilkan di UI
+
+      let secondsLeft = countdownDuration;
+      const interval = setInterval(() => {
+        secondsLeft -= 1;
+        setCountdownLeft(secondsLeft);
+
+        if (secondsLeft <= 0) {
+          clearInterval(interval);
+          router.push(
+            `/play-active/${gameSession.id}?participant=${participantId}`
+          );
+        }
+      }, 1000);
+    } catch (err) {
+      console.error(err);
       setError({
         type: "unknown",
-        message: "Gagal memulai countdown",
-        details: "Gagal menyimpan waktu mulai",
+        message: "Gagal memuat quiz",
+        details: "Terjadi kesalahan saat bergabung sebagai host",
       });
-      return;
+    } finally {
+      setIsJoining(false);
     }
-
-    setHostParticipantId(participantId);
-    setCountdownLeft(countdownDuration); // untuk ditampilkan di UI
-
-    let secondsLeft = countdownDuration;
-    const interval = setInterval(() => {
-      secondsLeft -= 1;
-      setCountdownLeft(secondsLeft);
-
-      if (secondsLeft <= 0) {
-        clearInterval(interval);
-        router.push(`/play-active/${gameSession.id}?participant=${participantId}`);
-      }
-    }, 1000);
-  } catch (err) {
-    console.error(err);
-    setError({
-      type: "unknown",
-      message: "Gagal memuat quiz",
-      details: "Terjadi kesalahan saat bergabung sebagai host",
-    });
-  } finally {
-    setIsJoining(false);
-  }
-};
-
+  };
 
   const endSession = async () => {
     if (!gameSession) return;
@@ -729,7 +772,9 @@ export default function HostGamePage({
             Quiz tidak ditemukan
           </h2>
           <Link href="/dashboard">
-            <Button className="bg-purple-600 hover:bg-purple-700">Kembali ke Dashboard</Button>
+            <Button className="bg-purple-600 hover:bg-purple-700">
+              Kembali ke Dashboard
+            </Button>
           </Link>
         </div>
       </div>
@@ -763,7 +808,9 @@ export default function HostGamePage({
           {/* Quiz Info Card */}
           <Card className="bg-white shadow-lg rounded-xl p-6">
             <CardHeader className="pb-4 px-0 pt-0">
-              <CardTitle className="text-xl font-semibold">{quiz.title}</CardTitle>
+              <CardTitle className="text-xl font-semibold">
+                {quiz.title}
+              </CardTitle>
               {quiz.description && (
                 <p className="text-gray-600 text-sm">{quiz.description}</p>
               )}
@@ -785,15 +832,32 @@ export default function HostGamePage({
               </div>
               <div className="flex items-center justify-between text-sm text-gray-600 pt-4 border-t">
                 <div className="flex items-center gap-1">
-                  <User className="w-4 h-4" />
+                  <Avatar className="h-8 w-8 bg-white border-2 border-white">
+                    <AvatarImage
+                      src={
+                        userProfile?.avatar_url ||
+                        (user?.email
+                          ? `https://robohash.org/${encodeURIComponent(
+                              user.email
+                            )}.png`
+                          : "/default-avatar.png") // fallback lokal
+                      }
+                      alt={user?.email || ""}
+                    />
+                    <AvatarFallback className="bg-white text-purple-600">
+                      {displayName?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
                   <span>Maker {quiz.profiles.username}</span>
                 </div>
                 <div className="flex gap-2">
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    quiz.is_public
-                      ? "bg-green-100 text-green-700"
-                      : "bg-orange-100 text-orange-700"
-                  }`}>
+                  <div
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      quiz.is_public
+                        ? "bg-green-100 text-green-700"
+                        : "bg-orange-100 text-orange-700"
+                    }`}
+                  >
                     {quiz.is_public ? "Public" : "Private"}
                   </div>
 
@@ -821,7 +885,9 @@ export default function HostGamePage({
               <>
                 <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
                   <Clock className="w-5 h-5 text-purple-600" />
-                  <CardTitle className="text-xl font-semibold">Set Quiz Time Limit</CardTitle>
+                  <CardTitle className="text-xl font-semibold">
+                    Set Quiz Time Limit
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="px-0 pb-0 space-y-4">
                   <div className="space-y-2">
@@ -857,7 +923,7 @@ export default function HostGamePage({
                       size="lg"
                     >
                       <Play className="w-5 h-5 mr-2" />
-                      Mulai Game ({totalTimeMinutes} menit)
+                      Mulai Game
                     </Button>
                     {gameSession?.status === "waiting" &&
                       !gameSession?.countdown_started_at && (
@@ -888,7 +954,9 @@ export default function HostGamePage({
               <CardTitle className="text-xl font-semibold">Game PIN</CardTitle>
             </CardHeader>
             <CardContent className="px-0 pb-0 space-y-6">
-              <div className="text-6xl font-extrabold text-purple-600">{gameSession.game_pin}</div>
+              <div className="text-6xl font-extrabold text-purple-600">
+                {gameSession.game_pin}
+              </div>
               <Button
                 onClick={copyGamePin}
                 variant="outline"
@@ -937,7 +1005,9 @@ export default function HostGamePage({
                   <div className="flex justify-center py-4">
                     <Users className="w-24 h-24 text-gray-300" />
                   </div>
-                  <p className="text-lg font-medium text-gray-700">Menunggu pemain...</p>
+                  <p className="text-lg font-medium text-gray-700">
+                    Menunggu pemain...
+                  </p>
                   <p className="text-sm text-gray-600">
                     Bagikan Game PIN untuk mengundang pemain bergabung
                   </p>
@@ -951,7 +1021,14 @@ export default function HostGamePage({
                     >
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {index + 1}
+                          <img
+        src={
+          participant.profiles?.avatar_url ||
+          `https://robohash.org/${encodeURIComponent(participant.nickname)}.png`
+        }
+        alt={participant.nickname}
+        className="w-8 h-8 rounded-full border border-gray-300 object-cover"
+      />
                         </div>
                         <span className="font-medium">
                           {participant.nickname}

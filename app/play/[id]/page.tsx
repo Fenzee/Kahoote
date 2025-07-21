@@ -37,6 +37,9 @@ interface Participant {
   id: string;
   nickname: string;
   score: number;
+  profiles?: {
+    avatar_url: string | null;
+  };
 }
 
 function getInitials(name: string) {
@@ -145,7 +148,7 @@ export default function PlayGamePage({
       const { data: participantsData, error: participantsError } =
         await supabase
           .from("game_participants")
-          .select("id, nickname, score")
+          .select("id, nickname, score, profiles(avatar_url)")
           .eq("session_id", resolvedParams.id)
           .order("score", { ascending: false });
 
@@ -451,16 +454,17 @@ export default function PlayGamePage({
                     }`}
                   >
                     <Avatar className="h-10 w-10 border-2 border-yellow-300">
-                      <AvatarImage
-                        src={`https://robohash.org/${encodeURIComponent(
-                          participant.nickname
-                        )}.png`}
-                        alt={participant.nickname}
-                      />
-                      <AvatarFallback className="bg-white text-purple-600 text-sm font-semibold">
-                        {getInitials(participant.nickname)}
-                      </AvatarFallback>
-                    </Avatar>
+  <AvatarImage
+    src={
+      participant.profiles?.avatar_url ||
+      `https://robohash.org/${encodeURIComponent(participant.nickname)}.png`
+    }
+    alt={participant.nickname}
+  />
+  <AvatarFallback className="bg-white text-purple-600 text-sm font-semibold">
+    {getInitials(participant.nickname)}
+  </AvatarFallback>
+</Avatar>
                     <span className={`font-medium text-gray-800 ${
                       participant.id === participantId ? "italic underline" : ""
                     }`}>

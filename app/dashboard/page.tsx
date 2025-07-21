@@ -885,7 +885,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="text-3xl font-bold">{bestGameScore}</div>
                 <p className="text-xs text-muted-foreground">
-                  Skor tertinggi Anda di kuis solo
+                  Skor tertinggi Anda di kuis
                 </p>
               </CardContent>
             </Card>
