@@ -94,14 +94,20 @@ interface NormalizedQuiz {
   }>;
 }
 
-interface SoloScore {
+interface GameHistoryEntry {
   id: string;
+  session_id: string;
   score: number;
-  total_questions: number;
-  completed_at: string;
-  quiz: {
+  joined_at: string;
+  game_sessions: {
     id: string;
-    title: string;
+    quiz_id: string;
+    ended_at: string | null;
+    status: string;
+    quizzes: {
+      id: string;
+      title: string;
+    };
   };
 }
 
@@ -114,8 +120,8 @@ const normalizeQuiz = (quiz: any): NormalizedQuiz => {
     created_at: quiz.created_at,
     is_public: quiz.is_public,
     creator_id: quiz.creator_id,
-    category: quiz.category || 'general',
-    language: quiz.language || 'id',
+    category: quiz.category || "general",
+    language: quiz.language || "id",
     creator: {
       username: quiz.profiles?.username || "Unknown User",
       avatar_url: quiz.profiles?.avatar_url || null,
@@ -126,17 +132,61 @@ const normalizeQuiz = (quiz: any): NormalizedQuiz => {
 
 // Kategori dan bahasa
 const categories = [
-  { value: "all", label: "Semua Kategori", icon: <Book className="h-4 w-4 text-blue-500" /> },
-  { value: "general", label: "Umum", icon: <BookOpen className="h-4 w-4 text-gray-500" /> },
-  { value: "science", label: "Sains", icon: <Beaker className="h-4 w-4 text-green-500" /> },
-  { value: "math", label: "Matematika", icon: <Calculator className="h-4 w-4 text-red-500" /> },
-  { value: "history", label: "Sejarah", icon: <Clock className="h-4 w-4 text-yellow-500" /> },
-  { value: "geography", label: "Geografi", icon: <Globe className="h-4 w-4 text-teal-500" /> },
-  { value: "language", label: "Bahasa", icon: <Languages className="h-4 w-4 text-purple-500" /> },
-  { value: "technology", label: "Teknologi", icon: <Laptop className="h-4 w-4 text-blue-500" /> },
-  { value: "sports", label: "Olahraga", icon: <Dumbbell className="h-4 w-4 text-orange-500" /> },
-  { value: "entertainment", label: "Hiburan", icon: <Film className="h-4 w-4 text-pink-500" /> },
-  { value: "business", label: "Bisnis", icon: <Briefcase className="h-4 w-4 text-indigo-500" /> },
+  {
+    value: "all",
+    label: "Semua Kategori",
+    icon: <Book className="h-4 w-4 text-blue-500" />,
+  },
+  {
+    value: "general",
+    label: "Umum",
+    icon: <BookOpen className="h-4 w-4 text-gray-500" />,
+  },
+  {
+    value: "science",
+    label: "Sains",
+    icon: <Beaker className="h-4 w-4 text-green-500" />,
+  },
+  {
+    value: "math",
+    label: "Matematika",
+    icon: <Calculator className="h-4 w-4 text-red-500" />,
+  },
+  {
+    value: "history",
+    label: "Sejarah",
+    icon: <Clock className="h-4 w-4 text-yellow-500" />,
+  },
+  {
+    value: "geography",
+    label: "Geografi",
+    icon: <Globe className="h-4 w-4 text-teal-500" />,
+  },
+  {
+    value: "language",
+    label: "Bahasa",
+    icon: <Languages className="h-4 w-4 text-purple-500" />,
+  },
+  {
+    value: "technology",
+    label: "Teknologi",
+    icon: <Laptop className="h-4 w-4 text-blue-500" />,
+  },
+  {
+    value: "sports",
+    label: "Olahraga",
+    icon: <Dumbbell className="h-4 w-4 text-orange-500" />,
+  },
+  {
+    value: "entertainment",
+    label: "Hiburan",
+    icon: <Film className="h-4 w-4 text-pink-500" />,
+  },
+  {
+    value: "business",
+    label: "Bisnis",
+    icon: <Briefcase className="h-4 w-4 text-indigo-500" />,
+  },
 ];
 
 const languages = [
@@ -151,10 +201,8 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [publicQuizzes, setPublicQuizzes] = useState<NormalizedQuiz[]>([]);
   const [myQuizzes, setMyQuizzes] = useState<NormalizedQuiz[]>([]);
-  const [soloScores, setSoloScores] = useState<SoloScore[]>([]);
   const [loadingPublicQuizzes, setLoadingPublicQuizzes] = useState(true);
   const [loadingMyQuizzes, setLoadingMyQuizzes] = useState(true);
-  const [loadingSoloScores, setLoadingSoloScores] = useState(true);
   const [userProfile, setUserProfile] = useState<{
     username: string;
     avatar_url: string | null;
@@ -164,6 +212,9 @@ export default function Dashboard() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [showCategoryFilter, setShowCategoryFilter] = useState(false);
+  const [gameHistory, setGameHistory] = useState<GameHistoryEntry[]>([]);
+
+  const [loadingGameHistory, setLoadingGameHistory] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -175,7 +226,7 @@ export default function Dashboard() {
       fetchUserProfile();
       fetchPublicQuizzes();
       fetchMyQuizzes();
-      fetchSoloScores();
+      fetchGameHistory();
     }
   }, [user, loading, router]);
 
@@ -305,8 +356,10 @@ export default function Dashboard() {
         query = query.eq("language", languageFilter);
       }
 
-      const { data: myQuizzesData, error: myQuizzesError } = await query
-        .order("created_at", { ascending: false });
+      const { data: myQuizzesData, error: myQuizzesError } = await query.order(
+        "created_at",
+        { ascending: false }
+      );
 
       if (myQuizzesError) {
         console.error("Error fetching my quizzes:", myQuizzesError);
@@ -333,66 +386,63 @@ export default function Dashboard() {
     }
   };
 
-  const fetchSoloScores = async () => {
+  const fetchGameHistory = async () => {
     if (!user) return;
 
     try {
-      setLoadingSoloScores(true);
+      setLoadingGameHistory(true);
 
-      const { data: scoresData, error: scoresError } = await supabase
-        .from("solo_scores")
+      const { data, error } = await supabase
+        .from("game_participants")
         .select(
           `
-          id,
-          score,
-          total_questions,
-          completed_at,
-          quiz_id
-        `
+    id,
+    session_id,
+    score,
+    joined_at,
+    game_sessions:game_sessions!game_participants_session_id_fkey (
+      id,
+      quiz_id,
+      ended_at,
+      status,
+      quizzes:quizzes!game_sessions_quiz_id_fkey (
+        id,
+        title
+      )
+    )
+  `
         )
         .eq("user_id", user.id)
-        .order("completed_at", { ascending: false })
-        .limit(10);
+        .eq("game_sessions.status", "finished")
+        .order("joined_at", { ascending: false });
 
-      if (scoresError) {
-        console.error("Error fetching solo scores:", scoresError);
-        return;
-      }
+      if (error) throw error;
 
-      if (!scoresData || scoresData.length === 0) {
-        setSoloScores([]);
-        return;
-      }
+      // const normalized = data.map((entry) => ({
+      //   id: entry.id,
+      //   session_id: entry.session_id,
+      //   score: entry.score,
+      //   joined_at: entry.joined_at,
+      //   game_sessions: {
+      //     id: entry.game_sessions?.id,
+      //     quiz_id: entry.game_sessions?.quiz_id,
+      //     ended_at: entry.game_sessions?.ended_at,
+      //     status: entry.game_sessions?.status,
+      //     quizzes: {
+      //       id: entry.game_sessions?.quizzes?.id,
+      //       title: entry.game_sessions?.quizzes?.title,
+      //     },
+      //   },
+      // }));
+      const filtered = data.filter(
+        (entry) => entry.game_sessions?.status === "finished"
+      );
 
-      const quizIds = [...new Set(scoresData.map((score) => score.quiz_id))];
-
-      const { data: quizzesData, error: quizzesError } = await supabase
-        .from("quizzes")
-        .select("id, title")
-        .in("id", quizIds);
-
-      if (quizzesError) {
-        console.error("Error fetching quiz titles:", quizzesError);
-      }
-
-      const scoresWithQuizzes = scoresData.map((score) => ({
-        ...score,
-        quiz: quizzesData?.find((q) => q.id === score.quiz_id) || {
-          id: score.quiz_id,
-          title: "Unknown Quiz",
-        },
-      }));
-
-      setSoloScores(scoresWithQuizzes);
+      setGameHistory(filtered);
     } catch (error) {
-      console.error("Error in fetchSoloScores:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch your scores",
-        variant: "destructive",
-      });
+      console.error("Error fetching game history:", error);
     } finally {
-      setLoadingSoloScores(false);
+      setLoadingGameHistory(false);
     }
   };
 
@@ -437,7 +487,7 @@ export default function Dashboard() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push("/");
+      router.push("../");
     } catch (error) {
       console.error("Error signing out:", error);
       toast({
@@ -473,12 +523,12 @@ export default function Dashboard() {
   );
 
   // Convert categories to actions for ActionSearchBar
-  const categoryActions = categories.map(cat => ({
+  const categoryActions = categories.map((cat) => ({
     id: cat.value,
     label: cat.label,
     icon: cat.icon,
     description: "",
-    end: "Kategori"
+    end: "Kategori",
   }));
 
   // Handle category selection from ActionSearchBar
@@ -490,6 +540,10 @@ export default function Dashboard() {
   const handleSearch = (query: string) => {
     setSearchTerm(query);
   };
+  const totalGamesPlayed = gameHistory.length;
+
+  const bestGameScore =
+    gameHistory.length > 0 ? Math.max(...gameHistory.map((g) => g.score)) : 0;
 
   if (loading) {
     return (
@@ -503,7 +557,8 @@ export default function Dashboard() {
     redirect("/");
   }
 
-  const displayName = userProfile?.username || user.email?.split("@")[0] || "User";
+  const displayName =
+    userProfile?.username || user.email?.split("@")[0] || "User";
 
   const navigationLinks = [
     {
@@ -608,11 +663,14 @@ export default function Dashboard() {
 
   // Render category badge with icon
   const renderCategoryBadge = (category: string) => {
-    const categoryObj = categories.find(c => c.value === category);
+    const categoryObj = categories.find((c) => c.value === category);
     if (!categoryObj) return null;
-    
+
     return (
-      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+      <Badge
+        variant="outline"
+        className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1"
+      >
         {categoryObj.icon}
         {categoryObj.label}
       </Badge>
@@ -620,9 +678,12 @@ export default function Dashboard() {
   };
 
   const renderLanguageBadge = (language: string) => {
-    const languageObj = languages.find(l => l.value === language);
+    const languageObj = languages.find((l) => l.value === language);
     return (
-      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+      <Badge
+        variant="outline"
+        className="bg-purple-50 text-purple-700 border-purple-200"
+      >
         {languageObj?.label || "Indonesia"}
       </Badge>
     );
@@ -637,7 +698,7 @@ export default function Dashboard() {
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
         <div className="absolute -bottom-8 right-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-6000"></div>
       </div>
-      
+
       {/* Header */}
       <header className="container mx-auto px-4 py-6 relative z-10">
         <div className="flex items-center justify-between">
@@ -645,7 +706,9 @@ export default function Dashboard() {
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
               <Slack className="w-5 h-5 text-cyan-950" />
             </div>
-            <span className="text-2xl font-bold text-white drop-shadow-md">GolekQuiz</span>
+            <span className="text-2xl font-bold text-white drop-shadow-md">
+              GolekQuiz
+            </span>
           </Link>
           <div className="flex items-center space-x-4">
             <Link href="/join">
@@ -657,7 +720,10 @@ export default function Dashboard() {
               <Avatar className="h-8 w-8 bg-white border-2 border-white">
                 <AvatarImage
                   src={
-                    userProfile?.avatar_url || `https://robohash.org/${encodeURIComponent(user.email || "guest")}.png`
+                    userProfile?.avatar_url ||
+                    `https://robohash.org/${encodeURIComponent(
+                      user.email || "guest"
+                    )}.png`
                   }
                   alt={user.email || ""}
                 />
@@ -665,7 +731,9 @@ export default function Dashboard() {
                   {displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-white font-medium hidden md:block">{displayName}</span>
+              <span className="text-white font-medium hidden md:block">
+                {displayName}
+              </span>
             </div>
             <Button
               onClick={() => setIsNavOpen(true)}
@@ -686,8 +754,12 @@ export default function Dashboard() {
           {/* Welcome Section */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-              <p className="text-gray-600 text-lg">Selamat datang kembali, {displayName}!</p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Dashboard
+              </h1>
+              <p className="text-gray-600 text-lg">
+                Selamat datang kembali, {displayName}!
+              </p>
             </div>
             <Button
               onClick={() => router.push("/create")}
@@ -702,24 +774,28 @@ export default function Dashboard() {
           {/* Search Bar with Categories */}
           <div className="mb-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <h2 className="text-2xl font-bold text-gray-900">Jelajahi Kuis</h2>
-              
+              <h2 className="text-2xl font-bold text-gray-900">
+                Jelajahi Kuis
+              </h2>
+
               <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="flex items-center gap-1 border-gray-300"
                   onClick={() => setShowCategoryFilter(!showCategoryFilter)}
                 >
                   <Filter className="h-4 w-4" />
-                  {categoryFilter !== "all" ? categories.find(c => c.value === categoryFilter)?.label : "Filter Kategori"}
+                  {categoryFilter !== "all"
+                    ? categories.find((c) => c.value === categoryFilter)?.label
+                    : "Filter Kategori"}
                 </Button>
               </div>
             </div>
-            
+
             {/* Modern Search Bar */}
-            <div className="mt-4">
-              <ActionSearchBar 
+            <div className="h-[4.5rem]">
+              <ActionSearchBar
                 actions={categoryActions}
                 onActionSelect={handleCategorySelect}
                 onSearch={handleSearch}
@@ -730,22 +806,28 @@ export default function Dashboard() {
 
             {/* Category Filters */}
             {showCategoryFilter && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}  
+                exit={{ opacity: 0, height: 0 }}
                 className="mt-4 bg-white p-4 rounded-lg border border-gray-200 absolute z-40 w-full shadow-lg"
-                style={{ maxHeight: '60vh', overflowY: 'auto' }}
+                style={{ maxHeight: "60vh", overflowY: "auto" }}
               >
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Filter berdasarkan kategori:</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">
+                  Filter berdasarkan kategori:
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((category) => (
                     <Badge
                       key={category.value}
-                      variant={categoryFilter === category.value ? "default" : "outline"}
+                      variant={
+                        categoryFilter === category.value
+                          ? "default"
+                          : "outline"
+                      }
                       className={`cursor-pointer flex items-center gap-1 ${
-                        categoryFilter === category.value 
-                          ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                        categoryFilter === category.value
+                          ? "bg-blue-500 hover:bg-blue-600 text-white"
                           : "bg-white hover:bg-gray-100"
                       }`}
                       onClick={() => {
@@ -774,31 +856,37 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{myQuizzes.length}</div>
-                <p className="text-xs text-muted-foreground">Total kuis yang Anda buat</p>
+                <p className="text-xs text-muted-foreground">
+                  Total kuis yang Anda buat
+                </p>
               </CardContent>
             </Card>
             <Card className="bg-white/90 border-none shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Permainan Dimainkan</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Permainan Dimainkan
+                </CardTitle>
                 <Target className="h-5 w-5 text-purple-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{soloScores.length}</div>
-                <p className="text-xs text-muted-foreground">Jumlah kuis solo yang diselesaikan</p>
+                <div className="text-3xl font-bold">{totalGamesPlayed}</div>
+                <p className="text-xs text-muted-foreground">
+                  Jumlah kuis yang pernah dimainkan
+                </p>
               </CardContent>
             </Card>
             <Card className="bg-white/90 border-none shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Skor Terbaik</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Skor Terbaik
+                </CardTitle>
                 <Award className="h-5 w-5 text-yellow-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
-                  {soloScores.length > 0
-                    ? `${Math.max(...soloScores.map((s) => Math.round((s.score / s.total_questions) * 100)))}%`
-                    : "0%"}
-                </div>
-                <p className="text-xs text-muted-foreground">Skor tertinggi Anda di kuis solo</p>
+                <div className="text-3xl font-bold">{bestGameScore}</div>
+                <p className="text-xs text-muted-foreground">
+                  Skor tertinggi Anda di kuis solo
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -819,7 +907,7 @@ export default function Dashboard() {
                 Private Quiz
               </TabsTrigger>
               <TabsTrigger
-                value="scores"
+                value="history"
                 className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md transition-all duration-200"
               >
                 Riwayat Permainan
@@ -828,11 +916,16 @@ export default function Dashboard() {
 
             {/* Browse Public Quizzes Tab */}
             <TabsContent value="browse" className="space-y-6">
-              <p className="text-sm text-gray-600">{filteredPublicQuizzes.length} kuis ditemukan</p>
+              <p className="text-sm text-gray-600">
+                {filteredPublicQuizzes.length} kuis ditemukan
+              </p>
               {loadingPublicQuizzes ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[...Array(6)].map((_, i) => (
-                    <Card key={i} className="animate-pulse bg-white/90 border-none shadow-md">
+                    <Card
+                      key={i}
+                      className="animate-pulse bg-white/90 border-none shadow-md"
+                    >
                       <CardHeader>
                         <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                         <div className="h-3 bg-gray-200 rounded w-1/2"></div>
@@ -849,10 +942,14 @@ export default function Dashboard() {
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Globe className="h-12 w-12 text-gray-400 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {searchTerm ? "Tidak ada kuis yang cocok" : "Belum ada Kuis Publik"}
+                      {searchTerm
+                        ? "Tidak ada kuis yang cocok"
+                        : "Belum ada Kuis Publik"}
                     </h3>
                     <p className="text-gray-600 text-center">
-                      {searchTerm ? "Coba kata kunci lain" : "Jadilah yang pertama membuat Kuis Publik!"}
+                      {searchTerm
+                        ? "Coba kata kunci lain"
+                        : "Jadilah yang pertama membuat Kuis Publik!"}
                     </p>
                   </CardContent>
                 </Card>
@@ -866,26 +963,40 @@ export default function Dashboard() {
                       <CardHeader>
                         <div className="flex items-center space-x-3 mb-2">
                           <Avatar className="h-8 w-8 border-2 border-blue-400">
-                            <AvatarImage src={quiz.creator.avatar_url || undefined} />
+                            <AvatarImage
+                              src={quiz.creator.avatar_url || undefined}
+                            />
                             <AvatarFallback className="bg-blue-100 text-blue-600">
                               {quiz.creator.username.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm text-gray-600 font-medium">{quiz.creator.username}</span>
+                          <span className="text-sm text-gray-600 font-medium">
+                            {quiz.creator.username}
+                          </span>
                           {quiz.creator_id === user?.id && (
-                            <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+                            <Badge
+                              variant="secondary"
+                              className="text-xs bg-purple-100 text-purple-700"
+                            >
                               Kuis Anda
                             </Badge>
                           )}
                         </div>
-                        <CardTitle className="line-clamp-2 text-xl font-bold text-gray-800">{quiz.title}</CardTitle>
+                        <CardTitle className="line-clamp-2 text-xl font-bold text-gray-800">
+                          {quiz.title}
+                        </CardTitle>
                         {quiz.description && (
-                          <CardDescription className="line-clamp-2 text-gray-600">{quiz.description}</CardDescription>
+                          <CardDescription className="line-clamp-2 text-gray-600">
+                            {quiz.description}
+                          </CardDescription>
                         )}
                       </CardHeader>
                       <CardContent>
                         <div className="flex flex-wrap items-center gap-2 mb-4">
-                          <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                          <Badge
+                            variant="secondary"
+                            className="bg-gray-200 text-gray-700"
+                          >
                             {quiz.questions?.length || 0} pertanyaan
                           </Badge>
                           <div className="flex items-center space-x-1 text-xs text-green-600">
@@ -904,7 +1015,9 @@ export default function Dashboard() {
                           <Button
                             onClick={() => router.push(`/host/${quiz.id}`)}
                             className="flex-1 bg-blue-500 hover:bg-blue-600 text-white shadow-md"
-                            disabled={!quiz.questions || quiz.questions.length === 0}
+                            disabled={
+                              !quiz.questions || quiz.questions.length === 0
+                            }
                           >
                             <Play className="w-4 h-4 mr-2" />
                             Host
@@ -913,14 +1026,18 @@ export default function Dashboard() {
                             onClick={() => router.push(`/solo/${quiz.id}`)}
                             variant="outline"
                             className="flex-1 border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 shadow-md"
-                            disabled={!quiz.questions || quiz.questions.length === 0}
+                            disabled={
+                              !quiz.questions || quiz.questions.length === 0
+                            }
                           >
                             <Users className="w-4 h-4 mr-2" />
                             Solo
                           </Button>
                         </div>
                         {(!quiz.questions || quiz.questions.length === 0) && (
-                          <p className="text-xs text-orange-600 mt-2 text-center">Kuis belum memiliki pertanyaan</p>
+                          <p className="text-xs text-orange-600 mt-2 text-center">
+                            Kuis belum memiliki pertanyaan
+                          </p>
                         )}
                       </CardContent>
                     </Card>
@@ -934,7 +1051,10 @@ export default function Dashboard() {
               {loadingMyQuizzes ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[...Array(3)].map((_, i) => (
-                    <Card key={i} className="animate-pulse bg-white/90 border-none shadow-md">
+                    <Card
+                      key={i}
+                      className="animate-pulse bg-white/90 border-none shadow-md"
+                    >
                       <CardHeader>
                         <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                         <div className="h-3 bg-gray-200 rounded w-1/2"></div>
@@ -951,14 +1071,18 @@ export default function Dashboard() {
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Plus className="h-12 w-12 text-gray-400 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {searchTerm ? "Tidak ada kuis yang cocok" : "Belum ada kuis"}
+                      {searchTerm
+                        ? "Tidak ada kuis yang cocok"
+                        : "Belum ada kuis"}
                     </h3>
                     <p className="text-gray-600 text-center mb-4">
-                      {searchTerm ? "Coba kata kunci lain" : "Buat kuis pertama Anda untuk memulai!"}
+                      {searchTerm
+                        ? "Coba kata kunci lain"
+                        : "Buat kuis pertama Anda untuk memulai!"}
                     </p>
                     {!searchTerm && (
-                      <Button 
-                        onClick={() => router.push("/create")} 
+                      <Button
+                        onClick={() => router.push("/create")}
                         className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -992,17 +1116,26 @@ export default function Dashboard() {
                           </div>
                         </div>
                         {quiz.description && (
-                          <CardDescription className="line-clamp-2 text-gray-600">{quiz.description}</CardDescription>
+                          <CardDescription className="line-clamp-2 text-gray-600">
+                            {quiz.description}
+                          </CardDescription>
                         )}
                       </CardHeader>
                       <CardContent>
                         <div className="flex flex-wrap items-center gap-2 mb-4">
-                          <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                          <Badge
+                            variant="secondary"
+                            className="bg-gray-200 text-gray-700"
+                          >
                             {quiz.questions?.length || 0} pertanyaan
                           </Badge>
                           <Badge
                             variant={quiz.is_public ? "default" : "outline"}
-                            className={`text-xs ${quiz.is_public ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}
+                            className={`text-xs ${
+                              quiz.is_public
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-orange-100 text-orange-700"
+                            }`}
                           >
                             {quiz.is_public ? "Publik" : "Privat"}
                           </Badge>
@@ -1028,7 +1161,9 @@ export default function Dashboard() {
                             onClick={() => router.push(`/host/${quiz.id}`)}
                             size="sm"
                             className="bg-blue-500 hover:bg-blue-600 text-white shadow-md"
-                            disabled={!quiz.questions || quiz.questions.length === 0}
+                            disabled={
+                              !quiz.questions || quiz.questions.length === 0
+                            }
                           >
                             <Play className="w-4 h-4 mr-1" />
                             Host
@@ -1055,89 +1190,71 @@ export default function Dashboard() {
             </TabsContent>
 
             {/* My Scores Tab */}
-            <TabsContent value="scores" className="space-y-6">
-              {loadingSoloScores ? (
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Card key={i} className="animate-pulse bg-white/90 border-none shadow-md">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-center">
-                          <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-48"></div>
-                            <div className="h-3 bg-gray-200 rounded w-32"></div>
-                          </div>
-                          <div className="h-8 bg-gray-200 rounded w-16"></div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : soloScores.length === 0 ? (
+            <TabsContent value="history" className="space-y-6">
+              {loadingGameHistory ? (
+                <p className="text-center text-gray-500">
+                  Memuat riwayat permainan...
+                </p>
+              ) : gameHistory.length === 0 ? (
                 <Card className="bg-white/90 border-none shadow-md">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Trophy className="h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum ada riwayat permainan</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Belum ada riwayat permainan
+                    </h3>
                     <p className="text-gray-600 text-center mb-4">
-                      Mainkan beberapa kuis untuk melihat riwayat Anda di sini!
+                      Anda belum mengikuti kuis apa pun.
                     </p>
-                    <Button
-                      onClick={() => router.push("/dashboard")}
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg"
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      Jelajah Kuis
-                    </Button>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="space-y-4">
-                  {soloScores.map((score) => (
-                    <Card key={score.id} className="bg-white/90 border-none shadow-md">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-semibold text-lg text-gray-800">{score.quiz.title}</h3>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                              <span className="flex items-center">
-                                <Clock className="w-4 h-4 mr-1 text-gray-500" />
-                                {new Date(score.completed_at).toLocaleDateString()}
-                              </span>
-                              <span>
-                                {score.score}/{score.total_questions} benar
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-3xl font-bold text-blue-600">
-                              {Math.round((score.score / score.total_questions) * 100)}%
-                            </div>
-                            <Badge
-                              variant={
-                                score.score / score.total_questions >= 0.8
-                                  ? "default"
-                                  : score.score / score.total_questions >= 0.6
-                                    ? "secondary"
-                                    : "destructive"
+                <div className="overflow-auto rounded-md shadow">
+                  <table className="min-w-full divide-y divide-gray-200 bg-white">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
+                          Judul Kuis
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
+                          Tanggal
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
+                          Skor
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
+                          Aksi
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {gameHistory.map((entry) => (
+                        <tr key={entry.id}>
+                          <td className="px-6 py-4 text-sm text-gray-800">
+                            {entry.game_sessions.quizzes.title ||
+                              "Judul tidak ditemukan"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {new Date(entry.joined_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {entry.score} poin
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                router.push(
+                                  `/results/${entry.session_id}?participant=${entry.id}`
+                                )
                               }
-                              className={`text-xs ${
-                                score.score / score.total_questions >= 0.8
-                                  ? "bg-green-100 text-green-700"
-                                  : score.score / score.total_questions >= 0.6
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : "bg-red-100 text-red-700"
-                              }`}
                             >
-                              {score.score / score.total_questions >= 0.8
-                                ? "Sangat Baik"
-                                : score.score / score.total_questions >= 0.6
-                                  ? "Baik"
-                                  : "Perlu Latihan"}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                              Lihat Detail
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </TabsContent>
@@ -1146,7 +1263,7 @@ export default function Dashboard() {
       </main>
 
       {/* Bottom Navigation Menu */}
-      {typeof window !== 'undefined' && (
+      {typeof window !== "undefined" && (
         <AnimatePresence>
           {isNavOpen && (
             <>
@@ -1174,18 +1291,32 @@ export default function Dashboard() {
                 </div>
 
                 <div className="p-4">
-                  <h3 className="font-medium text-lg mb-4 px-2 text-gray-900">Menu Navigasi</h3>
+                  <h3 className="font-medium text-lg mb-4 px-2 text-gray-900">
+                    Menu Navigasi
+                  </h3>
 
                   {/* Navigation Links */}
                   <div className="space-y-1">
                     {navigationLinks.map((link) => (
-                      <Link key={link.href} href={link.href} onClick={() => setIsNavOpen(false)}>
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsNavOpen(false)}
+                      >
                         <Button
-                          variant={link.href === "/dashboard" ? "default" : "ghost"}
+                          variant={
+                            link.href === "/dashboard" ? "default" : "ghost"
+                          }
                           className="w-full justify-start text-lg py-6"
                         >
                           <div className="flex items-center gap-4">
-                            <div className={link.href === "/dashboard" ? "text-white" : "text-gray-700"}>
+                            <div
+                              className={
+                                link.href === "/dashboard"
+                                  ? "text-white"
+                                  : "text-gray-700"
+                              }
+                            >
                               {link.icon}
                             </div>
                             <span>{link.title}</span>
