@@ -189,7 +189,7 @@ function ActionSearchBar({
     };
 
     return (
-        <div className="w-full max-w-xl mx-auto relative">
+        <div className="w-full relative">
             <div className="relative">
                 <div className="w-full sticky top-0 bg-transparent z-10 pt-4 pb-1">
                     <label
@@ -294,9 +294,6 @@ function ActionSearchBar({
                     </AnimatePresence>
                 </div>
             </div>
-            
-            {/* Spacer div to ensure content below has proper spacing */}
-            <div className="h-10"></div>
         </div>
     );
 }

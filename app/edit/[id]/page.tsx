@@ -23,6 +23,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const categories = [
   { value: "general", label: "Umum" },
@@ -84,6 +95,15 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [quiz, setQuiz] = useState<Quiz | null>(null)
+  
+  // Add confirmation dialog state
+  const [showDeleteQuestionConfirm, setShowDeleteQuestionConfirm] = useState(false)
+  const [questionToDelete, setQuestionToDelete] = useState<string | null>(null)
+  const [skipQuestionDeleteConfirmation, setSkipQuestionDeleteConfirmation] = useState(false)
+  
+  const [showDeleteAnswerConfirm, setShowDeleteAnswerConfirm] = useState(false)
+  const [answerToDelete, setAnswerToDelete] = useState<{questionId: string, answerId: string} | null>(null)
+  const [skipAnswerDeleteConfirmation, setSkipAnswerDeleteConfirmation] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -243,6 +263,25 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
   const removeQuestion = async (questionId: string) => {
     if (!quiz || quiz.questions.length <= 1) return
 
+    if (skipQuestionDeleteConfirmation) {
+      // If skipping confirmation, delete immediately
+      await deleteQuestion(questionId)
+    } else {
+      // Otherwise show confirmation dialog
+      setQuestionToDelete(questionId)
+      setShowDeleteQuestionConfirm(true)
+    }
+  }
+
+  const confirmDeleteQuestion = async () => {
+    if (questionToDelete) {
+      await deleteQuestion(questionToDelete)
+      setQuestionToDelete(null)
+      setShowDeleteQuestionConfirm(false)
+    }
+  }
+
+  const deleteQuestion = async (questionId: string) => {
     // If it's an existing question, delete from database
     if (!questionId.startsWith("new_")) {
       try {
@@ -256,8 +295,8 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
     }
 
     setQuiz({
-      ...quiz,
-      questions: quiz.questions.filter((q) => q.id !== questionId),
+      ...quiz!,
+      questions: quiz!.questions.filter((q) => q.id !== questionId),
     })
   }
 
@@ -295,9 +334,28 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
     const question = quiz.questions.find(q => q.id === questionId)
     if (!question || question.answers.length <= 2) return
     
+    if (skipAnswerDeleteConfirmation) {
+      // If skipping confirmation, delete immediately
+      deleteAnswer(questionId, answerId)
+    } else {
+      // Otherwise show confirmation dialog
+      setAnswerToDelete({ questionId, answerId })
+      setShowDeleteAnswerConfirm(true)
+    }
+  }
+
+  const confirmDeleteAnswer = () => {
+    if (answerToDelete) {
+      deleteAnswer(answerToDelete.questionId, answerToDelete.answerId)
+      setAnswerToDelete(null)
+      setShowDeleteAnswerConfirm(false)
+    }
+  }
+
+  const deleteAnswer = (questionId: string, answerId: string) => {
     setQuiz({
-      ...quiz,
-      questions: quiz.questions.map(q => 
+      ...quiz!,
+      questions: quiz!.questions.map(q => 
         q.id === questionId
           ? {
               ...q,
@@ -866,6 +924,62 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
           </Card>
         </div>
       </main>
+
+      {/* Question Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteQuestionConfirm} onOpenChange={setShowDeleteQuestionConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Pertanyaan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus pertanyaan ini? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Switch
+              id="skip-question-confirmation"
+              checked={skipQuestionDeleteConfirmation}
+              onCheckedChange={setSkipQuestionDeleteConfirmation}
+            />
+            <Label htmlFor="skip-question-confirmation" className="text-sm text-gray-600">
+              Jangan ingatkan lagi
+            </Label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteQuestionConfirm(false)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteQuestion} className="bg-red-600 hover:bg-red-700">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Answer Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteAnswerConfirm} onOpenChange={setShowDeleteAnswerConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Jawaban</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus jawaban ini? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Switch
+              id="skip-answer-confirmation"
+              checked={skipAnswerDeleteConfirmation}
+              onCheckedChange={setSkipAnswerDeleteConfirmation}
+            />
+            <Label htmlFor="skip-answer-confirmation" className="text-sm text-gray-600">
+              Jangan ingatkan lagi
+            </Label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteAnswerConfirm(false)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAnswer} className="bg-red-600 hover:bg-red-700">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

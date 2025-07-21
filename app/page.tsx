@@ -1,36 +1,16 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Users, Zap, Trophy, Heart, Play, Star, CheckCircle } from "lucide-react"
+import { ArrowRight, Users, Zap, Trophy, Heart, Play, Star, CheckCircle, BookOpen, Gamepad2 } from "lucide-react"
+import NavbarDemo from "@/components/resizable-navbar-demo"
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-16 scroll-smooth">
       {/* Navigation */}
-      <nav className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">GQ</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              GolekQuiz
-            </span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link href="/auth/register">
-              <Button variant="ghost">Masuk</Button>
-            </Link>
-            <Link href="/join">
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
-                Join Game
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <NavbarDemo />
 
       {/* Hero Section */}
-      <section className="py-20 md:py-32">
+      <section id="learn" className="pt-28 pb-20 md:pb-32 scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
             <div className="space-y-8 max-w-2xl">
@@ -142,7 +122,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-white dark:bg-gray-800">
+      <section id="features" className="py-20 bg-white dark:bg-gray-800 scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -201,7 +181,7 @@ export default function LandingPage() {
       </section>
 
       {/* Game Modes Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <section id="game" className="py-20 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Mode Permainan</h2>
@@ -307,8 +287,72 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Quiz Section */}
+      <section id="quiz" className="py-20 bg-white dark:bg-gray-800 scroll-mt-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Jelajahi{" "}
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Berbagai Kuis
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Temukan ribuan kuis dari berbagai kategori yang dibuat oleh komunitas
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-2xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
+                <BookOpen className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Pendidikan</h3>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                Berbagai kuis untuk membantu belajar mata pelajaran sekolah, dari matematika hingga sejarah.
+              </p>
+              <Button variant="outline" className="w-full">
+                Jelajahi Kuis Pendidikan
+              </Button>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-6 rounded-2xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                <Gamepad2 className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Hiburan</h3>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                Kuis tentang film, musik, selebriti, dan semua hal menyenangkan untuk menghibur diri.
+              </p>
+              <Button variant="outline" className="w-full">
+                Jelajahi Kuis Hiburan
+              </Button>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-6 rounded-2xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4">
+                <Trophy className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Kompetisi</h3>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                Tantang teman-temanmu dalam kuis kompetitif yang menguji pengetahuan dan kecepatan.
+              </p>
+              <Button variant="outline" className="w-full">
+                Jelajahi Kuis Kompetisi
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-center mt-10">
+            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+              Lihat Semua Kuis
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials Section */}
-      <section className="py-20 bg-white dark:bg-gray-800">
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Apa Kata Pengguna</h2>
@@ -458,8 +502,13 @@ export default function LandingPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#game" className="hover:text-white transition-colors">
                     Mode Game
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#quiz" className="hover:text-white transition-colors">
+                    Kuis
                   </Link>
                 </li>
                 <li>
