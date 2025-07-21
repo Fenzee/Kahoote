@@ -508,7 +508,7 @@ export default function Dashboard() {
   const navigationLinks = [
     {
       title: "Dashboard",
-      href: "/dashboard",
+      href: "../dashboard",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -547,7 +547,7 @@ export default function Dashboard() {
     },
     {
       title: "Teman",
-      href: "/dashboard/friends",
+      href: "../dashboard/friends",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -568,7 +568,7 @@ export default function Dashboard() {
     },
     {
       title: "Riwayat",
-      href: "/dashboard/history",
+      href: "../dashboard/history",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -587,7 +587,7 @@ export default function Dashboard() {
     },
     {
       title: "Profil",
-      href: "/profile",
+      href: "../dashboard/profile",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
