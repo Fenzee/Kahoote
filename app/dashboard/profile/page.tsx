@@ -174,8 +174,11 @@ export default function ProfilePage() {
     setUploadingImage(true);
 
     try {
+      // Process image before upload to ensure it's square
+      const processedFile = await processImageForAvatar(file);
+      
       // Upload image to storage
-      const imageUrl = await uploadImage(file, `avatars/${user.id}`);
+      const imageUrl = await uploadImage(processedFile, `avatars/${user.id}`);
 
       if (!imageUrl) {
         throw new Error("Gagal mengunggah gambar");
@@ -204,6 +207,56 @@ export default function ProfilePage() {
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  // Process image to ensure it's square with proper aspect ratio
+  const processImageForAvatar = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        // Create a square canvas with the minimum dimension
+        const canvas = document.createElement('canvas');
+        const size = Math.min(img.width, img.height);
+        canvas.width = size;
+        canvas.height = size;
+        
+        // Calculate position to crop from center
+        const offsetX = (img.width - size) / 2;
+        const offsetY = (img.height - size) / 2;
+        
+        // Draw the image on the canvas (cropped to square)
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, size, size);
+        
+        // Convert canvas to blob
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Could not create image blob'));
+            return;
+          }
+          
+          // Create a new file from the blob
+          const processedFile = new File([blob], file.name, {
+            type: file.type,
+            lastModified: Date.now()
+          });
+          
+          resolve(processedFile);
+        }, file.type);
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image'));
+      };
+      
+      // Load the image from the file
+      img.src = URL.createObjectURL(file);
+    });
   };
 
   const handleSignOut = async () => {
@@ -279,15 +332,18 @@ export default function ProfilePage() {
               {/* Left side - Avatar and basic info */}
               <div className="flex flex-col items-center md:w-1/3">
                 <div className="relative">
-                  <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
-                    <AvatarImage 
-                      src={userProfile.avatar_url || `https://robohash.org/${encodeURIComponent(user.email || "user")}.png`} 
-                      alt={userProfile.username} 
-                    />
-                    <AvatarFallback className="bg-blue-100 text-blue-600 text-4xl">
-                      {userProfile.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="rounded-full overflow-hidden w-32 h-32 border-4 border-white shadow-lg">
+                    <Avatar className="w-full h-full">
+                      <AvatarImage 
+                        src={userProfile.avatar_url || `https://robohash.org/${encodeURIComponent(user.email || "user")}.png`} 
+                        alt={userProfile.username} 
+                        className="object-cover w-full h-full"
+                      />
+                      <AvatarFallback className="bg-blue-100 text-blue-600 text-4xl">
+                        {userProfile.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   <label 
                     htmlFor="avatar-upload" 
                     className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-md"
