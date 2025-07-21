@@ -15,6 +15,7 @@ import {
   Slack,
   ChevronLeft,
   Loader,
+  Gamepad2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -491,9 +492,9 @@ const setupRealTimeSubscription = useCallback(() => {
   // Show loading while redirecting players
   if (participantId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center text-blue-600">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-lg">Mengarahkan ke game...</p>
         </div>
       </div>
@@ -513,13 +514,16 @@ const setupRealTimeSubscription = useCallback(() => {
 
   if (!gameSession) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl border-0">
           <CardContent className="p-8 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Game tidak ditemukan
             </h2>
-            <Button onClick={() => router.push("/dashboard")}>
+            <Button 
+              onClick={() => router.push("/dashboard")}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+            >
               Kembali ke Dashboard
             </Button>
           </CardContent>
@@ -529,49 +533,51 @@ const setupRealTimeSubscription = useCallback(() => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE]">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => router.push(`/host/${resolvedParams.id}`)}
-              className="text-white hover:bg-white/10"
+              className="border-2 border-gray-200"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               Kembali
             </Button>
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <Slack className="w-5 h-5 text-cyan-950" />
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <Gamepad2 className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">Game Control</span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Game Control</span>
           </div>
           <div className="flex items-center space-x-2">
             {/* Game Timer */}
             <Badge
-              variant="secondary"
+              variant="outline"
               className={`${
                 timeLeft <= 60
-                  ? "bg-red-500 animate-pulse"
+                  ? "bg-red-100 text-red-800 border-red-300"
                   : timeLeft <= 300
-                  ? "bg-yellow-500"
-                  : "bg-green-500"
-              } text-white text-lg px-4 py-2`}
+                  ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                  : "bg-green-100 text-green-800 border-green-300"
+              } text-lg px-4 py-2`}
             >
               <Timer className="w-4 h-4 mr-2" />
               {formatTime(timeLeft)}
             </Badge>
-            <Badge variant="secondary" className="bg-white/20 text-white">
+            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
               <Users className="w-3 h-3 mr-1" />
               {participants.length} pemain
             </Badge>
             <Badge
-              variant="secondary"
+              variant="outline"
               className={`${
-                gameSession.status === "active" ? "bg-green-500" : "bg-red-500"
-              } text-white`}
+                gameSession.status === "active" 
+                  ? "bg-green-100 text-green-800 border-green-300" 
+                  : "bg-red-100 text-red-800 border-red-300"
+              }`}
             >
               {gameSession.status === "active" ? "Aktif" : "Selesai"}
             </Badge>
@@ -583,7 +589,7 @@ const setupRealTimeSubscription = useCallback(() => {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Game Timer Card */}
-          <Card className="bg-white/95 backdrop-blur-sm mb-6">
+          <Card className="bg-white/90 backdrop-blur-sm mb-6 shadow-xl border-0">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -627,14 +633,14 @@ const setupRealTimeSubscription = useCallback(() => {
                         100
                       : 0
                   }
-                  className="h-3"
+                  className="h-3 bg-gray-200"
                 />
               </div>
             </CardContent>
           </Card>
 
           {/* Game Controls */}
-          <Card className="bg-white/95 backdrop-blur-sm mb-6">
+          <Card className="bg-white/90 backdrop-blur-sm mb-6 shadow-xl border-0">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Kontrol Game</span>
@@ -642,7 +648,7 @@ const setupRealTimeSubscription = useCallback(() => {
                   <Button
                     onClick={handleEndGame}
                     disabled={isEnding}
-                    variant="destructive"
+                    className="bg-red-500 hover:bg-red-600 text-white"
                     size="lg"
                   >
                     {isEnding ? (
@@ -661,20 +667,20 @@ const setupRealTimeSubscription = useCallback(() => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <div className="text-2xl font-bold text-blue-600">
                     {questions.length}
                   </div>
                   <div className="text-sm text-gray-600">Total Pertanyaan</div>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
                   <div className="text-2xl font-bold text-green-600">
                     {participants.length}
                   </div>
                   <div className="text-sm text-gray-600">Pemain Aktif</div>
                 </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-100">
                   <div className="text-2xl font-bold text-purple-600">
                     {Math.max(
                       0,
@@ -691,7 +697,7 @@ const setupRealTimeSubscription = useCallback(() => {
           </Card>
 
           {/* Progress Leaderboard */}
-          <Card className="bg-white/95 backdrop-blur-sm">
+          <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Loader className="w-5 h-5 text-blue-500" />
@@ -731,7 +737,7 @@ const setupRealTimeSubscription = useCallback(() => {
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center space-x-3">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
-                                  idx === 0 ? "bg-yellow-500" : "bg-gray-400"
+                                  idx === 0 ? "bg-gradient-to-r from-yellow-500 to-yellow-400" : "bg-gradient-to-r from-gray-500 to-gray-400"
                                 }`}>
                                   {idx + 1}
                                 </div>
@@ -762,7 +768,7 @@ const setupRealTimeSubscription = useCallback(() => {
                               >
                                 <motion.div 
                                   className={`h-full rounded-full ${
-                                    idx === 0 ? "bg-yellow-500" : "bg-gray-500"
+                                    idx === 0 ? "bg-gradient-to-r from-yellow-500 to-yellow-400" : "bg-gradient-to-r from-gray-500 to-gray-400"
                                   }`}
                                   initial={{ width: "0%" }}
                                   animate={{ width: `${progress}%` }}
@@ -799,7 +805,7 @@ const setupRealTimeSubscription = useCallback(() => {
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                                     {rank}
                                   </div>
                                   <div className="font-medium">{player.nickname}</div>
@@ -821,7 +827,7 @@ const setupRealTimeSubscription = useCallback(() => {
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                                   <motion.div 
-                                    className="h-full bg-blue-500 rounded-full"
+                                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
                                     initial={{ width: "0%" }}
                                     animate={{ width: `${progress}%` }}
                                     transition={{ type: "spring", stiffness: 100, damping: 25 }}
