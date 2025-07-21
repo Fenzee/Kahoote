@@ -43,19 +43,66 @@ export default function JoinGamePage() {
 
       if (!user) {
         setError("Kamu harus login untuk join game.");
+        setLoading(false);
         return;
       }
 
       // Ambil username dari profile
-      const { data: profile, error: profileError } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("username")
+        .select("username, email")
         .eq("id", user.id)
         .single();
 
+      // Jika profil tidak ditemukan, coba buat profil baru
       if (profileError || !profile) {
-        setError("Gagal mengambil username.");
-        return;
+        console.log("Profile not found, creating new profile");
+        
+        // Ekstrak username dari email
+        let username = "";
+        let email = "";
+        
+        if (user.email) {
+          email = user.email;
+          username = user.email.split('@')[0];
+          
+          // Tambahkan angka random jika username sudah ada
+          const { data: usernameExists } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("username", username)
+            .single();
+            
+          if (usernameExists) {
+            username = `${username}${Math.floor(Math.random() * 1000)}`;
+          }
+        } else {
+          username = `user_${Math.floor(Math.random() * 10000)}`;
+          email = `${username}@example.com`;
+        }
+        
+        // Buat profil baru
+        const { data: newProfile, error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            username: username,
+            email: email,
+            fullname: user.user_metadata?.full_name || username,
+            avatar_url: user.user_metadata?.avatar_url || null,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+          setError("Gagal membuat profile: " + insertError.message);
+          setLoading(false);
+          return;
+        }
+        
+        profile = newProfile;
       }
 
       // Cek session game
@@ -68,19 +115,22 @@ export default function JoinGamePage() {
 
       if (sessionError || !session) {
         setError("Game PIN tidak valid atau game sudah dimulai");
+        setLoading(false);
         return;
       }
 
       // Cek apakah username sudah dipakai
-      const { data: existingParticipant } = await supabase
+      const { data: existingParticipant, error: existingError } = await supabase
         .from("game_participants")
         .select("id")
         .eq("session_id", session.id)
-        .eq("nickname", profile.username)
+        .eq("nickname", profile?.username || "")
         .single();
 
+      // PGRST116 adalah kode error "tidak ada data" yang berarti username belum dipakai
       if (existingParticipant) {
         setError("Username kamu sudah dipakai di game ini.");
+        setLoading(false);
         return;
       }
 
@@ -90,17 +140,26 @@ export default function JoinGamePage() {
         .insert({
           session_id: session.id,
           user_id: user.id,
-          nickname: profile.username,
+          nickname: profile?.username || "user_" + Math.floor(Math.random() * 10000),
         })
         .select()
         .single();
 
-      if (participantError) throw participantError;
+      if (participantError) {
+        console.error("Error joining game:", participantError);
+        setError("Gagal bergabung ke game: " + participantError.message);
+        setLoading(false);
+        return;
+      }
 
       router.push(`/play/${session.id}?participant=${participant.id}`);
     } catch (error: any) {
       console.error("Error joining game:", error);
-      setError("Gagal bergabung ke game. Silakan coba lagi.");
+      let errorMessage = "Gagal bergabung ke game. Silakan coba lagi.";
+      if (error && error.message) {
+        errorMessage += " Detail: " + error.message;
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

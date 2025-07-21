@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +40,97 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Slider } from "@/components/ui/slider";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+} from "@/components/ui/dialog";
+
+/**
+ * @author: @kokonutui
+ * @description: AI Text Loading
+ * @version: 1.0.0
+ * @date: 2025-06-26
+ * @license: MIT
+ * @website: https://kokonutui.com
+ * @github: https://github.com/kokonut-labs/kokonutui
+ */
+function AITextLoading({
+    texts = [
+        "Thinking...",
+        "Processing...",
+        "Analyzing...",
+        "Computing...",
+        "Almost...",
+    ],
+    className,
+    interval = 1500,
+}: {
+    texts?: string[];
+    className?: string;
+    interval?: number;
+}) {
+    const [currentTextIndex, setCurrentTextIndex] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTextIndex((prevIndex) => (prevIndex + 1) % texts.length);
+        }, interval);
+
+        return () => clearInterval(timer);
+    }, [interval, texts.length]);
+
+    return (
+        <div className="flex items-center justify-center">
+            <motion.div
+                className="relative px-4 py-2 w-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+            >
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentTextIndex}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{
+                            opacity: 1,
+                            y: 0,
+                            backgroundPosition: ["200% center", "-200% center"],
+                        }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{
+                            opacity: { duration: 0.3 },
+                            y: { duration: 0.3 },
+                            backgroundPosition: {
+                                duration: 2.5,
+                                ease: "linear",
+                                repeat: Infinity,
+                            },
+                        }}
+                        className={cn(
+                            "flex justify-center text-base font-medium bg-gradient-to-r from-neutral-950 via-neutral-400 to-neutral-950 dark:from-white dark:via-neutral-600 dark:to-white bg-[length:200%_100%] bg-clip-text text-transparent whitespace-nowrap min-w-max",
+                            className
+                        )}
+                    >
+                        {texts[currentTextIndex]}
+                    </motion.div>
+                </AnimatePresence>
+            </motion.div>
+        </div>
+    );
+}
 
 const categories = [
   { value: "general", label: "Umum" },
@@ -99,6 +190,10 @@ export default function CreateQuizPage() {
   const [loading, setLoading] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
+  const [skipDeleteConfirmation, setSkipDeleteConfirmation] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -203,7 +298,20 @@ export default function CreateQuizPage() {
   };
 
   const removeQuestion = (id: string) => {
-    setQuestions((prev) => prev.filter((q) => q.id !== id));
+    if (skipDeleteConfirmation) {
+      setQuestions((prev) => prev.filter((q) => q.id !== id));
+    } else {
+      setQuestionToDelete(id);
+      setShowDeleteConfirm(true);
+    }
+  };
+
+  const confirmDeleteQuestion = () => {
+    if (questionToDelete) {
+      setQuestions((prev) => prev.filter((q) => q.id !== questionToDelete));
+      setQuestionToDelete(null);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const updateQuestion = (id: string, field: string, value: string | number | null) => {
@@ -370,6 +478,57 @@ export default function CreateQuizPage() {
         </div>
       </header>
 
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black/80">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {previewImage && (
+              <img 
+                src={previewImage} 
+                alt="Preview" 
+                className="max-h-[80vh] max-w-full object-contain"
+              />
+            )}
+            <DialogClose className="absolute top-2 right-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <Button variant="outline" size="icon" className="h-8 w-8 bg-white/20 border-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <path d="M18 6 6 18"></path>
+                  <path d="m6 6 12 12"></path>
+                </svg>
+              </Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Pertanyaan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus pertanyaan ini? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-2">
+            <Switch
+              id="skip-confirmation"
+              checked={skipDeleteConfirmation}
+              onCheckedChange={setSkipDeleteConfirmation}
+            />
+            <Label htmlFor="skip-confirmation" className="text-sm text-gray-600">
+              Jangan ingatkan lagi
+            </Label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteQuestion} className="bg-red-600 hover:bg-red-700">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -480,16 +639,13 @@ export default function CreateQuizPage() {
                       <Button
                         onClick={generateQuestionsWithAI}
                         disabled={aiGenerating || !aiPrompt.trim()}
-                        className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
+                        className="bg-transparent border-2 text-black hover:text-white"
                       >
                         {aiGenerating ? (
-                          <span className="flex items-center">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Menghasilkan...
-                          </span>
+                          <AITextLoading 
+                            texts={["Menghasilkan...", "Menganalisis topik...", "Membuat pilihan...", "Hampir selesai..."]} 
+                            interval={2000}
+                          />
                         ) : (
                           <span className="flex items-center">
                             <Brain className="w-4 h-4 mr-2" />
@@ -733,6 +889,25 @@ export default function CreateQuizPage() {
                                   onImageChange={(url) => updateQuestion(question.id, "image_url", url)}
                                   label="Gambar Pertanyaan (Opsional)"
                                 />
+                                {question.image_url && (
+                                  <div 
+                                    className="relative h-24 w-24 mt-2 rounded-md overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => setPreviewImage(question.image_url)}
+                                  >
+                                    <img 
+                                      src={question.image_url} 
+                                      alt="Gambar pertanyaan"
+                                      className="object-cover w-full h-full"
+                                    />
+                                    <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 flex items-center justify-center transition-all">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white opacity-0 hover:opacity-100">
+                                        <path d="M15 3h6v6"></path>
+                                        <path d="M10 14 21 3"></path>
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Time & Points */}
@@ -848,12 +1023,22 @@ export default function CreateQuizPage() {
                                       </div>
                                       
                                       {answer.image_url && (
-                                        <div className="relative h-20 w-20 rounded-md overflow-hidden border border-gray-200">
+                                        <div 
+                                          className="relative h-20 w-20 rounded-md overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                                          onClick={() => setPreviewImage(answer.image_url)}
+                                        >
                                           <img 
                                             src={answer.image_url} 
                                             alt={`Gambar untuk jawaban ${aIndex + 1}`}
                                             className="object-cover w-full h-full"
                                           />
+                                          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 flex items-center justify-center transition-all">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white opacity-0 hover:opacity-100">
+                                              <path d="M15 3h6v6"></path>
+                                              <path d="M10 14 21 3"></path>
+                                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                            </svg>
+                                          </div>
                                         </div>
                                       )}
                                     </div>

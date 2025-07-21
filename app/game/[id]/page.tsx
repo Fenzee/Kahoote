@@ -17,6 +17,7 @@ import {
   Loader,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Participant {
   id: string;
@@ -689,12 +690,12 @@ const setupRealTimeSubscription = useCallback(() => {
             </CardContent>
           </Card>
 
-          {/* Leaderboard */}
+          {/* Progress Leaderboard */}
           <Card className="bg-white/95 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Loader className="w-5 h-5" />
-                <span>Progress</span>
+                <Loader className="w-5 h-5 text-blue-500" />
+                <span>Progress Pemain</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -704,28 +705,134 @@ const setupRealTimeSubscription = useCallback(() => {
                   <p>Belum ada data pemain</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="space-y-4">
-                    {participants.map((p) => {
-                      const progress =
-                        questions.length > 0
-                          ? ((p.responsesCount || 0) / questions.length) * 100
+                <div className="space-y-4">
+                  {/* Top 2 Players */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[...participants]
+                      .sort((a, b) => (b.responsesCount || 0) - (a.responsesCount || 0))
+                      .slice(0, 2)
+                      .map((player, idx) => {
+                        const progress = questions.length > 0
+                          ? ((player.responsesCount || 0) / questions.length) * 100
                           : 0;
-
-                      return (
-                        <div
-                          key={p.id}
-                          className="p-4 bg-gray-100 rounded-lg shadow-sm space-y-1"
-                        >
-                          <div className="flex justify-between text-sm font-medium text-gray-700">
-                            <span>{p.nickname}</span>
-                            <span>{Math.round(progress)}%</span>
-                          </div>
-                          <Progress value={progress} />
-                        </div>
-                      );
-                    })}
+                        
+                        return (
+                          <motion.div
+                            key={player.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className={`p-6 rounded-lg shadow-md ${
+                              idx === 0 
+                                ? "bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300" 
+                                : "bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
+                                  idx === 0 ? "bg-yellow-500" : "bg-gray-400"
+                                }`}>
+                                  {idx + 1}
+                                </div>
+                                <h3 className="text-xl font-bold">{player.nickname}</h3>
+                              </div>
+                              <motion.div
+                                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                  idx === 0 ? "bg-yellow-200 text-yellow-800" : "bg-gray-200 text-gray-800"
+                                }`}
+                                initial={{ scale: 1 }}
+                                animate={{ scale: [1, 1.1, 1] }}
+                                key={player.responsesCount}
+                                transition={{ duration: 0.5 }}
+                              >
+                                {player.responsesCount || 0}/{questions.length} soal
+                              </motion.div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm font-medium">
+                                <span>Progress</span>
+                                <span>{Math.round(progress)}%</span>
+                              </div>
+                              <motion.div 
+                                className="w-full bg-gray-200 rounded-full h-4 overflow-hidden"
+                                initial={{ width: 0 }}
+                                animate={{ width: "100%" }}
+                                transition={{ duration: 0.5 }}
+                              >
+                                <motion.div 
+                                  className={`h-full rounded-full ${
+                                    idx === 0 ? "bg-yellow-500" : "bg-gray-500"
+                                  }`}
+                                  initial={{ width: "0%" }}
+                                  animate={{ width: `${progress}%` }}
+                                  transition={{ type: "spring", stiffness: 100, damping: 25 }}
+                                ></motion.div>
+                              </motion.div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                   </div>
+
+                  {/* Other Players */}
+                  <AnimatePresence>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[...participants]
+                        .sort((a, b) => (b.responsesCount || 0) - (a.responsesCount || 0))
+                        .slice(2)
+                        .map((player, idx) => {
+                          const progress = questions.length > 0
+                            ? ((player.responsesCount || 0) / questions.length) * 100
+                            : 0;
+                          const rank = idx + 3; // Starting from rank 3
+                          
+                          return (
+                            <motion.div
+                              key={player.id}
+                              layout
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                              className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                                    {rank}
+                                  </div>
+                                  <div className="font-medium">{player.nickname}</div>
+                                </div>
+                                <motion.div
+                                  className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                                  initial={{ scale: 1 }}
+                                  animate={{ scale: [1, 1.1, 1] }}
+                                  key={player.responsesCount}
+                                  transition={{ duration: 0.5 }}
+                                >
+                                  {player.responsesCount || 0}/{questions.length}
+                                </motion.div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-gray-500">
+                                  <span>Progress</span>
+                                  <span>{Math.round(progress)}%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                  <motion.div 
+                                    className="h-full bg-blue-500 rounded-full"
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: `${progress}%` }}
+                                    transition={{ type: "spring", stiffness: 100, damping: 25 }}
+                                  ></motion.div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                    </div>
+                  </AnimatePresence>
                 </div>
               )}
             </CardContent>
