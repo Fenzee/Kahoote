@@ -25,6 +25,7 @@ interface Answer {
   color: string;
   order_index: number;
   is_correct: boolean;
+  image_url?: string;
 }
 
 interface Question {
@@ -33,6 +34,7 @@ interface Question {
   time_limit: number;
   points: number;
   order_index: number;
+  image_url?: string;
   answers: Answer[];
 }
 
@@ -131,12 +133,14 @@ export default function PlayActiveGamePage({
           time_limit,
           points,
           order_index,
+          image_url,
           answers (
             id,
             answer_text,
             color,
             order_index,
-            is_correct
+            is_correct,
+            image_url
           )
         `
         )
@@ -333,36 +337,6 @@ export default function PlayActiveGamePage({
     setCurrentQuestionIndex(index);
   };
 
-  // const submitQuiz = async () => {
-  //   if (!gameState) return;
-
-  //   const unansweredQuestions = gameState.questions.filter(
-  //     (question) => !playerAnswers.has(question.id)
-  //   );
-
-  //   if (unansweredQuestions.length > 0) {
-  //     const firstUnansweredIndex = gameState.questions.findIndex(
-  //       (question) => !playerAnswers.has(question.id)
-  //     );
-  //     setCurrentQuestionIndex(firstUnansweredIndex);
-  //     return;
-  //   }
-
-  //   try {
-  //     await supabase
-  //       .from("game_sessions")
-  //       .update({
-  //         status: "finished",
-  //         ended_at: new Date().toISOString(),
-  //        })
-  //       .eq("id", gameState.sessionId);
-  //   } catch (error) {
-  //     console.error("Gagal mengakhiri sesi:", error);
-  //   }
-
-  //   router.push(`/results/${resolvedParams.id}?participant=${participantId}`);
-  // };
-
   const submitQuiz = async () => {
     if (!gameState) return;
 
@@ -491,6 +465,16 @@ export default function PlayActiveGamePage({
                 <CardTitle className="text-2xl text-center">
                   {currentQuestion.question_text}
                 </CardTitle>
+                {currentQuestion.image_url && (
+                  <div className="flex justify-center mt-4">
+                    <img
+                      src={currentQuestion.image_url}
+                      alt="Gambar Soal"
+                      className="max-h-64 rounded shadow-md"
+                    />
+                  </div>
+                )}
+
                 {currentAnswer && (
                   <div className="text-center">
                     <Badge
@@ -505,7 +489,7 @@ export default function PlayActiveGamePage({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentQuestion.answers.map((answer) => (
+                  {currentQuestion.answers.map((answer, index) => (
                     <Button
                       key={answer.id}
                       onClick={() => selectAnswer(answer.id)}
@@ -531,17 +515,22 @@ export default function PlayActiveGamePage({
                     >
                       <div className="flex items-center space-x-3">
                         <div
-                          className={`w-6 h-6 rounded-full ${
-                            answer.color === "red"
-                              ? "bg-red-500"
-                              : answer.color === "blue"
-                              ? "bg-blue-500"
-                              : answer.color === "yellow"
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
-                          }`}
-                        ></div>
-                        <span className="text-lg">{answer.answer_text}</span>
+                          className="w-6 h-6 rounded-full bg-sky-300 flex items-center justify-center"
+                        >
+                          {String.fromCharCode(65 + index)}
+                        </div>
+                        <div className="flex flex-col w-[80%] max-h-40 overflow-y-auto pr-2">
+                          <div className="text-lg ">
+                            {answer.answer_text}
+                          </div>
+                          {answer.image_url && (
+                            <img
+                              src={answer.image_url}
+                              alt="Gambar Jawaban"
+                              className="w-full max-h-48 object-contain rounded border border-gray-200"
+                            />
+                          )}
+                        </div>
                         {currentAnswer?.answer_id === answer.id && (
                           <CheckCircle className="w-5 h-5 ml-auto" />
                         )}
