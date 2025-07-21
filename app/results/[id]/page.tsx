@@ -564,7 +564,7 @@ export default function ResultsPage({
                 {topThree[1] && (
                   <div className="flex flex-col items-center text-center transform transition-all hover:scale-105">
                     <div className="w-16 h-16 bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center mb-2 animate-bounce-slow">
-                      <Medal className="w-8 h-8 text-white" />
+                    <span className="text-4xl">🥈</span>
                     </div>
                     <div className="bg-gray-100 rounded-lg p-4 h-24 flex flex-col justify-center shadow-md hover:shadow-lg transition-shadow">
                       <div className="font-bold text-gray-800">
@@ -602,7 +602,7 @@ export default function ResultsPage({
                 {topThree[2] && (
                   <div className="flex flex-col items-center text-center transform transition-all hover:scale-105">
                     <div className="w-16 h-16 bg-gradient-to-br from-amber-600 to-amber-800 rounded-full flex items-center justify-center mb-2 animate-bounce-slow">
-                      <Award className="w-8 h-8 text-white" />
+                    <span className="text-4xl">🥉</span>
                     </div>
                     <div className="bg-amber-50 rounded-lg p-4 h-24 flex flex-col justify-center shadow-md hover:shadow-lg transition-shadow">
                       <div className="font-bold text-amber-800">
@@ -626,7 +626,7 @@ export default function ResultsPage({
           <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
             <Users className="w-5 h-5 text-gray-600" />
             <CardTitle className="text-xl font-semibold">
-              Leaderboard Lengkap ({participants.length} Pemain)
+              Leaderboard ({participants.length} Pemain)
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-0">
