@@ -55,8 +55,8 @@ const categories = [
 ];
 
 const languages = [
-  { value: "id", label: "Indonesia" },
   { value: "en", label: "Inggris" },
+  { value: "id", label: "Indonesia" },
 ];
 
 type Question = {
