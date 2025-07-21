@@ -37,6 +37,14 @@ import {
   Menu,
   ChevronUp,
   Filter,
+  Book,
+  Beaker,
+  Calculator,
+  Dumbbell,
+  Film,
+  Briefcase,
+  Languages,
+  Laptop,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,6 +56,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ActionSearchBar from "@/components/ui/action-search-bar";
 
 interface SupabaseQuizResponse {
   id: string;
@@ -117,17 +126,17 @@ const normalizeQuiz = (quiz: any): NormalizedQuiz => {
 
 // Kategori dan bahasa
 const categories = [
-  { value: "all", label: "Semua Kategori" },
-  { value: "general", label: "Umum" },
-  { value: "science", label: "Sains" },
-  { value: "math", label: "Matematika" },
-  { value: "history", label: "Sejarah" },
-  { value: "geography", label: "Geografi" },
-  { value: "language", label: "Bahasa" },
-  { value: "technology", label: "Teknologi" },
-  { value: "sports", label: "Olahraga" },
-  { value: "entertainment", label: "Hiburan" },
-  { value: "business", label: "Bisnis" },
+  { value: "all", label: "Semua Kategori", icon: <Book className="h-4 w-4 text-blue-500" /> },
+  { value: "general", label: "Umum", icon: <BookOpen className="h-4 w-4 text-gray-500" /> },
+  { value: "science", label: "Sains", icon: <Beaker className="h-4 w-4 text-green-500" /> },
+  { value: "math", label: "Matematika", icon: <Calculator className="h-4 w-4 text-red-500" /> },
+  { value: "history", label: "Sejarah", icon: <Clock className="h-4 w-4 text-yellow-500" /> },
+  { value: "geography", label: "Geografi", icon: <Globe className="h-4 w-4 text-teal-500" /> },
+  { value: "language", label: "Bahasa", icon: <Languages className="h-4 w-4 text-purple-500" /> },
+  { value: "technology", label: "Teknologi", icon: <Laptop className="h-4 w-4 text-blue-500" /> },
+  { value: "sports", label: "Olahraga", icon: <Dumbbell className="h-4 w-4 text-orange-500" /> },
+  { value: "entertainment", label: "Hiburan", icon: <Film className="h-4 w-4 text-pink-500" /> },
+  { value: "business", label: "Bisnis", icon: <Briefcase className="h-4 w-4 text-indigo-500" /> },
 ];
 
 const languages = [
@@ -154,6 +163,7 @@ export default function Dashboard() {
   const [isNavOpen, setIsNavOpen] = useState(false); // State for bottom navigation
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -462,6 +472,25 @@ export default function Dashboard() {
         quiz.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Convert categories to actions for ActionSearchBar
+  const categoryActions = categories.map(cat => ({
+    id: cat.value,
+    label: cat.label,
+    icon: cat.icon,
+    description: "",
+    end: "Kategori"
+  }));
+
+  // Handle category selection from ActionSearchBar
+  const handleCategorySelect = (action: any) => {
+    setCategoryFilter(action.id);
+  };
+
+  // Handle search term change
+  const handleSearch = (query: string) => {
+    setSearchTerm(query);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE]">
@@ -577,12 +606,15 @@ export default function Dashboard() {
     },
   ];
 
-  // Render category and language badges
+  // Render category badge with icon
   const renderCategoryBadge = (category: string) => {
     const categoryObj = categories.find(c => c.value === category);
+    if (!categoryObj) return null;
+    
     return (
-      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-        {categoryObj?.label || "Umum"}
+      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+        {categoryObj.icon}
+        {categoryObj.label}
       </Badge>
     );
   };
@@ -667,19 +699,72 @@ export default function Dashboard() {
             </Button>
           </div>
 
-                      {/* Search Bar */}
-          <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-gray-900">Jelajahi Kuis</h2>
-            <div className="relative w-full md:w-2/3 lg:w-1/2">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
+          {/* Search Bar with Categories */}
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <h2 className="text-2xl font-bold text-gray-900">Jelajahi Kuis</h2>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center gap-1 border-gray-300"
+                  onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+                >
+                  <Filter className="h-4 w-4" />
+                  {categoryFilter !== "all" ? categories.find(c => c.value === categoryFilter)?.label : "Filter Kategori"}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Modern Search Bar */}
+            <div className="mt-4">
+              <ActionSearchBar 
+                actions={categoryActions}
+                onActionSelect={handleCategorySelect}
+                onSearch={handleSearch}
                 placeholder="Cari kuis berdasarkan judul, pembuat, atau deskripsi..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/70 border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm"
+                label="Cari atau pilih kategori"
               />
             </div>
+
+            {/* Category Filters */}
+            {showCategoryFilter && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200 absolute z-40 w-full shadow-lg"
+                style={{ maxHeight: '60vh', overflowY: 'auto' }}
+              >
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Filter berdasarkan kategori:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((category) => (
+                    <Badge
+                      key={category.value}
+                      variant={categoryFilter === category.value ? "default" : "outline"}
+                      className={`cursor-pointer flex items-center gap-1 ${
+                        categoryFilter === category.value 
+                          ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                          : "bg-white hover:bg-gray-100"
+                      }`}
+                      onClick={() => {
+                        setCategoryFilter(category.value);
+                        setShowCategoryFilter(false); // Hide filter after selection
+                      }}
+                    >
+                      {category.icon}
+                      {category.label}
+                    </Badge>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Spacer div to ensure content below has proper spacing when filter is shown */}
+            {showCategoryFilter && <div className="h-20"></div>}
           </div>
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
             <Card className="bg-white/90 border-none shadow-md">
@@ -799,16 +884,18 @@ export default function Dashboard() {
                         )}
                       </CardHeader>
                       <CardContent>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="secondary" className="bg-gray-200 text-gray-700">
-                              {quiz.questions?.length || 0} pertanyaan
-                            </Badge>
-                            <div className="flex items-center space-x-1 text-xs text-green-600">
-                              <Globe className="w-3 h-3" />
-                              <span>Publik</span>
-                            </div>
+                        <div className="flex flex-wrap items-center gap-2 mb-4">
+                          <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                            {quiz.questions?.length || 0} pertanyaan
+                          </Badge>
+                          <div className="flex items-center space-x-1 text-xs text-green-600">
+                            <Globe className="w-3 h-3" />
+                            <span>Publik</span>
                           </div>
+                          {renderCategoryBadge(quiz.category)}
+                          {renderLanguageBadge(quiz.language)}
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
                           <span className="text-sm text-gray-500">
                             {new Date(quiz.created_at).toLocaleDateString()}
                           </span>
@@ -909,18 +996,20 @@ export default function Dashboard() {
                         )}
                       </CardHeader>
                       <CardContent>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="secondary" className="bg-gray-200 text-gray-700">
-                              {quiz.questions?.length || 0} pertanyaan
-                            </Badge>
-                            <Badge
-                              variant={quiz.is_public ? "default" : "outline"}
-                              className={`text-xs ${quiz.is_public ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}
-                            >
-                              {quiz.is_public ? "Publik" : "Privat"}
-                            </Badge>
-                          </div>
+                        <div className="flex flex-wrap items-center gap-2 mb-4">
+                          <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                            {quiz.questions?.length || 0} pertanyaan
+                          </Badge>
+                          <Badge
+                            variant={quiz.is_public ? "default" : "outline"}
+                            className={`text-xs ${quiz.is_public ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}
+                          >
+                            {quiz.is_public ? "Publik" : "Privat"}
+                          </Badge>
+                          {renderCategoryBadge(quiz.category)}
+                          {renderLanguageBadge(quiz.language)}
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
                           <span className="text-sm text-gray-500">
                             {new Date(quiz.created_at).toLocaleDateString()}
                           </span>
