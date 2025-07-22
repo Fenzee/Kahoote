@@ -28,8 +28,8 @@ import {
   XCircle,
   HelpCircle,
   LayoutDashboard,
+  Crown,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface GameSession {
   id: string;
@@ -51,9 +51,6 @@ interface Participant {
   score: number;
   joined_at: string;
   user_id: string | null;
-  profiles?: {
-    avatar_url: string | null;
-  };
 }
 
 interface QuestionStats {
@@ -109,6 +106,38 @@ export default function ResultsPage({
   const [error, setError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+// useEffect(() => {
+//   if (
+//     gameSession &&
+//     participants.length > 0 &&
+//     user?.id &&
+//     gameSession.quiz_id
+//   ) {
+//     fetchPersonalStats(user.id, participants, gameSession.quiz_id);
+//   }
+// }, [gameSession, participants, user]);
+
+// useEffect(() => {
+//   if (
+//     gameSession &&
+//     participants.length > 0 &&
+//     user?.id &&
+//     gameSession.quiz_id
+//   ) {
+//     console.log("User ID:", user.id);
+//     console.log("Participants:", participants);
+//     fetchPersonalStats(user.id, participants, gameSession.quiz_id);
+//   } else {
+//     console.log("⛔ Belum siap: ", {
+//       gameSession,
+//       participantsLength: participants.length,
+//       userId: user?.id,
+//     });
+//   }
+// }, [gameSession, participants, user]);
+
+
+
   useEffect(() => {
     fetchResults();
   }, [resolvedParams.id, user, participantId]);
@@ -118,21 +147,21 @@ export default function ResultsPage({
       console.log("Fetching results for session:", resolvedParams.id);
       console.log("User:", user);
       console.log("Participant ID:", participantId);
-
+      
       //test
       const fetchParticipants = async () => {
-        const { data, error } = await supabase
-          .from("game_participants")
-          .select("*")
-          .eq("session_id", resolvedParams.id);
+  const { data, error } = await supabase
+    .from("game_participants")
+    .select("*")
+    .eq("session_id", resolvedParams.id);
 
-        if (error) {
-          console.error("Gagal mengambil participants:", error);
-        } else {
-          console.log("✅ Participants berhasil dimuat:", data);
-          setParticipants(data);
-        }
-      };
+  if (error) {
+    console.error("Gagal mengambil participants:", error);
+  } else {
+    console.log("✅ Participants berhasil dimuat:", data);
+    setParticipants(data);
+  }
+};
       const { data: session, error: sessionError } = await supabase
         .from("game_sessions")
         .select(
@@ -158,7 +187,12 @@ export default function ResultsPage({
       }
 
       console.log("Game session:", session);
+      // setGameSession({
+      //   ...session,
+      //   quiz: session.quizzes[0], 
+      // } as GameSession);
       setGameSession(session as unknown as GameSession);
+
 
       const userIsHost = user ? session.host_id === user.id : false;
       setIsHost(userIsHost);
@@ -166,18 +200,7 @@ export default function ResultsPage({
       const { data: participantsData, error: participantsError } =
         await supabase
           .from("game_participants")
-          .select(
-            `
-            id,
-            nickname,
-            score,
-            joined_at,
-            user_id,
-            profiles (
-              avatar_url
-            )
-          `
-          )
+          .select("*")
           .eq("session_id", resolvedParams.id)
           .order("score", { ascending: false });
 
@@ -342,7 +365,7 @@ export default function ResultsPage({
       const questionDetails = [];
       for (const response of responses) {
         const questionId = response.question_id;
-
+        
         // Get correct answer with image
         const { data: correctAnswerData, error: answerError } = await supabase
           .from("answers")
@@ -350,7 +373,7 @@ export default function ResultsPage({
           .eq("question_id", questionId)
           .eq("is_correct", true)
           .single();
-
+        
         if (!answerError && correctAnswerData) {
           questionDetails.push({
             question_id: questionId,
@@ -452,12 +475,7 @@ export default function ResultsPage({
               Terjadi Kesalahan
             </h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button
-              onClick={() => router.push("/join")}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              Kembali
-            </Button>
+            <Button onClick={() => router.push("/join")} className="bg-purple-600 hover:bg-purple-700">Kembali</Button>
           </CardContent>
         </Card>
       </div>
@@ -475,12 +493,7 @@ export default function ResultsPage({
             <p className="text-gray-600 mb-4">
               Sesi game tidak valid atau sudah berakhir.
             </p>
-            <Button
-              onClick={() => router.push("/join")}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              Kembali
-            </Button>
+            <Button onClick={() => router.push("/join")} className="bg-purple-600 hover:bg-purple-700">Kembali</Button>
           </CardContent>
         </Card>
       </div>
@@ -513,9 +526,7 @@ export default function ResultsPage({
           <Trophy className="h-6 w-6 text-purple-600 animate-bounce" />
           <div className="flex flex-col">
             <span className="font-bold text-lg">Hasil Game</span>
-            <span className="text-sm text-gray-500">
-              {gameSession.quiz.title}
-            </span>
+            <span className="text-sm text-gray-500">{gameSession.quiz.title}</span>
           </div>
         </div>
         <nav className="flex items-center gap-4">
@@ -564,218 +575,18 @@ export default function ResultsPage({
       </header>
 
       <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16 space-y-8">
-        {personalStats && !isHost && (
-          <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl hover:-translate-y-1">
-            <CardHeader className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <Trophy className="w-10 h-10 text-white animate-bounce" />
-              </div>
-              <CardTitle className="text-3xl animate-fade-in">
-                Hasil Anda
-              </CardTitle>
-              <p className="text-gray-600">Selamat telah menyelesaikan game!</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-purple-50 rounded-lg transform transition-all hover:scale-105 hover:bg-purple-100">
-                  <div className="text-3xl font-bold text-purple-600 animate-number-pop">
-                    #{personalStats.rank}
-                  </div>
-                  <div className="text-sm text-gray-600">Peringkat</div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg transform transition-all hover:scale-105 hover:bg-green-100">
-                  <div className="text-3xl font-bold text-green-600 animate-number-pop">
-                    {personalStats.total_points.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-gray-600">Total Poin</div>
-                </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg transform transition-all hover:scale-105 hover:bg-blue-100">
-                  <div className="text-3xl font-bold text-blue-600 animate-number-pop">
-                    {personalStats.correct_answers}/
-                    {personalStats.total_questions}
-                  </div>
-                  <div className="text-sm text-gray-600">Benar</div>
-                </div>
-              </div>
-
-              {personalStats.question_details &&
-                personalStats.question_details.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <HelpCircle className="w-5 h-5 mr-2 text-purple-600" />
-                      Detail Jawaban Anda
-                    </h3>
-                    <div className="space-y-4">
-                      {personalStats.question_details.map((question, index) => (
-                        <div
-                          key={question.question_id}
-                          className={`border rounded-lg p-4 hover:shadow-md transition-all ${
-                            question.is_correct
-                              ? "border-green-100 hover:border-green-200"
-                              : "border-red-100 hover:border-red-200"
-                          }`}
-                        >
-                          <div className="flex justify-between items-center mb-2">
-                            <h4 className="font-medium flex items-center flex-wrap">
-                              <span
-                                className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs flex-shrink-0 ${
-                                  question.is_correct
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {index + 1}
-                              </span>
-                              <span className="break-words">
-                                {question.question_text}
-                              </span>
-                              {question.image_url && (
-                                <span className="ml-2 text-blue-500 flex-shrink-0">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <rect
-                                      x="3"
-                                      y="3"
-                                      width="18"
-                                      height="18"
-                                      rx="2"
-                                      ry="2"
-                                    ></rect>
-                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                    <polyline points="21 15 16 10 5 21"></polyline>
-                                  </svg>
-                                </span>
-                              )}
-                              {question.answer_image_url && (
-                                <span className="ml-1 text-green-500 flex-shrink-0">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M5 12h14"></path>
-                                    <path d="M12 5v14"></path>
-                                  </svg>
-                                </span>
-                              )}
-                            </h4>
-                            {question.is_correct ? (
-                              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                            )}
-                          </div>
-
-                          {question.image_url && (
-                            <div className="flex justify-center items-center my-3">
-                              <div
-                                className="relative w-full max-w-[200px] h-32 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() =>
-                                  setPreviewImage(question.image_url)
-                                }
-                              >
-                                <Image
-                                  src={question.image_url}
-                                  alt="Question image"
-                                  className="object-contain"
-                                  fill
-                                  sizes="(max-width: 768px) 100vw, 200px"
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Always display the correct answer */}
-                          <div
-                            className={`mt-3 p-3 rounded-lg border ${
-                              question.is_correct
-                                ? "bg-green-50 border-green-100"
-                                : "bg-red-50 border-red-100"
-                            }`}
-                          >
-                            <p className="text-xs text-gray-600 mb-1 flex items-center">
-                              {question.is_correct ? (
-                                <>
-                                  <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
-                                  Jawaban Benar:
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-3 h-3 mr-1 text-red-600" />
-                                  Jawaban yang Benar:
-                                </>
-                              )}
-                            </p>
-
-                            {question.answer_image_url && (
-                              <div className="mb-2 flex justify-center">
-                                <div
-                                  className="relative w-full max-w-[200px] h-28 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() =>
-                                    setPreviewImage(question.answer_image_url)
-                                  }
-                                >
-                                  <Image
-                                    src={question.answer_image_url}
-                                    alt="Answer image"
-                                    className="object-contain"
-                                    fill
-                                    sizes="(max-width: 768px) 100vw, 200px"
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            {question.correct_answer && (
-                              <p
-                                className={`text-sm font-medium ${
-                                  question.is_correct
-                                    ? "text-green-800"
-                                    : "text-red-800"
-                                }`}
-                              >
-                                {question.correct_answer}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-            </CardContent>
-          </Card>
-        )}
-
         {topThree.length > 0 && (
           <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
             <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center justify-center gap-2">
               <Award className="w-6 h-6 text-yellow-500 animate-pulse" />
-              <CardTitle className="text-xl font-semibold">
-                Podium Pemenang
-              </CardTitle>
+              <CardTitle className="text-xl font-semibold">Podium Pemenang</CardTitle>
             </CardHeader>
             <CardContent className="px-0 pb-0 space-y-4">
               <div className="flex items-end justify-center space-x-4">
                 {topThree[1] && (
                   <div className="flex flex-col items-center text-center transform transition-all hover:scale-105">
                     <div className="w-16 h-16 bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center mb-2 animate-bounce-slow">
-                      <span className="text-4xl">🥈</span>
+                    <span className="text-4xl">🥈</span>
                     </div>
                     <div className="bg-gray-100 rounded-lg p-4 h-24 flex flex-col justify-center shadow-md hover:shadow-lg transition-shadow">
                       <div className="font-bold text-gray-800">
@@ -794,7 +605,7 @@ export default function ResultsPage({
                 {topThree[0] && (
                   <div className="flex flex-col items-center text-center transform transition-all hover:scale-105 z-10">
                     <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mb-2 animate-bounce">
-                      <Trophy className="w-10 h-10 text-white" />
+                      <Crown className="w-10 h-10 text-white" />
                     </div>
                     <div className="bg-yellow-50 rounded-lg p-4 h-32 flex flex-col justify-center border-2 border-yellow-300 shadow-lg hover:shadow-xl transition-shadow">
                       <div className="font-bold text-yellow-800">
@@ -813,7 +624,7 @@ export default function ResultsPage({
                 {topThree[2] && (
                   <div className="flex flex-col items-center text-center transform transition-all hover:scale-105">
                     <div className="w-16 h-16 bg-gradient-to-br from-amber-600 to-amber-800 rounded-full flex items-center justify-center mb-2 animate-bounce-slow">
-                      <span className="text-4xl">🥉</span>
+                    <span className="text-4xl">🥉</span>
                     </div>
                     <div className="bg-amber-50 rounded-lg p-4 h-24 flex flex-col justify-center shadow-md hover:shadow-lg transition-shadow">
                       <div className="font-bold text-amber-800">
@@ -843,13 +654,7 @@ export default function ResultsPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="px-0 pb-0">
-              <div
-                className={`space-y-3 ${
-                  participants.length > 5
-                    ? "max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
-                    : ""
-                }`}
-              >
+              <div className={`space-y-3 ${participants.length > 5 ? 'max-h-[500px] overflow-y-auto pr-2 custom-scrollbar' : ''}`}>
                 {participants.map((participant, index) => (
                   <div
                     key={participant.id}
@@ -858,65 +663,34 @@ export default function ResultsPage({
                         ? "bg-yellow-50 hover:bg-yellow-100"
                         : "bg-gray-50 hover:bg-gray-100"
                     } transform hover:scale-[1.01] hover:shadow-md ${
-                      participant.id === participantId
-                        ? "ring-2 ring-purple-400"
-                        : ""
+                      participant.id === participantId ? "ring-2 ring-purple-400" : ""
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span
-                        className={`font-bold text-lg ${
-                          index === 0
-                            ? "text-yellow-800"
-                            : index === 1
-                            ? "text-gray-600"
-                            : index === 2
-                            ? "text-amber-800"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        {index + 1}
-                      </span>
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          index === 0
-                            ? "bg-yellow-400 text-white"
-                            : index === 1
-                            ? "bg-gray-300 text-white"
-                            : index === 2
-                            ? "bg-amber-500 text-white"
-                            : "bg-gray-200 text-gray-700"
-                        }`}
-                      >
-                        <Avatar className="w-10 h-10 border-2 border-white shadow">
-                          <AvatarImage
-                            src={
-                              participant.profiles?.avatar_url ||
-                              `https://robohash.org/${encodeURIComponent(
-                                participant.nickname
-                              )}.png`
-                            }
-                            alt={participant.nickname}
-                          />
-                          <AvatarFallback className="bg-gray-300 text-white text-sm font-semibold">
-                            {participant.nickname.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                      <span className={`font-bold text-lg ${
+                        index === 0 ? "text-yellow-800" : 
+                        index === 1 ? "text-gray-600" : 
+                        index === 2 ? "text-amber-800" : "text-gray-600"
+                      }`}>{index + 1}</span>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        index === 0 ? "bg-yellow-400 text-white" : 
+                        index === 1 ? "bg-gray-300 text-white" : 
+                        index === 2 ? "bg-amber-500 text-white" : "bg-gray-200 text-gray-700"
+                      }`}>
+                        {participant.nickname.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-medium text-gray-800">
                           {participant.nickname}
                         </span>
                         <span className="text-xs text-gray-500">
-                          Bergabung:{" "}
-                          {new Date(participant.joined_at).toLocaleTimeString(
-                            "id-ID"
-                          )}
+                          Bergabung: {new Date(participant.joined_at).toLocaleTimeString("id-ID")}
                         </span>
                       </div>
                     </div>
                     <span className="font-bold text-lg text-gray-800 animate-number-pop">
                       {participant.score.toLocaleString()} poin
+                      
                     </span>
                   </div>
                 ))}
@@ -927,9 +701,7 @@ export default function ResultsPage({
           <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
             <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
               <LayoutDashboard className="w-5 h-5 text-gray-600" />
-              <CardTitle className="text-xl font-semibold">
-                Ringkasan Game
-              </CardTitle>
+              <CardTitle className="text-xl font-semibold">Ringkasan Game</CardTitle>
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className="grid grid-cols-2 gap-4 text-center">
@@ -944,9 +716,7 @@ export default function ResultsPage({
                 <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:from-green-100 hover:to-green-200 shadow-sm">
                   <HelpCircle className="w-8 h-8 text-green-600 mb-2" />
                   <div className="text-2xl font-bold text-green-600 animate-number-pop">
-                    {isHost
-                      ? questionStats.length
-                      : personalStats?.total_questions ?? 0}
+                    {isHost ? questionStats.length : personalStats?.total_questions ?? 0}
                   </div>
                   <div className="text-sm text-gray-600">Total Pertanyaan</div>
                 </div>
@@ -995,9 +765,8 @@ export default function ResultsPage({
                   <div
                     key={stat.question_id}
                     className={`border rounded-lg p-4 hover:shadow-md transition-all hover:border-purple-200 transform hover:scale-[1.01] ${
-                      questionStats.length % 2 !== 0 &&
-                      index === questionStats.length - 1
-                        ? "md:col-span-2 max-w-xl mx-auto w-full"
+                      questionStats.length % 2 !== 0 && index === questionStats.length - 1 
+                        ? "md:col-span-2 max-w-xl mx-auto w-full" 
                         : ""
                     }`}
                   >
@@ -1006,30 +775,11 @@ export default function ResultsPage({
                         <span className="bg-purple-100 text-purple-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs flex-shrink-0">
                           {index + 1}
                         </span>
-                        <span className="break-words">
-                          {stat.question_text}
-                        </span>
+                        <span className="break-words">{stat.question_text}</span>
                         {stat.image_url && (
                           <span className="ml-2 text-blue-500 flex-shrink-0">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <rect
-                                x="3"
-                                y="3"
-                                width="18"
-                                height="18"
-                                rx="2"
-                                ry="2"
-                              ></rect>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                               <circle cx="8.5" cy="8.5" r="1.5"></circle>
                               <polyline points="21 15 16 10 5 21"></polyline>
                             </svg>
@@ -1037,17 +787,7 @@ export default function ResultsPage({
                         )}
                         {stat.answer_image_url && (
                           <span className="ml-1 text-green-500 flex-shrink-0">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M5 12h14"></path>
                               <path d="M12 5v14"></path>
                             </svg>
@@ -1068,35 +808,34 @@ export default function ResultsPage({
                         </Badge>
                       </div>
                     </div>
-
+                    
                     <div className="flex flex-col">
+                      
                       {stat.image_url && (
                         <div className="flex justify-center items-center my-3 w-full">
-                          <QuestionImageTooltip
+                          <QuestionImageTooltip 
                             imageUrl={stat.image_url}
                             correctAnswer={stat.correct_answer}
                             onClick={() => setPreviewImage(stat.image_url)}
                           />
                         </div>
                       )}
-
+                      
                       {/* Always display the correct answer */}
                       <div className="mt-3 bg-green-50 p-3 rounded-lg border border-green-100">
                         <p className="text-xs text-gray-600 mb-1 flex items-center">
                           <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
                           Jawaban Benar:
                         </p>
-
+                        
                         {stat.answer_image_url && (
                           <div className="mb-2 flex justify-center">
-                            <div
+                            <div 
                               className="relative w-full max-w-[200px] h-28 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() =>
-                                setPreviewImage(stat.answer_image_url)
-                              }
+                              onClick={() => setPreviewImage(stat.answer_image_url)}
                             >
-                              <Image
-                                src={stat.answer_image_url}
+                              <Image 
+                                src={stat.answer_image_url} 
                                 alt="Answer image"
                                 className="object-contain"
                                 fill
@@ -1105,38 +844,25 @@ export default function ResultsPage({
                             </div>
                           </div>
                         )}
-
+                        
                         {stat.correct_answer && (
-                          <p className="text-sm text-green-800 font-medium">
-                            {stat.correct_answer}
-                          </p>
+                          <p className="text-sm text-green-800 font-medium">{stat.correct_answer}</p>
                         )}
                       </div>
-
+                      
                       {stat.total_responses > 0 && (
                         <div className="mt-3">
                           <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-gray-600 font-medium">
-                              Tingkat Kebenaran
-                            </span>
+                            <span className="text-gray-600 font-medium">Tingkat Kebenaran</span>
                             <span className="font-medium text-gray-700">
-                              {Math.round(
-                                (stat.correct_responses /
-                                  stat.total_responses) *
-                                  100
-                              )}
-                              %
+                              {Math.round((stat.correct_responses / stat.total_responses) * 100)}%
                             </span>
                           </div>
                           <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-green-500 to-green-400 animate-progress-bar"
-                              style={{
-                                width: `${Math.round(
-                                  (stat.correct_responses /
-                                    stat.total_responses) *
-                                    100
-                                )}%`,
+                            <div 
+                              className="h-full bg-gradient-to-r from-green-500 to-green-400 animate-progress-bar" 
+                              style={{ 
+                                width: `${Math.round((stat.correct_responses / stat.total_responses) * 100)}%` 
                               }}
                             ></div>
                           </div>
@@ -1150,11 +876,158 @@ export default function ResultsPage({
           </Card>
         )}
 
+        {personalStats && !isHost && (
+          <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl hover:-translate-y-1">
+            <CardHeader className="text-center">
+              {/* <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <Trophy className="w-10 h-10 text-white animate-bounce" />
+              </div> */}
+              <CardTitle className="text-3xl animate-fade-in">Hasil Anda</CardTitle>
+              <p className="text-gray-600">
+                Selamat telah menyelesaikan game!
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-purple-50 rounded-lg transform transition-all hover:scale-105 hover:bg-purple-100">
+                  <div className="text-3xl font-bold text-purple-600 animate-number-pop">
+                    #{personalStats.rank}
+                  </div>
+                  <div className="text-sm text-gray-600">Peringkat</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg transform transition-all hover:scale-105 hover:bg-green-100">
+                  <div className="text-3xl font-bold text-green-600 animate-number-pop">
+                    {personalStats.total_points.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-gray-600">Total Poin</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg transform transition-all hover:scale-105 hover:bg-blue-100">
+                  <div className="text-3xl font-bold text-blue-600 animate-number-pop">
+                    {personalStats.correct_answers}/
+                    {personalStats.total_questions}
+                  </div>
+                  <div className="text-sm text-gray-600">Benar</div>
+                </div>
+              </div>
+
+              {personalStats.question_details && personalStats.question_details.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <HelpCircle className="w-5 h-5 mr-2 text-purple-600" />
+                    Detail Jawaban Anda
+                  </h3>
+                  <div className="space-y-4">
+                    {personalStats.question_details.map((question, index) => (
+                      <div 
+                        key={question.question_id}
+                        className={`border rounded-lg p-4 hover:shadow-md transition-all ${
+                          question.is_correct 
+                            ? "border-green-100 hover:border-green-200" 
+                            : "border-red-100 hover:border-red-200"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium flex items-center flex-wrap">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs flex-shrink-0 ${
+                              question.is_correct 
+                                ? "bg-green-100 text-green-800" 
+                                : "bg-red-100 text-red-800"
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <span className="break-words">{question.question_text}</span>
+                            {question.image_url && (
+                              <span className="ml-2 text-blue-500 flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                  <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                              </span>
+                            )}
+                            {question.answer_image_url && (
+                              <span className="ml-1 text-green-500 flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M5 12h14"></path>
+                                  <path d="M12 5v14"></path>
+                                </svg>
+                              </span>
+                            )}
+                          </h4>
+                          {question.is_correct ? (
+                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                          )}
+                        </div>
+                        
+                        {question.image_url && (
+                          <div className="flex justify-center items-center my-3">
+                            <div 
+                              className="relative w-full max-w-[200px] h-32 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setPreviewImage(question.image_url)}
+                            >
+                              <Image 
+                                src={question.image_url} 
+                                alt="Question image"
+                                className="object-contain"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 200px"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Always display the correct answer */}
+                        <div className={`mt-3 p-3 rounded-lg border ${question.is_correct ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                          <p className="text-xs text-gray-600 mb-1 flex items-center">
+                            {question.is_correct ? (
+                              <>
+                                <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
+                                Jawaban Benar:
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 mr-1 text-red-600" />
+                                Jawaban yang Benar:
+                              </>
+                            )}
+                          </p>
+                          
+                          {question.answer_image_url && (
+                            <div className="mb-2 flex justify-center">
+                              <div 
+                                className="relative w-full max-w-[200px] h-28 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setPreviewImage(question.answer_image_url)}
+                              >
+                                <Image 
+                                  src={question.answer_image_url} 
+                                  alt="Answer image"
+                                  className="object-contain"
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, 200px"
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {question.correct_answer && (
+                            <p className={`text-sm font-medium ${question.is_correct ? 'text-green-800' : 'text-red-800'}`}>
+                              {question.correct_answer}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Image Preview Modal */}
-        <Dialog
-          open={!!previewImage}
-          onOpenChange={() => setPreviewImage(null)}
-        >
+        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
           <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-transparent border-0 animate-fade-in">
             <div className="relative w-full h-[80vh] bg-black bg-opacity-80">
               {previewImage && (
@@ -1167,8 +1040,8 @@ export default function ResultsPage({
                   priority
                 />
               )}
-              <Button
-                className="absolute top-2 right-2 bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-800 rounded-full w-8 h-8 p-0 animate-fade-in"
+              <Button 
+                className="absolute top-2 right-2 bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-800 rounded-full w-8 h-8 p-0 animate-fade-in" 
                 onClick={() => setPreviewImage(null)}
               >
                 ✕
