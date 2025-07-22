@@ -43,6 +43,7 @@ interface Quiz {
   }>;
   profiles: {
     username: string;
+    avatar_url: string | null;
   };
 }
 
@@ -289,7 +290,8 @@ export default function HostGamePage({
             points
           ),
           profiles!quizzes_creator_id_fkey (
-            username
+            username,
+            avatar_url
           )
         `
         )
@@ -834,7 +836,7 @@ export default function HostGamePage({
                   <Avatar className="h-8 w-8 bg-white border-2 border-white">
                     <AvatarImage
                       src={
-                        userProfile?.avatar_url ||
+                        quiz.profiles.avatar_url ||
                         (user?.email
                           ? `https://robohash.org/${encodeURIComponent(
                               user.email
