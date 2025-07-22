@@ -103,6 +103,7 @@ interface GameHistoryEntry {
   game_sessions: {
     id: string;
     quiz_id: string;
+    started_at: string | null;
     ended_at: string | null;
     status: string;
     quizzes: {
@@ -397,24 +398,26 @@ export default function Dashboard() {
         .from("game_participants")
         .select(
           `
-    id,
-    session_id,
-    score,
-    joined_at,
-    game_sessions:game_sessions!game_participants_session_id_fkey (
-      id,
-      quiz_id,
-      ended_at,
-      status,
-      quizzes:quizzes!game_sessions_quiz_id_fkey (
-        id,
-        title
-      )
-    )
-  `
+            id,
+            session_id,
+            score,
+            joined_at,
+            game_sessions:game_sessions!game_participants_session_id_fkey (
+              id,
+              quiz_id,
+              started_at,
+              ended_at,
+              status,
+              quizzes:quizzes!game_sessions_quiz_id_fkey (
+                id,
+                title
+              )
+            )
+          `
         )
         .eq("user_id", user.id)
-        .eq("game_sessions.status", "finished")
+        .not("game_sessions.started_at", "is", null)
+        .not("game_sessions.ended_at", "is", null)
         .order("joined_at", { ascending: false })
         .limit(5); // Fetch one extra to determine if we need "See More"
 
@@ -429,6 +432,7 @@ export default function Dashboard() {
         game_sessions: {
           id: entry.game_sessions.id,
           quiz_id: entry.game_sessions.quiz_id,
+          started_at: entry.game_sessions.started_at,
           ended_at: entry.game_sessions.ended_at,
           status: entry.game_sessions.status,
           quizzes: {
@@ -1260,7 +1264,9 @@ export default function Dashboard() {
                                 <div className="flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
                                   <span>
-                                    {new Date(entry.joined_at).toLocaleDateString("id-ID", {
+                                    {new Date(
+                                      entry.joined_at
+                                    ).toLocaleDateString("id-ID", {
                                       day: "numeric",
                                       month: "long",
                                       year: "numeric",
@@ -1275,7 +1281,9 @@ export default function Dashboard() {
                           <div className="flex items-center gap-4">
                             {/* Score */}
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">{entry.score}</div>
+                              <div className="text-2xl font-bold text-blue-600">
+                                {entry.score}
+                              </div>
                               <div className="text-xs text-gray-500">Skor</div>
                             </div>
 
@@ -1301,7 +1309,7 @@ export default function Dashboard() {
                       </CardContent>
                     </Card>
                   ))}
-                  
+
                   {gameHistory.length > 4 && (
                     <div className="flex justify-center mt-4">
                       <Button
