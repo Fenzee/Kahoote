@@ -60,7 +60,6 @@ interface GameSession {
       avatar_url: string | null;
     };
   }>;
-
 }
 
 interface SupabaseQuizResponse {
@@ -843,6 +842,7 @@ export default function HostGamePage({
                           : "/default-avatar.png") // fallback lokal
                       }
                       alt={user?.email || ""}
+                      className="object-cover w-full h-full"
                     />
                     <AvatarFallback className="bg-white text-purple-600">
                       {displayName?.charAt(0).toUpperCase() || "U"}
@@ -1020,16 +1020,18 @@ export default function HostGamePage({
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          <img
-        src={
-          participant.profiles?.avatar_url ||
-          `https://robohash.org/${encodeURIComponent(participant.nickname)}.png`
-        }
-        alt={participant.nickname}
-        className="w-8 h-8 rounded-full border border-gray-300 object-cover"
-      />
-                        </div>
+                        <Avatar className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          <AvatarImage
+                            src={
+                              participant.profiles?.avatar_url ||
+                              `https://robohash.org/${encodeURIComponent(
+                                participant.nickname
+                              )}.png`
+                            }
+                            alt={participant.nickname}
+                            className="object-cover w-full h-full"
+                          />
+                        </Avatar>
                         <span className="font-medium">
                           {participant.nickname}
                         </span>

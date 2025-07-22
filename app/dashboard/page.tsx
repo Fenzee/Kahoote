@@ -726,6 +726,7 @@ export default function Dashboard() {
                     )}.png`
                   }
                   alt={user.email || ""}
+                  className="object-cover w-full h-full"
                 />
                 <AvatarFallback className="bg-white text-purple-600">
                   {displayName.charAt(0).toUpperCase()}
