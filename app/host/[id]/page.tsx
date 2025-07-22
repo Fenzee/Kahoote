@@ -1074,6 +1074,7 @@ export default function HostGamePage({
           nickname={displayName}
           avatarUrl={userProfile?.avatar_url}
           position="right"
+          isHost={true}
         />
       )}
     </div>

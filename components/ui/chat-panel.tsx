@@ -8,10 +8,40 @@ import {
   MessageCircle, 
   X, 
   Send,
-  ChevronDown
+  ChevronDown,
+  Star,
+  Bell,
+  BellOff,
+  AlertCircle,
+  CheckCheck,
+  MessageSquarePlus,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+
+interface ReadReceipt {
+  user_id: string;
+  nickname: string;
+  avatar_url?: string | null;
+  read_at: string;
+}
 
 interface ChatMessage {
   id: string;
@@ -21,6 +51,8 @@ interface ChatMessage {
   message: string;
   created_at: string;
   avatar_url?: string | null;
+  is_important?: boolean;
+  read_by?: ReadReceipt[];
 }
 
 interface ChatPanelProps {
@@ -29,7 +61,57 @@ interface ChatPanelProps {
   nickname: string;
   avatarUrl?: string | null;
   position?: 'right' | 'bottom';
+  isHost?: boolean;
 }
+
+// Template messages for quick responses
+const chatTemplates = [
+  {
+    category: "Game Start",
+    templates: [
+      "Game akan dimulai dalam 1 menit. Bersiaplah!",
+      "Selamat datang di quiz! Aturan: jawab dengan cepat untuk poin lebih tinggi.",
+      "Pastikan koneksi internet stabil sebelum kita mulai."
+    ]
+  },
+  {
+    category: "Game Info",
+    templates: [
+      "Ada total 10 pertanyaan dalam quiz ini.",
+      "Perhatikan pertanyaan berikutnya, agak sulit!",
+      "Quiz akan berakhir dalam 5 menit."
+    ]
+  },
+  {
+    category: "Support",
+    templates: [
+      "Jika mengalami masalah teknis, refresh halaman.",
+      "Klik tombol next jika tidak melihat pertanyaan berikutnya.",
+      "Hubungi host jika ada pertanyaan."
+    ]
+  }
+];
+
+// Available notification sounds
+const notificationSounds = [
+  { id: 'default', name: 'Chime', path: '/sounds/notification.mp3' },
+  { id: 'chime', name: 'Chinese', path: '/sounds/chinese.mp3' },
+  { id: 'ding', name: 'Ding', path: '/sounds/Vine.mp3' },
+  { id: 'bell', name: 'Discord', path: '/sounds/Discord.mp3' },
+  { id: 'none', name: 'Tidak Ada', path: '' }
+];
+
+// Fungsi untuk mengecek apakah file ada
+const checkFileExists = async (url: string): Promise<boolean> => {
+  if (!url) return false;
+  
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch (e) {
+    return false;
+  }
+};
 
 function getInitials(name: string) {
   return name
@@ -45,14 +127,54 @@ export function ChatPanel({
   userId, 
   nickname,
   avatarUrl,
-  position = 'right' 
+  position = 'right',
+  isHost = false
 }: ChatPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isImportant, setIsImportant] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showSoundSettings, setShowSoundSettings] = useState(false);
+  const [selectedSound, setSelectedSound] = useState('default');
+  const [soundError, setSoundError] = useState<string | null>(null);
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize notification sound
+  useEffect(() => {
+    if (typeof Audio !== "undefined") {
+      try {
+        setSoundError(null);
+        const soundToUse = notificationSounds.find(sound => sound.id === selectedSound);
+        if (soundToUse && soundToUse.path) {
+          const audio = new Audio(soundToUse.path);
+          
+          // Handle error jika file tidak ada
+          audio.addEventListener('error', () => {
+            console.warn(`Notification sound error: ${soundToUse.path} not found or not supported`);
+            notificationSoundRef.current = null;
+            setSoundError(`File suara '${soundToUse.name}' tidak ditemukan`);
+          });
+          
+          // Mulai proses loading
+          audio.load();
+          notificationSoundRef.current = audio;
+        } else {
+          notificationSoundRef.current = null;
+        }
+      } catch (err) {
+        console.error("Error initializing audio:", err);
+        notificationSoundRef.current = null;
+        setSoundError("Terjadi kesalahan saat memuat file suara");
+      }
+    }
+  }, [selectedSound]);
   
   // Load initial messages and set up real-time listener
   useEffect(() => {
@@ -67,6 +189,12 @@ export function ChatPanel({
         
         if (error) throw error;
         setMessages(data || []);
+        
+        // Mark all messages as read
+        if (userId && data && data.length > 0) {
+          const messageIds = data.map(msg => msg.id);
+          await markMessagesAsRead(messageIds);
+        }
       } catch (error) {
         console.error("Error loading chat messages:", error);
       } finally {
@@ -76,10 +204,11 @@ export function ChatPanel({
 
     if (isOpen) {
       loadMessages();
+      setUnreadCount(0);
       
-      // Set up realtime subscription
-      const channel = supabase
-        .channel(`chat_${sessionId}`)
+      // Set up realtime subscription for messages
+      const messageChannel = supabase
+        .channel(`chat_messages_${sessionId}`)
         .on(
           "postgres_changes",
           {
@@ -91,6 +220,76 @@ export function ChatPanel({
           (payload) => {
             const newMessage = payload.new as ChatMessage;
             setMessages((prev) => [...prev, newMessage]);
+            
+            // Mark message as read if panel is open
+            if (userId) {
+              markMessagesAsRead([newMessage.id]);
+            }
+          }
+        )
+        .subscribe();
+        
+      // Set up realtime subscription for read receipts
+      const readReceiptChannel = supabase
+        .channel(`chat_read_receipts_${sessionId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "game_chat_read_receipts",
+            filter: `session_id=eq.${sessionId}`,
+          },
+          async () => {
+            // Refresh messages to get updated read_by arrays
+            const { data } = await supabase
+              .from("game_chat_messages")
+              .select("*")
+              .eq("session_id", sessionId)
+              .order("created_at", { ascending: true });
+              
+            if (data) setMessages(data);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(messageChannel);
+        supabase.removeChannel(readReceiptChannel);
+      };
+    } else {
+      // When panel is closed, subscribe just to count new messages
+      const channel = supabase
+        .channel(`chat_count_${sessionId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "game_chat_messages",
+            filter: `session_id=eq.${sessionId}`,
+          },
+          (payload) => {
+            const newMessage = payload.new as ChatMessage;
+            
+            // Only notify if the message is from someone else
+            if (newMessage.user_id !== userId) {
+              setUnreadCount(prev => prev + 1);
+              
+              // Play notification sound if enabled
+              if (notificationsEnabled && notificationSoundRef.current && selectedSound !== 'none') {
+                try {
+                  // Clone audio untuk memastikan bisa diputar lagi meskipun belum selesai dari pemutaran sebelumnya
+                  const soundClone = notificationSoundRef.current.cloneNode() as HTMLAudioElement;
+                  soundClone.volume = 0.5; // Set volume 50%
+                  soundClone.play().catch(err => {
+                    console.error("Error playing notification:", err);
+                  });
+                } catch (err) {
+                  console.error("Error cloning audio:", err);
+                }
+              }
+            }
           }
         )
         .subscribe();
@@ -99,7 +298,7 @@ export function ChatPanel({
         supabase.removeChannel(channel);
       };
     }
-  }, [sessionId, isOpen]);
+  }, [sessionId, isOpen, userId, notificationsEnabled, selectedSound]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -114,6 +313,26 @@ export function ChatPanel({
       inputRef.current.focus();
     }
   }, [isOpen]);
+  
+  const markMessagesAsRead = async (messageIds: string[]) => {
+    if (!userId || !messageIds.length) return;
+    
+    try {
+      // Create one read receipt for each message
+      const receipts = messageIds.map(messageId => ({
+        message_id: messageId,
+        session_id: sessionId,
+        user_id: userId,
+        nickname: nickname,
+        avatar_url: avatarUrl,
+        read_at: new Date().toISOString()
+      }));
+      
+      await supabase.from("game_chat_read_receipts").upsert(receipts);
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,14 +345,68 @@ export function ChatPanel({
         user_id: userId,
         nickname: nickname,
         message: newMessage.trim(),
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        is_important: isImportant
       });
       
       if (error) throw error;
       
       setNewMessage("");
+      setIsImportant(false);
     } catch (error) {
       console.error("Error sending message:", error);
+    }
+  };
+  
+  const toggleImportant = () => {
+    setIsImportant(!isImportant);
+  };
+  
+  const toggleNotifications = () => {
+    setNotificationsEnabled(!notificationsEnabled);
+  };
+  
+  const toggleSoundSettings = () => {
+    setShowSoundSettings(!showSoundSettings);
+  };
+  
+  const selectTemplate = (template: string) => {
+    setNewMessage(template);
+    setShowTemplates(false);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+  
+  const handleSoundChange = (value: string) => {
+    setSelectedSound(value);
+    setSoundError(null);
+    
+    // Test the sound
+    if (value !== 'none') {
+      try {
+        const sound = notificationSounds.find(s => s.id === value);
+        if (sound && sound.path) {
+          const testAudio = new Audio(sound.path);
+          
+          testAudio.addEventListener('error', () => {
+            console.warn(`Test sound error: ${sound.path} not found or not supported`);
+            setSoundError(`File suara '${sound.name}' tidak ditemukan`);
+          });
+          
+          testAudio.addEventListener('canplaythrough', () => {
+            testAudio.play().catch(err => {
+              console.error("Error playing test sound:", err);
+              setSoundError("Tidak dapat memutar suara notifikasi");
+            });
+          });
+          
+          testAudio.load();
+        }
+      } catch (err) {
+        console.error("Error testing sound:", err);
+        setSoundError("Terjadi kesalahan saat memuat file suara");
+      }
     }
   };
 
@@ -141,10 +414,48 @@ export function ChatPanel({
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+  
+  const renderReadReceipts = (msg: ChatMessage) => {
+    if (!msg.read_by || msg.read_by.length === 0) {
+      return <div className="text-xs text-gray-400">Belum dibaca</div>;
+    }
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger className="flex items-center">
+            <div className="flex items-center gap-0.5">
+              <CheckCheck className="h-3 w-3 text-green-500" />
+              <span className="text-xs text-gray-400">{msg.read_by.length}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="p-2 bg-white rounded-md shadow-md border">
+            <div className="text-xs font-semibold mb-1">Dibaca oleh:</div>
+            <div className="flex flex-wrap gap-1 max-w-48">
+              {msg.read_by.map((reader, i) => (
+                <div key={`${reader.user_id || reader.nickname}-${i}`} className="flex items-center gap-1 bg-gray-50 rounded p-1">
+                  <div className="h-4 w-4 rounded-full bg-purple-100 overflow-hidden">
+                    {reader.avatar_url ? (
+                      <img src={reader.avatar_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-[8px] text-purple-600">
+                        {getInitials(reader.nickname)}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10px] truncate max-w-28">{reader.nickname}</span>
+                </div>
+              ))}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   return (
     <>
-      {/* Chat Toggle Button */}
+      {/* Chat Toggle Button with Badge */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
         variant="outline"
@@ -156,7 +467,14 @@ export function ChatPanel({
         {isOpen ? (
           <X className="w-5 h-5" />
         ) : (
-          <MessageCircle className="w-5 h-5" />
+          <>
+            <MessageCircle className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </>
         )}
       </Button>
 
@@ -171,19 +489,89 @@ export function ChatPanel({
         } flex flex-col border-l`}
       >
         {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between bg-purple-50">
+        <div className="p-3 border-b flex items-center justify-between bg-purple-50">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-purple-600" />
             <h3 className="font-semibold">Game Chat</h3>
+            {isHost && (
+              <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200 text-xs">
+                Host
+              </Badge>
+            )}
           </div>
-          <Button
-            onClick={() => setIsOpen(false)}
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full hover:bg-purple-100"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          
+          <div className="flex items-center">
+            {/* Notification Toggle */}
+            <Button
+              onClick={toggleNotifications}
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full hover:bg-purple-100"
+              title={notificationsEnabled ? "Matikan notifikasi" : "Aktifkan notifikasi"}
+            >
+              {notificationsEnabled ? (
+                <Bell className="w-4 h-4 text-purple-600" />
+              ) : (
+                <BellOff className="w-4 h-4 text-gray-400" />
+              )}
+            </Button>
+            
+            {/* Sound Settings */}
+            <Popover open={showSoundSettings} onOpenChange={setShowSoundSettings}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full hover:bg-purple-100"
+                  title="Pengaturan suara"
+                >
+                  {selectedSound !== 'none' ? (
+                    <Volume2 className="w-4 h-4" />
+                  ) : (
+                    <VolumeX className="w-4 h-4 text-gray-400" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-4">
+                <div className="font-medium text-sm mb-3">Pilih Suara Notifikasi</div>
+                <RadioGroup 
+                  value={selectedSound} 
+                  onValueChange={handleSoundChange}
+                  className="space-y-2"
+                >
+                  {notificationSounds.map((sound) => (
+                    <div key={`sound-option-${sound.id}`} className="flex items-center space-x-2">
+                      <RadioGroupItem value={sound.id} id={`sound-${sound.id}`} />
+                      <Label htmlFor={`sound-${sound.id}`} className="cursor-pointer">
+                        {sound.name}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+                
+                {soundError && (
+                  <div className="mt-3 text-xs text-red-500 p-2 bg-red-50 rounded border border-red-100">
+                    <AlertCircle className="inline-block w-3 h-3 mr-1" />
+                    {soundError}
+                  </div>
+                )}
+                
+                <div className="mt-4 text-xs text-gray-500">
+                  Letakkan file suara notifikasi di direktori /public/sounds/
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            {/* Close Button */}
+            <Button
+              onClick={() => setIsOpen(false)}
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full hover:bg-purple-100"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -205,13 +593,13 @@ export function ChatPanel({
             <div className="space-y-4">
               {messages.map((msg) => (
                 <div
-                  key={msg.id}
+                  key={`msg-${msg.id}`}
                   className={`flex ${
                     msg.user_id === userId ? "justify-end" : "justify-start"
                   }`}
                 >
                   <div
-                    className={`flex max-w-[80%] ${
+                    className={`flex max-w-[90%] ${
                       msg.user_id === userId ? "flex-row-reverse" : "flex-row"
                     } gap-2 items-start`}
                   >
@@ -224,28 +612,40 @@ export function ChatPanel({
                         {getInitials(msg.nickname)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="space-y-1">
                       <div
                         className={`px-4 py-2 rounded-xl ${
-                          msg.user_id === userId
+                          msg.is_important
+                            ? "bg-amber-100 border border-amber-300 text-amber-800"
+                            : msg.user_id === userId
                             ? "bg-purple-600 text-white"
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        <p className={`text-xs font-semibold mb-1 ${
-                          msg.user_id === userId ? "text-purple-100" : "text-gray-600"
-                        }`}>
-                          {msg.nickname}
-                        </p>
-                        <p className="break-words">{msg.message}</p>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <p className={`text-xs font-semibold ${
+                            msg.is_important
+                              ? "text-amber-800"
+                              : msg.user_id === userId 
+                                ? "text-purple-100" 
+                                : "text-gray-600"
+                          }`}>
+                            {msg.nickname}
+                          </p>
+                          {msg.is_important && (
+                            <Star className="h-3 w-3 text-amber-600 fill-amber-600" />
+                          )}
+                        </div>
+                        <p className="break-words whitespace-pre-wrap">{msg.message}</p>
                       </div>
-                      <p
-                        className={`text-xs mt-1 ${
-                          msg.user_id === userId ? "text-right" : "text-left"
-                        } text-gray-500`}
-                      >
-                        {formatTime(msg.created_at)}
-                      </p>
+                      <div className={`flex items-center gap-2 ${
+                        msg.user_id === userId ? "justify-end" : "justify-start"
+                      }`}>
+                        <p className="text-xs text-gray-500">
+                          {formatTime(msg.created_at)}
+                        </p>
+                        {msg.user_id === userId && renderReadReceipts(msg)}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -254,27 +654,103 @@ export function ChatPanel({
           )}
         </ScrollArea>
 
+        {/* Template Messages */}
+        {showTemplates && (
+          <div className="max-h-60 overflow-y-auto border-t">
+            <Tabs defaultValue="Game Start">
+              <TabsList className="w-full justify-start p-2 bg-gray-50">
+                {chatTemplates.map((category) => (
+                  <TabsTrigger 
+                    key={`tab-${category.category}`} 
+                    value={category.category}
+                    className="text-xs"
+                  >
+                    {category.category}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              
+              {chatTemplates.map((category) => (
+                <TabsContent 
+                  key={`content-${category.category}`} 
+                  value={category.category}
+                  className="p-2 space-y-1"
+                >
+                  {category.templates.map((template, index) => (
+                    <Button
+                      key={`template-${category.category}-${index}`}
+                      variant="ghost"
+                      className="w-full justify-start text-left h-auto py-2 px-3 text-sm font-normal"
+                      onClick={() => selectTemplate(template)}
+                    >
+                      {template}
+                    </Button>
+                  ))}
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
+        )}
+
         {/* Input */}
         <form
-          className="p-3 border-t flex items-center gap-2"
+          className="p-3 border-t flex flex-col gap-2"
           onSubmit={handleSubmit}
         >
-          <Input
-            ref={inputRef}
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Ketik pesan..."
-            className="flex-1"
-            maxLength={500}
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!newMessage.trim()}
-            className="h-10 w-10 rounded-full bg-purple-600 text-white hover:bg-purple-700"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* Important Message Toggle */}
+            {isHost && (
+              <Button
+                type="button"
+                onClick={toggleImportant}
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 rounded-full ${isImportant ? 'bg-amber-100 text-amber-700' : ''}`}
+                title="Mark as important"
+              >
+                <Star className={`w-4 h-4 ${isImportant ? 'fill-amber-500 text-amber-500' : ''}`} />
+              </Button>
+            )}
+            
+            {/* Template Messages */}
+            {isHost && (
+              <Button
+                type="button"
+                onClick={() => setShowTemplates(!showTemplates)}
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 rounded-full ${showTemplates ? 'bg-blue-50' : ''}`}
+                title="Template messages"
+              >
+                <MessageSquarePlus className={`w-4 h-4 ${showTemplates ? 'text-blue-600' : ''}`} />
+              </Button>
+            )}
+            
+            <Input
+              ref={inputRef}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Ketik pesan..."
+              className="flex-1"
+              maxLength={500}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!newMessage.trim()}
+              className="h-9 w-9 rounded-full bg-purple-600 text-white hover:bg-purple-700"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Important message info */}
+          {isImportant && (
+            <div className="flex items-center gap-1 text-xs text-amber-600 px-1">
+              <AlertCircle className="w-3 h-3" />
+              <span>Pesan ini akan ditandai sebagai penting</span>
+            </div>
+          )}
         </form>
       </div>
     </>
