@@ -2,10 +2,14 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { QuestionImageTooltip } from "@/components/ui/question-image-tooltip";
+import { AnswerTooltip } from "@/components/ui/answer-tooltip";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import {
@@ -55,6 +59,8 @@ interface QuestionStats {
   correct_responses: number;
   average_time: number;
   points: number;
+  image_url: string | null;
+  correct_answer: string | null;
 }
 
 interface PersonalStats {
@@ -88,6 +94,7 @@ export default function ResultsPage({
   const [isHost, setIsHost] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
 // useEffect(() => {
 //   if (
@@ -218,7 +225,7 @@ export default function ResultsPage({
     try {
       const { data: questions, error: questionsError } = await supabase
         .from("questions")
-        .select("id, question_text, points")
+        .select("id, question_text, points, image_url")
         .eq("quiz_id", quizId)
         .order("order_index", { ascending: true });
 
@@ -242,6 +249,16 @@ export default function ResultsPage({
 
         if (responsesError) continue;
 
+        // Get correct answer
+        const { data: answers, error: answersError } = await supabase
+          .from("answers")
+          .select("answer_text")
+          .eq("question_id", question.id)
+          .eq("is_correct", true)
+          .single();
+
+        const correctAnswer = answersError ? null : answers?.answer_text;
+
         const totalResponses = responses.length;
         const correctResponses = responses.filter(
           (r) => r.answers?.is_correct
@@ -260,6 +277,8 @@ export default function ResultsPage({
           correct_responses: correctResponses,
           average_time: Math.round(averageTime),
           points: question.points,
+          image_url: question.image_url,
+          correct_answer: correctAnswer,
         });
       }
 
@@ -681,59 +700,107 @@ export default function ResultsPage({
                 Statistik Pertanyaan
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-0 pb-0 space-y-4">
-              {questionStats.map((stat, index) => (
-                <div
-                  key={stat.question_id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-lg font-semibold">Pertanyaan {index + 1}</h3>
-                    <Badge className="bg-gray-100 text-gray-700">
-                      {stat.points} poin
-                    </Badge>
-                  </div>
-                  <p className="text-gray-600 mb-4">{stat.question_text}</p>
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="p-3 bg-blue-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-blue-100">
-                      <Users className="w-6 h-6 text-blue-600 mb-1" />
-                      <div className="text-xl font-bold text-blue-600 animate-number-pop">
-                        {stat.total_responses}
-                      </div>
-                      <div className="text-sm text-gray-600">Total Jawaban</div>
-                    </div>
-                    <div className="p-3 bg-green-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-green-100">
-                      <CheckCircle className="w-6 h-6 text-green-600 mb-1" />
-                      <div className="text-xl font-bold text-green-600 animate-number-pop">
-                        {stat.correct_responses}
-                      </div>
-                      <div className="text-sm text-gray-600">Jawaban Benar</div>
-                    </div>
-                  </div>
-
-                  {stat.total_responses > 0 && (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <span>Tingkat Kebenaran</span>
-                        <span className="font-medium">
-                          {Math.round((stat.correct_responses / stat.total_responses) * 100)}%
+            <CardContent className="px-0 pb-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {questionStats.map((stat, index) => (
+                  <div
+                    key={stat.question_id}
+                    className={`border rounded-lg p-4 hover:shadow-md transition-all hover:border-purple-200 transform hover:scale-[1.01] ${
+                      questionStats.length % 2 !== 0 && index === questionStats.length - 1 
+                        ? "md:col-span-2 max-w-xl mx-auto w-full" 
+                        : ""
+                    }`}
+                  >
+                    <div className="flex flex-wrap justify-between items-center mb-3 gap-2 pb-2 border-b border-gray-100">
+                      <h3 className="text-base font-semibold flex items-center">
+                        <span className="bg-purple-100 text-purple-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs">
+                          {index + 1}
                         </span>
-                      </div>
-                      <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-green-500 to-green-400 animate-progress-bar" 
-                          style={{ 
-                            width: `${Math.round((stat.correct_responses / stat.total_responses) * 100)}%` 
-                          }}
-                        ></div>
+                        <span className="line-clamp-1">{stat.question_text}</span>
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                          <Users className="w-3 h-3 mr-1" />
+                          <span>{stat.total_responses}</span>
+                        </div>
+                        <div className="flex items-center text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          <span>{stat.correct_responses}</span>
+                        </div>
+                        <Badge className="bg-gray-100 text-gray-700">
+                          {stat.points} poin
+                        </Badge>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                    
+                    <div className="flex flex-col">
+                      {stat.question_text.length > 60 && (
+                        <p className="text-gray-600 text-sm mb-3">{stat.question_text}</p>
+                      )}
+                      
+                      {stat.image_url && (
+                        <div className="flex justify-center items-center my-3 w-full">
+                          <QuestionImageTooltip 
+                            imageUrl={stat.image_url}
+                            correctAnswer={stat.correct_answer}
+                            onClick={() => setPreviewImage(stat.image_url)}
+                          />
+                        </div>
+                      )}
+                      
+                      {!stat.image_url && stat.correct_answer && (
+                        <AnswerTooltip correctAnswer={stat.correct_answer} />
+                      )}
+                      
+                      {stat.total_responses > 0 && (
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-gray-600 font-medium">Tingkat Kebenaran</span>
+                            <span className="font-medium text-gray-700">
+                              {Math.round((stat.correct_responses / stat.total_responses) * 100)}%
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-green-500 to-green-400 animate-progress-bar" 
+                              style={{ 
+                                width: `${Math.round((stat.correct_responses / stat.total_responses) * 100)}%` 
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
+        
+        {/* Image Preview Modal */}
+        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-transparent border-0 animate-fade-in">
+            <div className="relative w-full h-[80vh] bg-black bg-opacity-80">
+              {previewImage && (
+                <Image
+                  src={previewImage}
+                  alt="Preview"
+                  className="object-contain animate-scale-in"
+                  fill
+                  sizes="100vw"
+                  priority
+                />
+              )}
+              <Button 
+                className="absolute top-2 right-2 bg-white bg-opacity-70 hover:bg-opacity-100 text-gray-800 rounded-full w-8 h-8 p-0 animate-fade-in" 
+                onClick={() => setPreviewImage(null)}
+              >
+                ✕
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
           <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">

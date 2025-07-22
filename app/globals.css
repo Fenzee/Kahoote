@@ -12,6 +12,64 @@ body {
   }
 }
 
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes progressBar {
+  from { width: 0; }
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+}
+
+@keyframes numberPop {
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out forwards;
+}
+
+.animate-progress-bar {
+  animation: progressBar 1s ease-out forwards;
+}
+
+.animate-number-pop {
+  animation: numberPop 0.5s ease-out forwards;
+}
+
+.animate-confetti-fall-slow {
+  animation: confettiFall 7s linear infinite;
+}
+
+.animate-confetti-fall-medium {
+  animation: confettiFall 5s linear infinite;
+}
+
+.animate-confetti-fall-fast {
+  animation: confettiFall 3s linear infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce 2s infinite;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
