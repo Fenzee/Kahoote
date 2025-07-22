@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import {
   motion,
   useTransform,
@@ -8,12 +9,16 @@ import {
   useMotionValue,
   useSpring,
 } from "framer-motion";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Image as ImageIcon } from "lucide-react";
 
 export const AnswerTooltip = ({
   correctAnswer,
+  imageUrl,
+  onImageClick,
 }: {
   correctAnswer: string | null;
+  imageUrl?: string | null;
+  onImageClick?: () => void;
 }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const springConfig = { stiffness: 100, damping: 5 };
@@ -33,7 +38,7 @@ export const AnswerTooltip = ({
     x.set(event.clientX - rect.left - halfWidth);
   };
 
-  if (!correctAnswer) return null;
+  if (!correctAnswer && !imageUrl) return null;
 
   return (
     <div 
@@ -81,7 +86,30 @@ export const AnswerTooltip = ({
         <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
         Jawaban Benar:
       </p>
-      <p className="text-sm text-green-800 font-medium line-clamp-2">{correctAnswer}</p>
+      
+      {imageUrl && (
+        <div className="mb-2 flex justify-center">
+          <div 
+            className="relative w-full max-w-[200px] h-28 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={onImageClick}
+          >
+            <Image 
+              src={imageUrl} 
+              alt="Answer image"
+              className="object-contain"
+              fill
+              sizes="(max-width: 768px) 100vw, 200px"
+            />
+            <div className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1">
+              <ImageIcon className="w-3 h-3 text-white" />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {correctAnswer && (
+        <p className="text-sm text-green-800 font-medium line-clamp-2">{correctAnswer}</p>
+      )}
     </div>
   );
 }; 

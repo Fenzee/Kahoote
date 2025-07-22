@@ -61,6 +61,7 @@ interface QuestionStats {
   points: number;
   image_url: string | null;
   correct_answer: string | null;
+  answer_image_url: string | null; // Add this field for answer images
 }
 
 interface PersonalStats {
@@ -71,6 +72,14 @@ interface PersonalStats {
   fastest_answer: number;
   rank: number;
   total_participants: number;
+  question_details?: Array<{
+    question_id: string;
+    question_text: string;
+    image_url: string | null;
+    answer_image_url: string | null;
+    correct_answer: string | null;
+    is_correct: boolean;
+  }>;
 }
 
 export default function ResultsPage({
@@ -252,12 +261,13 @@ export default function ResultsPage({
         // Get correct answer
         const { data: answers, error: answersError } = await supabase
           .from("answers")
-          .select("answer_text")
+          .select("answer_text, image_url")
           .eq("question_id", question.id)
           .eq("is_correct", true)
           .single();
 
         const correctAnswer = answersError ? null : answers?.answer_text;
+        const answerImageUrl = answersError ? null : answers?.image_url;
 
         const totalResponses = responses.length;
         const correctResponses = responses.filter(
@@ -279,6 +289,7 @@ export default function ResultsPage({
           points: question.points,
           image_url: question.image_url,
           correct_answer: correctAnswer,
+          answer_image_url: answerImageUrl,
         });
       }
 
@@ -300,7 +311,13 @@ export default function ResultsPage({
           `
           *,
           answers (
-            is_correct
+            is_correct,
+            answer_text
+          ),
+          questions (
+            id,
+            question_text,
+            image_url
           )
         `
         )
@@ -343,7 +360,30 @@ export default function ResultsPage({
       );
       const rank = participantsWithHigherScores.length + 1;
 
-      
+      // Fetch correct answers with images for each question
+      const questionDetails = [];
+      for (const response of responses) {
+        const questionId = response.question_id;
+        
+        // Get correct answer with image
+        const { data: correctAnswerData, error: answerError } = await supabase
+          .from("answers")
+          .select("answer_text, image_url")
+          .eq("question_id", questionId)
+          .eq("is_correct", true)
+          .single();
+        
+        if (!answerError && correctAnswerData) {
+          questionDetails.push({
+            question_id: questionId,
+            question_text: response.questions?.question_text || "",
+            image_url: response.questions?.image_url || null,
+            answer_image_url: correctAnswerData.image_url,
+            correct_answer: correctAnswerData.answer_text,
+            is_correct: response.answers?.is_correct || false,
+          });
+        }
+      }
 
       setPersonalStats({
         total_questions: totalQuestions,
@@ -353,8 +393,7 @@ export default function ResultsPage({
         fastest_answer: Math.round(fastestAnswer),
         rank,
         total_participants: allParticipants.length,
-
-        
+        question_details: questionDetails,
       });
     } catch (error) {
       console.error("Error fetching personal stats:", error);
@@ -568,6 +607,119 @@ export default function ResultsPage({
                   <div className="text-sm text-gray-600">Benar</div>
                 </div>
               </div>
+
+              {personalStats.question_details && personalStats.question_details.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <HelpCircle className="w-5 h-5 mr-2 text-purple-600" />
+                    Detail Jawaban Anda
+                  </h3>
+                  <div className="space-y-4">
+                    {personalStats.question_details.map((question, index) => (
+                      <div 
+                        key={question.question_id}
+                        className={`border rounded-lg p-4 hover:shadow-md transition-all ${
+                          question.is_correct 
+                            ? "border-green-100 hover:border-green-200" 
+                            : "border-red-100 hover:border-red-200"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium flex items-center flex-wrap">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs flex-shrink-0 ${
+                              question.is_correct 
+                                ? "bg-green-100 text-green-800" 
+                                : "bg-red-100 text-red-800"
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <span className="break-words">{question.question_text}</span>
+                            {question.image_url && (
+                              <span className="ml-2 text-blue-500 flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                  <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                              </span>
+                            )}
+                            {question.answer_image_url && (
+                              <span className="ml-1 text-green-500 flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M5 12h14"></path>
+                                  <path d="M12 5v14"></path>
+                                </svg>
+                              </span>
+                            )}
+                          </h4>
+                          {question.is_correct ? (
+                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                          )}
+                        </div>
+                        
+                        {question.image_url && (
+                          <div className="flex justify-center items-center my-3">
+                            <div 
+                              className="relative w-full max-w-[200px] h-32 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setPreviewImage(question.image_url)}
+                            >
+                              <Image 
+                                src={question.image_url} 
+                                alt="Question image"
+                                className="object-contain"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 200px"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Always display the correct answer */}
+                        <div className={`mt-3 p-3 rounded-lg border ${question.is_correct ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                          <p className="text-xs text-gray-600 mb-1 flex items-center">
+                            {question.is_correct ? (
+                              <>
+                                <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
+                                Jawaban Benar:
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 mr-1 text-red-600" />
+                                Jawaban yang Benar:
+                              </>
+                            )}
+                          </p>
+                          
+                          {question.answer_image_url && (
+                            <div className="mb-2 flex justify-center">
+                              <div 
+                                className="relative w-full max-w-[200px] h-28 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setPreviewImage(question.answer_image_url)}
+                              >
+                                <Image 
+                                  src={question.answer_image_url} 
+                                  alt="Answer image"
+                                  className="object-contain"
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, 200px"
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {question.correct_answer && (
+                            <p className={`text-sm font-medium ${question.is_correct ? 'text-green-800' : 'text-red-800'}`}>
+                              {question.correct_answer}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -641,56 +793,111 @@ export default function ResultsPage({
           </Card>
         )}
 
-        <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
-          <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
-            <Users className="w-5 h-5 text-gray-600" />
-            <CardTitle className="text-xl font-semibold">
-              Leaderboard ({participants.length} Pemain)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 pb-0">
-            <div className="space-y-3">
-              {participants.map((participant, index) => (
-                <div
-                  key={participant.id}
-                  className={`flex items-center justify-between p-3 rounded-lg transition-all ${
-                    index < 3
-                      ? "bg-yellow-50 hover:bg-yellow-100"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  } transform hover:scale-[1.01] hover:shadow-md ${
-                    participant.id === participantId ? "ring-2 ring-purple-400" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`font-bold text-lg ${
-                      index === 0 ? "text-yellow-800" : 
-                      index === 1 ? "text-gray-600" : 
-                      index === 2 ? "text-amber-800" : "text-gray-600"
-                    }`}>{index + 1}</span>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      index === 0 ? "bg-yellow-400 text-white" : 
-                      index === 1 ? "bg-gray-300 text-white" : 
-                      index === 2 ? "bg-amber-500 text-white" : "bg-gray-200 text-gray-700"
-                    }`}>
-                      {participant.nickname.charAt(0).toUpperCase()}
+        {/* Leaderboard and Game Summary in grid layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl lg:col-span-2">
+            <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
+              <Users className="w-5 h-5 text-gray-600" />
+              <CardTitle className="text-xl font-semibold">
+                Leaderboard ({participants.length} Pemain)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              <div className={`space-y-3 ${participants.length > 5 ? 'max-h-[500px] overflow-y-auto pr-2 custom-scrollbar' : ''}`}>
+                {participants.map((participant, index) => (
+                  <div
+                    key={participant.id}
+                    className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                      index < 3
+                        ? "bg-yellow-50 hover:bg-yellow-100"
+                        : "bg-gray-50 hover:bg-gray-100"
+                    } transform hover:scale-[1.01] hover:shadow-md ${
+                      participant.id === participantId ? "ring-2 ring-purple-400" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`font-bold text-lg ${
+                        index === 0 ? "text-yellow-800" : 
+                        index === 1 ? "text-gray-600" : 
+                        index === 2 ? "text-amber-800" : "text-gray-600"
+                      }`}>{index + 1}</span>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        index === 0 ? "bg-yellow-400 text-white" : 
+                        index === 1 ? "bg-gray-300 text-white" : 
+                        index === 2 ? "bg-amber-500 text-white" : "bg-gray-200 text-gray-700"
+                      }`}>
+                        {participant.nickname.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-800">
+                          {participant.nickname}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          Bergabung: {new Date(participant.joined_at).toLocaleTimeString("id-ID")}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-800">
-                        {participant.nickname}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        Bergabung: {new Date(participant.joined_at).toLocaleTimeString("id-ID")}
-                      </span>
-                    </div>
+                    <span className="font-bold text-lg text-gray-800 animate-number-pop">
+                      {participant.score.toLocaleString()} poin
+                    </span>
                   </div>
-                  <span className="font-bold text-lg text-gray-800 animate-number-pop">
-                    {participant.score.toLocaleString()} poin
-                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
+            <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
+              <LayoutDashboard className="w-5 h-5 text-gray-600" />
+              <CardTitle className="text-xl font-semibold">Ringkasan Game</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:from-blue-100 hover:to-blue-200 shadow-sm">
+                  <Users className="w-8 h-8 text-blue-600 mb-2" />
+                  <div className="text-2xl font-bold text-blue-600 animate-number-pop">
+                    {participants.length}
+                  </div>
+                  <div className="text-sm text-gray-600">Total Pemain</div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+
+                <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:from-green-100 hover:to-green-200 shadow-sm">
+                  <HelpCircle className="w-8 h-8 text-green-600 mb-2" />
+                  <div className="text-2xl font-bold text-green-600 animate-number-pop">
+                    {isHost ? questionStats.length : personalStats?.total_questions ?? 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Total Pertanyaan</div>
+                </div>
+
+                <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:from-purple-100 hover:to-purple-200 shadow-sm">
+                  <Trophy className="w-8 h-8 text-purple-600 mb-2" />
+                  <div className="text-2xl font-bold text-purple-600 animate-number-pop">
+                    {participants.length > 0
+                      ? Math.max(
+                          ...participants.map((p) => p.score)
+                        ).toLocaleString()
+                      : 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Skor Tertinggi</div>
+                </div>
+
+                <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:from-orange-100 hover:to-orange-200 shadow-sm">
+                  <Clock className="w-8 h-8 text-orange-600 mb-2" />
+                  <div className="text-2xl font-bold text-orange-600 animate-number-pop">
+                    {gameSession.ended_at && gameSession.started_at
+                      ? Math.round(
+                          (new Date(gameSession.ended_at).getTime() -
+                            new Date(gameSession.started_at).getTime()) /
+                            60000
+                        )
+                      : "0"}
+                  </div>
+                  <div className="text-sm text-gray-600">Durasi (menit)</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {isHost && questionStats.length > 0 && (
           <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
@@ -712,31 +919,45 @@ export default function ResultsPage({
                     }`}
                   >
                     <div className="flex flex-wrap justify-between items-center mb-3 gap-2 pb-2 border-b border-gray-100">
-                      <h3 className="text-base font-semibold flex items-center">
-                        <span className="bg-purple-100 text-purple-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs">
+                      <h3 className="text-base font-semibold flex items-center flex-wrap">
+                        <span className="bg-purple-100 text-purple-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs flex-shrink-0">
                           {index + 1}
                         </span>
-                        <span className="line-clamp-1">{stat.question_text}</span>
+                        <span className="break-words">{stat.question_text}</span>
+                        {stat.image_url && (
+                          <span className="ml-2 text-blue-500 flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                              <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                          </span>
+                        )}
+                        {stat.answer_image_url && (
+                          <span className="ml-1 text-green-500 flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M5 12h14"></path>
+                              <path d="M12 5v14"></path>
+                            </svg>
+                          </span>
+                        )}
                       </h3>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full flex-shrink-0">
                           <Users className="w-3 h-3 mr-1" />
                           <span>{stat.total_responses}</span>
                         </div>
-                        <div className="flex items-center text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full">
+                        <div className="flex items-center text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full flex-shrink-0">
                           <CheckCircle className="w-3 h-3 mr-1" />
                           <span>{stat.correct_responses}</span>
                         </div>
-                        <Badge className="bg-gray-100 text-gray-700">
+                        <Badge className="bg-gray-100 text-gray-700 flex-shrink-0">
                           {stat.points} poin
                         </Badge>
                       </div>
                     </div>
                     
                     <div className="flex flex-col">
-                      {stat.question_text.length > 60 && (
-                        <p className="text-gray-600 text-sm mb-3">{stat.question_text}</p>
-                      )}
                       
                       {stat.image_url && (
                         <div className="flex justify-center items-center my-3 w-full">
@@ -748,9 +969,34 @@ export default function ResultsPage({
                         </div>
                       )}
                       
-                      {!stat.image_url && stat.correct_answer && (
-                        <AnswerTooltip correctAnswer={stat.correct_answer} />
-                      )}
+                      {/* Always display the correct answer */}
+                      <div className="mt-3 bg-green-50 p-3 rounded-lg border border-green-100">
+                        <p className="text-xs text-gray-600 mb-1 flex items-center">
+                          <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
+                          Jawaban Benar:
+                        </p>
+                        
+                        {stat.answer_image_url && (
+                          <div className="mb-2 flex justify-center">
+                            <div 
+                              className="relative w-full max-w-[200px] h-28 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setPreviewImage(stat.answer_image_url)}
+                            >
+                              <Image 
+                                src={stat.answer_image_url} 
+                                alt="Answer image"
+                                className="object-contain"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 200px"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {stat.correct_answer && (
+                          <p className="text-sm text-green-800 font-medium">{stat.correct_answer}</p>
+                        )}
+                      </div>
                       
                       {stat.total_responses > 0 && (
                         <div className="mt-3">
@@ -801,58 +1047,6 @@ export default function ResultsPage({
             </div>
           </DialogContent>
         </Dialog>
-
-        <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
-          <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
-            <LayoutDashboard className="w-5 h-5 text-gray-600" />
-            <CardTitle className="text-xl font-semibold">Ringkasan Game</CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 pb-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="p-4 bg-blue-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-blue-100">
-                <Users className="w-8 h-8 text-blue-600 mb-2" />
-                <div className="text-2xl font-bold text-blue-600 animate-number-pop">
-                  {participants.length}
-                </div>
-                <div className="text-sm text-gray-600">Total Pemain</div>
-              </div>
-
-              <div className="p-4 bg-green-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-green-100">
-                <HelpCircle className="w-8 h-8 text-green-600 mb-2" />
-                <div className="text-2xl font-bold text-green-600 animate-number-pop">
-                  {isHost ? questionStats.length : personalStats?.total_questions ?? 0}
-                </div>
-                <div className="text-sm text-gray-600">Total Pertanyaan</div>
-              </div>
-
-              <div className="p-4 bg-purple-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-purple-100">
-                <Trophy className="w-8 h-8 text-purple-600 mb-2" />
-                <div className="text-2xl font-bold text-purple-600 animate-number-pop">
-                  {participants.length > 0
-                    ? Math.max(
-                        ...participants.map((p) => p.score)
-                      ).toLocaleString()
-                    : 0}
-                </div>
-                <div className="text-sm text-gray-600">Skor Tertinggi</div>
-              </div>
-
-              <div className="p-4 bg-orange-50 rounded-lg flex flex-col items-center transform transition-all hover:scale-105 hover:bg-orange-100">
-                <Clock className="w-8 h-8 text-orange-600 mb-2" />
-                <div className="text-2xl font-bold text-orange-600 animate-number-pop">
-                  {gameSession.ended_at && gameSession.started_at
-                    ? Math.round(
-                        (new Date(gameSession.ended_at).getTime() -
-                          new Date(gameSession.started_at).getTime()) /
-                          60000
-                      )
-                    : "0"}
-                </div>
-                <div className="text-sm text-gray-600">Durasi (menit)</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
