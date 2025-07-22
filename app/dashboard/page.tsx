@@ -45,6 +45,7 @@ import {
   Briefcase,
   Languages,
   Laptop,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -414,31 +415,30 @@ export default function Dashboard() {
         )
         .eq("user_id", user.id)
         .eq("game_sessions.status", "finished")
-        .order("joined_at", { ascending: false });
+        .order("joined_at", { ascending: false })
+        .limit(5); // Fetch one extra to determine if we need "See More"
 
       if (error) throw error;
 
-      // const normalized = data.map((entry) => ({
-      //   id: entry.id,
-      //   session_id: entry.session_id,
-      //   score: entry.score,
-      //   joined_at: entry.joined_at,
-      //   game_sessions: {
-      //     id: entry.game_sessions?.id,
-      //     quiz_id: entry.game_sessions?.quiz_id,
-      //     ended_at: entry.game_sessions?.ended_at,
-      //     status: entry.game_sessions?.status,
-      //     quizzes: {
-      //       id: entry.game_sessions?.quizzes?.id,
-      //       title: entry.game_sessions?.quizzes?.title,
-      //     },
-      //   },
-      // }));
-      const filtered = data.filter(
-        (entry) => entry.game_sessions?.status === "finished"
-      );
+      // Transform the data to match our interface
+      const normalized = data.map((entry) => ({
+        id: entry.id,
+        session_id: entry.session_id,
+        score: entry.score,
+        joined_at: entry.joined_at,
+        game_sessions: {
+          id: entry.game_sessions.id,
+          quiz_id: entry.game_sessions.quiz_id,
+          ended_at: entry.game_sessions.ended_at,
+          status: entry.game_sessions.status,
+          quizzes: {
+            id: entry.game_sessions.quizzes.id,
+            title: entry.game_sessions.quizzes.title,
+          },
+        },
+      }));
 
-      setGameHistory(filtered);
+      setGameHistory(normalized);
     } catch (error) {
       console.error("Error fetching game history:", error);
     } finally {
@@ -1193,10 +1193,36 @@ export default function Dashboard() {
 
             {/* My Scores Tab */}
             <TabsContent value="history" className="space-y-6">
-              {loadingGameHistory ? (
-                <p className="text-center text-gray-500">
-                  Memuat riwayat permainan...
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-600">
+                  Riwayat permainan terbaru
                 </p>
+              </div>
+              {loadingGameHistory ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <Card
+                      key={i}
+                      className="animate-pulse bg-white/90 border-none shadow-md"
+                    >
+                      <CardContent className="p-4 md:p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex items-start md:items-center gap-4">
+                            <div className="rounded-full p-2 bg-gray-200 h-9 w-9"></div>
+                            <div className="flex-1">
+                              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="h-8 bg-gray-200 rounded w-16"></div>
+                            <div className="h-6 bg-gray-200 rounded w-20"></div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               ) : gameHistory.length === 0 ? (
                 <Card className="bg-white/90 border-none shadow-md">
                   <CardContent className="flex flex-col items-center justify-center py-12">
@@ -1210,38 +1236,55 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="overflow-auto rounded-md shadow">
-                  <table className="min-w-full divide-y divide-gray-200 bg-white">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
-                          Judul Kuis
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
-                          Tanggal
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
-                          Skor
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
-                          Aksi
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {gameHistory.map((entry) => (
-                        <tr key={entry.id}>
-                          <td className="px-6 py-4 text-sm text-gray-800">
-                            {entry.game_sessions.quizzes.title ||
-                              "Judul tidak ditemukan"}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {new Date(entry.joined_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {entry.score} poin
-                          </td>
-                          <td className="px-6 py-4 text-sm">
+                <div className="space-y-4">
+                  {gameHistory.slice(0, 4).map((entry) => (
+                    <Card
+                      key={entry.id}
+                      className="bg-white/90 border-none shadow-md hover:shadow-lg transition-shadow"
+                    >
+                      <CardContent className="p-4 md:p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex items-start md:items-center gap-4">
+                            {/* Game Type Badge */}
+                            <div className="rounded-full p-2 bg-purple-100 text-purple-600">
+                              <Trophy className="w-5 h-5" />
+                            </div>
+
+                            {/* Quiz Info */}
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg text-gray-900">
+                                {entry.game_sessions.quizzes.title}
+                              </h3>
+                              <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-600">
+                                {/* Date */}
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  <span>
+                                    {new Date(entry.joined_at).toLocaleDateString("id-ID", {
+                                      day: "numeric",
+                                      month: "long",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Score and Actions */}
+                          <div className="flex items-center gap-4">
+                            {/* Score */}
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-blue-600">{entry.score}</div>
+                              <div className="text-xs text-gray-500">Skor</div>
+                            </div>
+
+                            {/* Game Type Badge */}
+                            <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                              Multiplayer
+                            </Badge>
+
+                            {/* View Details Button */}
                             <Button
                               size="sm"
                               onClick={() =>
@@ -1249,14 +1292,28 @@ export default function Dashboard() {
                                   `/results/${entry.session_id}?participant=${entry.id}`
                                 )
                               }
+                              className="bg-blue-500 hover:bg-blue-600 text-white"
                             >
                               Lihat Detail
                             </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  
+                  {gameHistory.length > 4 && (
+                    <div className="flex justify-center mt-4">
+                      <Button
+                        onClick={() => router.push("/dashboard/history")}
+                        variant="outline"
+                        className="w-full max-w-md border-blue-300 text-blue-600 hover:bg-blue-50"
+                      >
+                        <ArrowRight className="w-4 h-4 mr-2" />
+                        Lihat Semua Riwayat
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
