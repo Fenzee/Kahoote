@@ -1025,7 +1025,7 @@ export default function Dashboard() {
                             Host
                           </Button>
                           <Button
-                            onClick={() => router.push(`/solo/${quiz.id}`)}
+                            onClick={() => router.push(`/learn/${quiz.id}`)}
                             variant="outline"
                             className="flex-1 border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 shadow-md"
                             disabled={
@@ -1033,7 +1033,7 @@ export default function Dashboard() {
                             }
                           >
                             <Users className="w-4 h-4 mr-2" />
-                            Solo
+                            Learn
                           </Button>
                         </div>
                         {(!quiz.questions || quiz.questions.length === 0) && (

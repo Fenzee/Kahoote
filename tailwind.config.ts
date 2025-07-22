@@ -104,12 +104,37 @@ const config: Config = {
   				'100%': {
   					transform: 'translate(0px, 0px) scale(1)'
   				}
-  			}
+  			},
+        shimmer: {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '0 0' }
+        },
+        'bounce-once': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-20px)' }
+        },
+        'confetti-fall-slow': {
+          '0%': { transform: 'translateY(-10px) rotate(0deg)', opacity: '1' },
+          '100%': { transform: 'translateY(100vh) rotate(360deg)', opacity: '0' }
+        },
+        'confetti-fall-medium': {
+          '0%': { transform: 'translateY(-10px) rotate(0deg)', opacity: '1' },
+          '100%': { transform: 'translateY(100vh) rotate(720deg)', opacity: '0' }
+        },
+        'confetti-fall-fast': {
+          '0%': { transform: 'translateY(-10px) rotate(0deg)', opacity: '1' },
+          '100%': { transform: 'translateY(100vh) rotate(1080deg)', opacity: '0' }
+        }
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-  			'blob': 'blob 7s infinite'
+  			'blob': 'blob 7s infinite',
+        'shimmer': 'shimmer 2s linear infinite',
+        'bounce-once': 'bounce-once 0.8s ease-in-out',
+        'confetti-fall-slow': 'confetti-fall-slow 7s linear infinite',
+        'confetti-fall-medium': 'confetti-fall-medium 5s linear infinite',
+        'confetti-fall-fast': 'confetti-fall-fast 3s linear infinite'
   		}
   	}
   },
