@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { QRCodeSVG } from "qrcode.react";
+import { ChatPanel } from "@/components/ui/chat-panel";
 
 import {
   ArrowLeft,
@@ -57,9 +58,11 @@ interface GameSession {
     id: string;
     nickname: string;
     joined_at: string;
-    profiles: {
-      avatar_url: string | null;
-    };
+    profiles?: {
+      avatar_url?: string | null;
+    } | Array<{
+      avatar_url?: string | null;
+    }>;
   }>;
 }
 
@@ -77,6 +80,7 @@ interface SupabaseQuizResponse {
   }>;
   profiles: {
     username: string;
+    avatar_url: string | null;
   };
 }
 
@@ -370,7 +374,10 @@ export default function HostGamePage({
         is_public: quiz.is_public,
         creator_id: quiz.creator_id,
         questions: quiz.questions,
-        profiles: quiz.profiles,
+        profiles: {
+          username: quiz.profiles.username,
+          avatar_url: quiz.profiles.avatar_url || null
+        }
       };
 
       setQuiz(processedQuiz);
@@ -1025,7 +1032,10 @@ export default function HostGamePage({
                         <Avatar className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
                           <AvatarImage
                             src={
-                              participant.profiles?.avatar_url ||
+                              participant.profiles && 
+                              (Array.isArray(participant.profiles) 
+                                ? participant.profiles[0]?.avatar_url 
+                                : participant.profiles?.avatar_url) ||
                               `https://robohash.org/${encodeURIComponent(
                                 participant.nickname
                               )}.png`
@@ -1056,15 +1066,16 @@ export default function HostGamePage({
         </div>
       </main>
 
-      {/* Issue Notification - Bisa ditambahkan jika diperlukan */}
-      {/* <div className="fixed bottom-4 left-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm">
-        <AlertCircle className="w-4 h-4" />
-        <span>1 Issue</span>
-        <Button variant="ghost" size="sm" className="text-white hover:bg-red-700 p-1">
-          <HelpCircle className="w-4 h-4" />
-          <span className="sr-only">Dismiss</span>
-        </Button>
-      </div> */}
+      {/* Chat Panel */}
+      {user && gameSession && (
+        <ChatPanel 
+          sessionId={gameSession.id} 
+          userId={user.id}
+          nickname={displayName}
+          avatarUrl={userProfile?.avatar_url}
+          position="right"
+        />
+      )}
     </div>
   );
 }

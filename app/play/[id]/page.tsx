@@ -10,6 +10,7 @@ import { Users, Trophy, AlertCircle, Play } from "lucide-react";
 import { use } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { ChatPanel } from "@/components/ui/chat-panel";
 
 interface GameSession {
   id: string;
@@ -38,8 +39,10 @@ interface Participant {
   nickname: string;
   score: number;
   profiles?: {
-    avatar_url: string | null;
-  };
+    avatar_url?: string | null;
+  } | Array<{
+    avatar_url?: string | null;
+  }>;
 }
 
 function getInitials(name: string) {
@@ -462,7 +465,10 @@ export default function PlayGamePage({
                         <Avatar className="h-10 w-10 border-2 border-yellow-300">
                           <AvatarImage
                             src={
-                              participant.profiles?.avatar_url ||
+                              participant.profiles && 
+                              (Array.isArray(participant.profiles) 
+                                ? participant.profiles[0]?.avatar_url 
+                                : participant.profiles?.avatar_url) ||
                               `https://robohash.org/${encodeURIComponent(
                                 participant.nickname
                               )}.png`
@@ -490,8 +496,24 @@ export default function PlayGamePage({
               </CardContent>
             </Card>
           </main>
+
+          {/* Chat Panel */}
+          {participantId && gameSession && (
+            <ChatPanel 
+              sessionId={gameSession.id} 
+              userId={null}
+              nickname={participants.find(p => p.id === participantId)?.nickname || 'Player'}
+              avatarUrl={(() => {
+                const participant = participants.find(p => p.id === participantId);
+                if (!participant || !participant.profiles) return null;
+                return Array.isArray(participant.profiles) 
+                  ? participant.profiles[0]?.avatar_url 
+                  : participant.profiles?.avatar_url;
+              })()}
+              position="right"
+            />
+          )}
         </div>
-        
       )}
     </div>
   );
