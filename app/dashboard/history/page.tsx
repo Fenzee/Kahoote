@@ -560,7 +560,7 @@ function HistoryCard({ game, formatDate }: { game: GameHistory, formatDate: (dat
                 {game.quiz.creator && (
                   <div className="flex items-center gap-1">
                     <Avatar className="h-5 w-5">
-                      <AvatarImage src={game.quiz.creator.avatar_url || undefined} />
+                      <AvatarImage src={game.quiz.creator.avatar_url || undefined} className="object-cover w-full h-full"/>
                       <AvatarFallback className="text-xs">
                         {game.quiz.creator.username.charAt(0).toUpperCase()}
                       </AvatarFallback>

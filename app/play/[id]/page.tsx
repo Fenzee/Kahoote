@@ -468,6 +468,7 @@ export default function PlayGamePage({
                               )}.png`
                             }
                             alt={participant.nickname}
+                            className="object-cover w-full h-full"
                           />
                           <AvatarFallback className="bg-white text-purple-600 text-sm font-semibold">
                             {getInitials(participant.nickname)}

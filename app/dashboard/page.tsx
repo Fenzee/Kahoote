@@ -966,6 +966,7 @@ export default function Dashboard() {
                           <Avatar className="h-8 w-8 border-2 border-blue-400">
                             <AvatarImage
                               src={quiz.creator.avatar_url || undefined}
+                              className="object-cover w-full h-full"
                             />
                             <AvatarFallback className="bg-blue-100 text-blue-600">
                               {quiz.creator.username.charAt(0).toUpperCase()}
