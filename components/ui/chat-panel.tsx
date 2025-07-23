@@ -141,8 +141,13 @@ export function ChatPanel({
   const [showSoundSettings, setShowSoundSettings] = useState(false);
   const [selectedSound, setSelectedSound] = useState('default');
   const [soundError, setSoundError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
+  const PAGE_SIZE = 25; // Jumlah pesan yang dimuat per halaman
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
 
@@ -181,14 +186,25 @@ export function ChatPanel({
     const loadMessages = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
+        const { data, error, count } = await supabase
           .from("game_chat_messages")
-          .select("*")
+          .select("*", { count: 'exact' })
           .eq("session_id", sessionId)
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: false })
+          .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
         
         if (error) throw error;
-        setMessages(data || []);
+        
+        // Reverse data agar urutan kronologis (lama ke baru)
+        const sortedData = [...(data || [])].reverse();
+        setMessages(sortedData);
+        
+        // Cek apakah ada lebih banyak pesan
+        if (count && count > currentPage * PAGE_SIZE) {
+          setHasMoreMessages(true);
+        } else {
+          setHasMoreMessages(false);
+        }
         
         // Mark all messages as read
         if (userId && data && data.length > 0) {
@@ -246,9 +262,14 @@ export function ChatPanel({
               .from("game_chat_messages")
               .select("*")
               .eq("session_id", sessionId)
-              .order("created_at", { ascending: true });
+              .order("created_at", { ascending: false })
+              .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
               
-            if (data) setMessages(data);
+            if (data) {
+              // Reverse data agar urutan kronologis
+              const sortedData = [...(data || [])].reverse();
+              setMessages(sortedData);
+            }
           }
         )
         .subscribe();
@@ -298,12 +319,58 @@ export function ChatPanel({
         supabase.removeChannel(channel);
       };
     }
-  }, [sessionId, isOpen, userId, notificationsEnabled, selectedSound]);
+  }, [sessionId, isOpen, userId, notificationsEnabled, selectedSound, currentPage, PAGE_SIZE]);
+  
+  // Fungsi untuk memuat lebih banyak pesan
+  const loadMoreMessages = async () => {
+    if (loadingMoreMessages || !hasMoreMessages) return;
+    
+    try {
+      setLoadingMoreMessages(true);
+      const nextPage = currentPage + 1;
+      
+      const { data, error } = await supabase
+        .from("game_chat_messages")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: false })
+        .range((nextPage - 1) * PAGE_SIZE, nextPage * PAGE_SIZE - 1);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        // Reverse untuk mendapatkan urutan kronologis dan gabungkan dengan pesan yang ada
+        const olderMessages = [...data].reverse();
+        setMessages(prev => [...olderMessages, ...prev]);
+        setCurrentPage(nextPage);
+        
+        // Cek apakah masih ada lebih banyak pesan
+        const { count } = await supabase
+          .from("game_chat_messages")
+          .select("*", { count: 'exact', head: true })
+          .eq("session_id", sessionId);
+        
+        setHasMoreMessages(count !== null && count > nextPage * PAGE_SIZE);
+        
+        // Mark older messages as read
+        if (userId) {
+          const messageIds = data.map(msg => msg.id);
+          await markMessagesAsRead(messageIds);
+        }
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (error) {
+      console.error("Error loading more messages:", error);
+    } finally {
+      setLoadingMoreMessages(false);
+    }
+  };
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollAreaRef.current && isOpen) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    if (isOpen && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen]);
 
@@ -591,6 +658,31 @@ export function ChatPanel({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Load More Button */}
+              {hasMoreMessages && (
+                <div className="flex justify-center pb-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                    onClick={loadMoreMessages}
+                    disabled={loadingMoreMessages}
+                  >
+                    {loadingMoreMessages ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600 mr-1"></div>
+                        Memuat...
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3 w-3" />
+                        Muat pesan sebelumnya
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+              
               {messages.map((msg) => (
                 <div
                   key={`msg-${msg.id}`}
@@ -650,6 +742,7 @@ export function ChatPanel({
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>

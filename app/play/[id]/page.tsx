@@ -281,10 +281,11 @@ export default function PlayGamePage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center text-gray-700">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-lg">Memuat game...</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold mb-2">Memuat Game...</h2>
+          <p className="text-white/80">Mohon tunggu sebentar</p>
         </div>
       </div>
     );
@@ -344,8 +345,8 @@ export default function PlayGamePage({
           </CardContent>
         </Card>
       ) : (
-        <div>
-          <header className="flex flex- items-center justify-between px-4 py-4 md:px-6 lg:px-8 border-b">
+        <div className="flex flex-col min-h-screen">
+          <header className="flex items-center justify-between px-4 py-4 md:px-6 lg:px-8 border-b">
             <Link
               href="#"
               className="flex items-center gap-2 font-bold text-lg"
@@ -377,124 +378,130 @@ export default function PlayGamePage({
             </div>
           </header>
 
-          <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16 space-y-8">
-            {/* Quiz Info */}
-            <Card className="bg-white shadow-lg rounded-xl p-6">
-              <CardHeader className="pb-4 px-0 pt-0">
-                <CardTitle className="text-xl font-semibold text-center">
-                  {quiz.title}
-                </CardTitle>
-                {quiz.description && (
-                  <p className="text-gray-600 text-center text-sm">
-                    {quiz.description}
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent className="px-0 pb-0">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="p-4 bg-purple-50 rounded-lg">
-                    <div className="text-3xl font-bold text-purple-600">
-                      {quiz.questions.length}
-                    </div>
-                    <div className="text-sm text-gray-600">Pertanyaan</div>
-                  </div>
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {participants.length}
-                    </div>
-                    <div className="text-sm text-gray-600">Pemain</div>
-                  </div>
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <div className="text-3xl font-bold text-green-600">
-                      {gameSession.total_time_minutes || "-"}
-                    </div>
-                    <div className="text-sm text-gray-600">Menit Total</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Game Status */}
-            {gameSession.status === "waiting" && countdownLeft === null && (
-              <Card className="bg-white shadow-lg rounded-xl p-6 text-center">
-                <CardContent className="px-0 pb-0 space-y-6">
-                  <div className="flex justify-center">
-                    <Play className="w-24 h-24 text-purple-600" />
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
-                    Menunggu Host Memulai Game
-                  </h2>
-                  <p className="text-base text-gray-600">
-                    Game akan dimulai sebentar lagi...
-                  </p>
-                  <p className="text-lg font-semibold text-purple-600">
-                    Game PIN: {gameSession.game_pin}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Leaderboard */}
-            <Card className="bg-white shadow-lg rounded-xl p-6">
-              <CardHeader className="pb-4 px-0 pt-0">
-                <CardTitle className="text-xl font-semibold">
-                  Waiting room
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-0 pb-0">
-                {participants.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Belum ada pemain yang bergabung</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {participants.map((participant, index) => (
-                      <div
-                        key={participant.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg ${
-                          index === 0
-                            ? "bg-yellow-50"
-                            : index === 1
-                            ? "bg-gray-50"
-                            : index === 2
-                            ? "bg-orange-50"
-                            : "bg-gray-50"
-                        }`}
-                      >
-                        <Avatar className="h-10 w-10 border-2 border-yellow-300">
-                          <AvatarImage
-                            src={
-                              participant.profiles && 
-                              (Array.isArray(participant.profiles) 
-                                ? participant.profiles[0]?.avatar_url 
-                                : participant.profiles?.avatar_url) ||
-                              `https://robohash.org/${encodeURIComponent(
-                                participant.nickname
-                              )}.png`
-                            }
-                            alt={participant.nickname}
-                            className="object-cover w-full h-full"
-                          />
-                          <AvatarFallback className="bg-white text-purple-600 text-sm font-semibold">
-                            {getInitials(participant.nickname)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span
-                          className={`font-medium text-gray-800 ${
-                            participant.id === participantId
-                              ? "italic underline"
-                              : ""
-                          }`}
-                        >
-                          {participant.nickname}
-                        </span>
+          <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16 flex-grow">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Left Column - Quiz Info */}
+              <div className="md:col-span-5 lg:col-span-4 space-y-6">
+                <Card className="bg-white shadow-lg rounded-xl p-6">
+                  <CardHeader className="pb-4 px-0 pt-0">
+                    <CardTitle className="text-xl font-semibold text-center">
+                      {quiz.title}
+                    </CardTitle>
+                    {quiz.description && (
+                      <p className="text-gray-600 text-center text-sm">
+                        {quiz.description}
+                      </p>
+                    )}
+                  </CardHeader>
+                  <CardContent className="px-0 pb-0">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="p-4 bg-purple-50 rounded-lg">
+                        <div className="text-3xl font-bold text-purple-600">
+                          {quiz.questions.length}
+                        </div>
+                        <div className="text-sm text-gray-600">Pertanyaan</div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="p-4 bg-blue-50 rounded-lg">
+                        <div className="text-3xl font-bold text-blue-600">
+                          {participants.length}
+                        </div>
+                        <div className="text-sm text-gray-600">Pemain</div>
+                      </div>
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <div className="text-3xl font-bold text-green-600">
+                          {gameSession.total_time_minutes || "-"}
+                        </div>
+                        <div className="text-sm text-gray-600">Menit Total</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Game Status */}
+                {gameSession.status === "waiting" && countdownLeft === null && (
+                  <Card className="bg-white shadow-lg rounded-xl p-6 text-center">
+                    <CardContent className="px-0 pb-0 space-y-6">
+                      <div className="flex justify-center">
+                        <Play className="w-24 h-24 text-purple-600" />
+                      </div>
+                      <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
+                        Menunggu Host Memulai Game
+                      </h2>
+                      <p className="text-base text-gray-600">
+                        Game akan dimulai sebentar lagi...
+                      </p>
+                      <p className="text-lg font-semibold text-purple-600">
+                        Game PIN: {gameSession.game_pin}
+                      </p>
+                    </CardContent>
+                  </Card>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+
+              {/* Right Column - Leaderboard */}
+              <div className="md:col-span-7 lg:col-span-8">
+                <Card className="bg-white shadow-lg rounded-xl p-6 h-full">
+                  <CardHeader className="pb-4 px-0 pt-0">
+                    <CardTitle className="text-xl font-semibold">
+                      Waiting room
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-0 pb-0">
+                    {participants.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>Belum ada pemain yang bergabung</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {participants.map((participant, index) => (
+                          <div
+                            key={participant.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg ${
+                              index === 0
+                                ? "bg-yellow-50"
+                                : index === 1
+                                ? "bg-gray-50"
+                                : index === 2
+                                ? "bg-orange-50"
+                                : "bg-gray-50"
+                            }`}
+                          >
+                            <Avatar className="h-10 w-10 border-2 border-yellow-300">
+                              <AvatarImage
+                                src={
+                                  participant.profiles && 
+                                  (Array.isArray(participant.profiles) 
+                                    ? participant.profiles[0]?.avatar_url 
+                                    : participant.profiles?.avatar_url) ||
+                                  `https://robohash.org/${encodeURIComponent(
+                                    participant.nickname
+                                  )}.png`
+                                }
+                                alt={participant.nickname}
+                                className="object-cover w-full h-full"
+                              />
+                              <AvatarFallback className="bg-white text-purple-600 text-sm font-semibold">
+                                {getInitials(participant.nickname)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span
+                              className={`font-medium text-gray-800 ${
+                                participant.id === participantId
+                                  ? "italic underline"
+                                  : ""
+                              }`}
+                            >
+                              {participant.nickname}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </main>
 
           {/* Chat Panel */}
