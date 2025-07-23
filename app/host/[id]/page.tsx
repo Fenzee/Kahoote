@@ -10,6 +10,13 @@ import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { QRCodeSVG } from "qrcode.react";
 import { ChatPanel } from "@/components/ui/chat-panel";
+import {
+  motion,
+  useTransform,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+} from "framer-motion";
 
 import {
   ArrowLeft,
@@ -100,6 +107,11 @@ export default function HostGamePage({
   const [showTimeSetup, setShowTimeSetup] = useState(false);
   const [totalTimeMinutes, setTotalTimeMinutes] = useState<number>(10);
   const [isJoining, setIsJoining] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const springConfig = { stiffness: 100, damping: 5 };
+  const x = useMotionValue(0);
+  const rotate = useSpring(useTransform(x, [-100, 100], [-15, 15]), springConfig);
+  const translateX = useSpring(useTransform(x, [-100, 100], [-20, 20]), springConfig);
   const [error, setError] = useState<{
     type:
       | "permission"
@@ -499,6 +511,12 @@ export default function HostGamePage({
     } catch (error) {
       console.error("Failed to copy:", error);
     }
+  };
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const halfWidth = rect.width / 2;
+    x.set(event.clientX - rect.left - halfWidth);
   };
 
   const handleStartGame = () => {
@@ -998,26 +1016,54 @@ export default function HostGamePage({
               <CardTitle className="text-xl font-semibold">Game PIN</CardTitle>
             </CardHeader>
             <CardContent className="px-0 pb-0 space-y-6">
-              <div className="text-6xl font-extrabold text-purple-600">
-                {gameSession.game_pin}
+              <div className="flex items-center justify-center gap-3">
+                <div className="text-6xl font-extrabold text-purple-600 left-[20px] relative">
+                  {gameSession.game_pin}
+                </div>
+                <div className="relative inline-block left-[10px]">
+                  <Button
+                    onClick={copyGamePin}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    onMouseMove={handleMouseMove}
+                    variant="ghost"
+                    size="icon"
+                    className="text-purple-600 hover:bg-purple-50 relative"
+                  >
+                    {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                  </Button>
+                  <AnimatePresence mode="wait">
+                    {isHovered && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                          scale: 1,
+                          transition: {
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 15,
+                          },
+                        }}
+                        exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                        style={{
+                          translateX: translateX,
+                          rotate: rotate,
+                        }}
+                        className="absolute -top-12 left-[-22px] z-50 flex -translate-x-1/2 flex-col items-center justify-center rounded-md bg-black px-3 py-1.5 text-xs shadow-xl min-w-[80px]"
+                      >
+                        <div className="absolute inset-x-10 -bottom-px z-30 h-px w-[20%] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+                        <div className="absolute -bottom-px left-10 z-30 h-px w-[40%] bg-gradient-to-r from-transparent via-sky-500 to-transparent" />
+                        <div className="relative z-30 text-sm font-medium text-white">
+                          {copied ? "Tersalin!" : "Salin PIN"}
+                        </div>
+                        <div className="absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45 z-10"></div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
-              <Button
-                onClick={copyGamePin}
-                variant="outline"
-                className="border-purple-300 text-purple-600 hover:bg-purple-50 bg-transparent"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Tersalin!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Salin PIN
-                  </>
-                )}
-              </Button>
               <div className="flex justify-center py-4">
                 <div className="w-48 h-48 border border-gray-200 rounded-lg p-2">
                   <QRCodeSVG
