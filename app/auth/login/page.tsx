@@ -318,6 +318,17 @@ export default function LoginPage() {
                   </svg>
                   Masuk dengan Google
                 </Button>
+                <div className="mt-6 text-center">
+                    <p className="text-sm text-gray-600">
+                      Belum punya akun?{" "}
+                      <Link
+                        href="/auth/register"
+                        className="text-purple-600 hover:underline font-medium"
+                      >
+                        Register di sini
+                      </Link>
+                    </p>
+                  </div>
 
                 <div className="mt-8 text-center">
                   <div className="flex items-center justify-center space-x-6 text-sm text-gray-500">

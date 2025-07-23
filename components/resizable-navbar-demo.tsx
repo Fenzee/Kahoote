@@ -97,9 +97,9 @@ export default function NavbarDemo() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 variant="gradient"
                 className="w-full"
-                href="/join"
+                href="/auth/register"
               >
-                Join Game
+                Register
               </NavbarButton>
             </div>
           </MobileNavMenu>
