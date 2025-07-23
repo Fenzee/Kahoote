@@ -253,9 +253,25 @@ export default function PlayActiveGamePage({
 
         if (remaining <= 0) {
           if (timerRef.current) clearInterval(timerRef.current);
-          router.push(
-            `/results/${resolvedParams.id}?participant=${participantId}`
-          );
+
+          // Hitung skor sebelum redirect
+          (async () => {
+            try {
+              // Hitung skor
+              await supabase.rpc("calculate_score", {
+                session_id_input: gameData.sessionId,
+                participant_id_input: gameData.participantId,
+              });
+              console.log("Score calculated when time is up");
+            } catch (error) {
+              console.error("Error calculating score when time is up:", error);
+            } finally {
+              // Redirect ke halaman hasil
+              router.push(
+                `/results/${resolvedParams.id}?participant=${participantId}`
+              );
+            }
+          })();
           return;
         }
 
@@ -275,9 +291,23 @@ export default function PlayActiveGamePage({
           .single();
 
         if (!error && session.status === "finished") {
-          router.push(
-            `/results/${resolvedParams.id}?participant=${participantId}`
-          );
+          // Hitung skor sebelum redirect
+          try {
+            await supabase.rpc("calculate_score", {
+              session_id_input: gameData.sessionId,
+              participant_id_input: gameData.participantId,
+            });
+            console.log("Score calculated when game is finished by host");
+          } catch (err) {
+            console.error(
+              "Error calculating score when game is finished:",
+              err
+            );
+          } finally {
+            router.push(
+              `/results/${resolvedParams.id}?participant=${participantId}`
+            );
+          }
         }
         setIsConnected(true);
       } catch (error) {
@@ -399,7 +429,7 @@ export default function PlayActiveGamePage({
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Game tidak ditemukan
             </h2>
-            <Button 
+            <Button
               onClick={() => router.push("/join")}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
             >
@@ -424,7 +454,9 @@ export default function PlayActiveGamePage({
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Gamepad2 className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">GolekQuiz</span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              GolekQuiz
+            </span>
           </div>
           <div className="flex items-center space-x-2">
             {gameState.totalTimeMinutes && gameState.status === "active" && (
@@ -446,7 +478,9 @@ export default function PlayActiveGamePage({
             <Badge
               variant="outline"
               className={`${
-                isConnected ? "bg-green-100 text-green-800 border-green-300" : "bg-red-100 text-red-800 border-red-300"
+                isConnected
+                  ? "bg-green-100 text-green-800 border-green-300"
+                  : "bg-red-100 text-red-800 border-red-300"
               }`}
             >
               {isConnected ? (
@@ -528,9 +562,7 @@ export default function PlayActiveGamePage({
                           {String.fromCharCode(65 + index)}
                         </div>
                         <div className="flex flex-col w-[80%] max-h-40 overflow-y-auto pr-2">
-                          <div className="text-lg">
-                            {answer.answer_text}
-                          </div>
+                          <div className="text-lg">{answer.answer_text}</div>
                           {answer.image_url && (
                             <img
                               src={answer.image_url}
@@ -554,7 +586,9 @@ export default function PlayActiveGamePage({
           <Card className="bg-white/90 backdrop-blur-sm mb-6 w-full md:w-[30%] shadow-xl border-0">
             <CardContent className="flex flex-col p-6 h-full">
               <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-medium text-gray-700">Progress Quiz</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Progress Quiz
+                </span>
                 <span className="text-sm text-gray-600">
                   Soal ke {currentQuestionIndex + 1} dari {totalQuestions}
                 </span>

@@ -19,12 +19,12 @@ export default function NavbarDemo() {
       link: "#learn",
     },
     {
-      name: "Game",
-      link: "#game",
-    },
-    {
       name: "Quiz",
       link: "#quiz",
+    },
+    {
+      name: "Game",
+      link: "#game",
     },
   ];
 

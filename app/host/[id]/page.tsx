@@ -58,11 +58,13 @@ interface GameSession {
     id: string;
     nickname: string;
     joined_at: string;
-    profiles?: {
-      avatar_url?: string | null;
-    } | Array<{
-      avatar_url?: string | null;
-    }>;
+    profiles?:
+      | {
+          avatar_url?: string | null;
+        }
+      | Array<{
+          avatar_url?: string | null;
+        }>;
   }>;
 }
 
@@ -376,8 +378,8 @@ export default function HostGamePage({
         questions: quiz.questions,
         profiles: {
           username: quiz.profiles.username,
-          avatar_url: quiz.profiles.avatar_url || null
-        }
+          avatar_url: quiz.profiles.avatar_url || null,
+        },
       };
 
       setQuiz(processedQuiz);
@@ -660,6 +662,7 @@ export default function HostGamePage({
     if (!gameSession) return;
 
     try {
+      // Update status game menjadi finished
       const { error } = await supabase
         .from("game_sessions")
         .update({
@@ -669,6 +672,38 @@ export default function HostGamePage({
         .eq("id", gameSession.id);
 
       if (error) throw error;
+
+      // Ambil data peserta terbaru
+      const { data: latestParticipants, error: participantsError } =
+        await supabase
+          .from("game_participants")
+          .select("id, nickname")
+          .eq("session_id", gameSession.id);
+
+      if (participantsError) {
+        console.error("Error fetching latest participants:", participantsError);
+      } else if (latestParticipants && latestParticipants.length > 0) {
+        // Hitung skor untuk semua peserta
+        console.log(
+          `Calculating scores for ${latestParticipants.length} participants`
+        );
+        await Promise.all(
+          latestParticipants.map(async (participant) => {
+            try {
+              await supabase.rpc("calculate_score", {
+                session_id_input: gameSession.id,
+                participant_id_input: participant.id,
+              });
+              console.log(`Score calculated for ${participant.nickname}`);
+            } catch (err) {
+              console.error(
+                `Error calculating score for ${participant.nickname}:`,
+                err
+              );
+            }
+          })
+        );
+      }
 
       router.push("/dashboard");
     } catch (error) {
@@ -1032,10 +1067,10 @@ export default function HostGamePage({
                         <Avatar className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
                           <AvatarImage
                             src={
-                              participant.profiles && 
-                              (Array.isArray(participant.profiles) 
-                                ? participant.profiles[0]?.avatar_url 
-                                : participant.profiles?.avatar_url) ||
+                              (participant.profiles &&
+                                (Array.isArray(participant.profiles)
+                                  ? participant.profiles[0]?.avatar_url
+                                  : participant.profiles?.avatar_url)) ||
                               `https://robohash.org/${encodeURIComponent(
                                 participant.nickname
                               )}.png`
@@ -1068,8 +1103,8 @@ export default function HostGamePage({
 
       {/* Chat Panel */}
       {user && gameSession && (
-        <ChatPanel 
-          sessionId={gameSession.id} 
+        <ChatPanel
+          sessionId={gameSession.id}
           userId={user.id}
           nickname={displayName}
           avatarUrl={userProfile?.avatar_url}

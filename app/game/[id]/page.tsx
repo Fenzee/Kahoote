@@ -107,27 +107,26 @@ export default function GamePage({
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-  if (!participantId) {
-    const init = async () => {
-      await fetchGameData(); // fetch semua data dulu
-      const unsubscribe = setupRealTimeSubscription(); // baru setup listener
+    if (!participantId) {
+      const init = async () => {
+        await fetchGameData(); // fetch semua data dulu
+        const unsubscribe = setupRealTimeSubscription(); // baru setup listener
 
-      // cleanup di unmount
-      return () => {
-        unsubscribe?.();
+        // cleanup di unmount
+        return () => {
+          unsubscribe?.();
+        };
       };
-    };
 
-    init();
-  }
-
-  return () => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
+      init();
     }
-  };
-}, [resolvedParams.id, participantId]);
 
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [resolvedParams.id, participantId]);
 
   // Timer effect
   useEffect(() => {
@@ -253,24 +252,22 @@ export default function GamePage({
 
   // mulai mencoba progress
 
-  
+  const fetchGameSession = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("game_sessions")
+      .select("*")
+      .eq("id", resolvedParams.id)
+      .single();
 
-const fetchGameSession = useCallback(async () => {
-  const { data, error } = await supabase
-    .from("game_sessions")
-    .select("*")
-    .eq("id", resolvedParams.id)
-    .single();
+    if (error) throw error;
+    return data;
+  }, [resolvedParams.id]);
 
-  if (error) throw error;
-  return data;
-}, [resolvedParams.id]);
-
-const fetchQuestions = useCallback(async (quizId: string) => {
-  const { data, error } = await supabase
-    .from("questions")
-    .select(
-      `
+  const fetchQuestions = useCallback(async (quizId: string) => {
+    const { data, error } = await supabase
+      .from("questions")
+      .select(
+        `
       id,
       question_text,
       time_limit,
@@ -284,120 +281,117 @@ const fetchQuestions = useCallback(async (quizId: string) => {
         order_index
       )
     `
-    )
-    .eq("quiz_id", quizId)
-    .order("order_index");
+      )
+      .eq("quiz_id", quizId)
+      .order("order_index");
 
-  if (error) throw error;
-  return data || [];
-}, []);
+    if (error) throw error;
+    return data || [];
+  }, []);
 
-const fetchParticipants = useCallback(async () => {
-  const { data, error } = await supabase
-    .from("game_participants")
-    .select("id, nickname, score")
-    .eq("session_id", resolvedParams.id)
-    .order("score", { ascending: false });
+  const fetchParticipants = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("game_participants")
+      .select("id, nickname, score")
+      .eq("session_id", resolvedParams.id)
+      .order("score", { ascending: false });
 
-  if (error) throw error;
-  return data || [];
-}, [resolvedParams.id]);
+    if (error) throw error;
+    return data || [];
+  }, [resolvedParams.id]);
 
-const fetchResponses = useCallback(async () => {
-  const { data, error } = await supabase
-    .from("game_responses")
-    .select("participant_id, question_id")
-    .eq("session_id", resolvedParams.id);
+  const fetchResponses = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("game_responses")
+      .select("participant_id, question_id")
+      .eq("session_id", resolvedParams.id);
 
-  if (error) throw error;
-  return data || [];
-}, [resolvedParams.id]);
+    if (error) throw error;
+    return data || [];
+  }, [resolvedParams.id]);
 
-const updateParticipantProgress = useCallback(async () => {
-  const [participantsData, responsesData] = await Promise.all([
-    fetchParticipants(),
-    fetchResponses(),
-  ]);
+  const updateParticipantProgress = useCallback(async () => {
+    const [participantsData, responsesData] = await Promise.all([
+      fetchParticipants(),
+      fetchResponses(),
+    ]);
 
-  const responseMap = responsesData.reduce((acc, curr) => {
-    acc[curr.participant_id] = (acc[curr.participant_id] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+    const responseMap = responsesData.reduce((acc, curr) => {
+      acc[curr.participant_id] = (acc[curr.participant_id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-  const updatedParticipants = participantsData.map((p) => ({
-    ...p,
-    responsesCount: responseMap[p.id] || 0,
-  }));
+    const updatedParticipants = participantsData.map((p) => ({
+      ...p,
+      responsesCount: responseMap[p.id] || 0,
+    }));
 
-  setParticipants(updatedParticipants);
-}, [fetchParticipants, fetchResponses]);
+    setParticipants(updatedParticipants);
+  }, [fetchParticipants, fetchResponses]);
 
-const fetchGameData = useCallback(async () => {
-  try {
-    setLoading(true);
+  const fetchGameData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-     const session = await fetchGameSession();
-    const questions = await fetchQuestions(session.quiz_id);
+      const session = await fetchGameSession();
+      const questions = await fetchQuestions(session.quiz_id);
 
-    setGameSession(session);
-    setQuestions(questions);
-    await updateParticipantProgress(); // gabungkan peserta + response count
-  } catch (error) {
-    console.error("Error fetching game data:", error);
-    toast.error("Gagal memuat data game");
-  } finally {
-    setLoading(false);
-  }
-}, [fetchGameSession, fetchQuestions, updateParticipantProgress]);
+      setGameSession(session);
+      setQuestions(questions);
+      await updateParticipantProgress(); // gabungkan peserta + response count
+    } catch (error) {
+      console.error("Error fetching game data:", error);
+      toast.error("Gagal memuat data game");
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchGameSession, fetchQuestions, updateParticipantProgress]);
 
-const setupRealTimeSubscription = useCallback(() => {
-  const channel = supabase
-    .channel(`game_control_${resolvedParams.id}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "game_responses",
-        filter: `session_id=eq.${resolvedParams.id}`,
-      },
-      () => {
-        updateParticipantProgress(); // hanya update progress
-      }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "game_participants",
-        filter: `session_id=eq.${resolvedParams.id}`,
-      },
-      () => {
-        updateParticipantProgress();
-      }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "game_sessions",
-        filter: `id=eq.${resolvedParams.id}`,
-      },
-      () => {
-        fetchGameData(); // reload full untuk timer / status
-      }
-    )
-    .subscribe();
+  const setupRealTimeSubscription = useCallback(() => {
+    const channel = supabase
+      .channel(`game_control_${resolvedParams.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "game_responses",
+          filter: `session_id=eq.${resolvedParams.id}`,
+        },
+        () => {
+          updateParticipantProgress(); // hanya update progress
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "game_participants",
+          filter: `session_id=eq.${resolvedParams.id}`,
+        },
+        () => {
+          updateParticipantProgress();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "game_sessions",
+          filter: `id=eq.${resolvedParams.id}`,
+        },
+        () => {
+          fetchGameData(); // reload full untuk timer / status
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [resolvedParams.id, updateParticipantProgress, fetchGameData]);
-
-
-
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [resolvedParams.id, updateParticipantProgress, fetchGameData]);
 
   // akhir mencoba progress
   useEffect(() => {
@@ -447,7 +441,6 @@ const setupRealTimeSubscription = useCallback(() => {
   //   )
   //   .subscribe();
 
-    
   //   return () => {
   //     supabase.removeChannel(channel);
   //   };
@@ -456,13 +449,14 @@ const setupRealTimeSubscription = useCallback(() => {
   useEffect(() => {
     const cleanup = setupRealTimeSubscription();
     return () => {
-      cleanup(); 
+      cleanup();
     };
   }, [setupRealTimeSubscription]);
-  
+
   const handleEndGame = useCallback(async () => {
     setIsEnding(true);
     try {
+      // Update status game menjadi finished
       const { error } = await supabase
         .from("game_sessions")
         .update({
@@ -472,6 +466,38 @@ const setupRealTimeSubscription = useCallback(() => {
         .eq("id", resolvedParams.id);
 
       if (error) throw error;
+
+      // Ambil data peserta terbaru
+      const { data: latestParticipants, error: participantsError } =
+        await supabase
+          .from("game_participants")
+          .select("id, nickname, score")
+          .eq("session_id", resolvedParams.id);
+
+      if (participantsError) {
+        console.error("Error fetching latest participants:", participantsError);
+      } else if (latestParticipants && latestParticipants.length > 0) {
+        // Hitung skor untuk semua peserta
+        console.log(
+          `Calculating scores for ${latestParticipants.length} participants`
+        );
+        await Promise.all(
+          latestParticipants.map(async (participant) => {
+            try {
+              await supabase.rpc("calculate_score", {
+                session_id_input: resolvedParams.id,
+                participant_id_input: participant.id,
+              });
+              console.log(`Score calculated for ${participant.nickname}`);
+            } catch (err) {
+              console.error(
+                `Error calculating score for ${participant.nickname}:`,
+                err
+              );
+            }
+          })
+        );
+      }
 
       toast.success("Game berakhir!");
       router.push(`/results/${resolvedParams.id}`);
@@ -520,7 +546,7 @@ const setupRealTimeSubscription = useCallback(() => {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Game tidak ditemukan
             </h2>
-            <Button 
+            <Button
               onClick={() => router.push("/dashboard")}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
             >
@@ -550,7 +576,9 @@ const setupRealTimeSubscription = useCallback(() => {
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Gamepad2 className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Game Control</span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Game Control
+            </span>
           </div>
           <div className="flex items-center space-x-2">
             {/* Game Timer */}
@@ -567,15 +595,18 @@ const setupRealTimeSubscription = useCallback(() => {
               <Timer className="w-4 h-4 mr-2" />
               {formatTime(timeLeft)}
             </Badge>
-            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+            <Badge
+              variant="outline"
+              className="bg-blue-100 text-blue-800 border-blue-300"
+            >
               <Users className="w-3 h-3 mr-1" />
               {participants.length} pemain
             </Badge>
             <Badge
               variant="outline"
               className={`${
-                gameSession.status === "active" 
-                  ? "bg-green-100 text-green-800 border-green-300" 
+                gameSession.status === "active"
+                  ? "bg-green-100 text-green-800 border-green-300"
                   : "bg-red-100 text-red-800 border-red-300"
               }`}
             >
@@ -715,44 +746,63 @@ const setupRealTimeSubscription = useCallback(() => {
                   {/* Top 2 Players */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[...participants]
-                      .sort((a, b) => (b.responsesCount || 0) - (a.responsesCount || 0))
+                      .sort(
+                        (a, b) =>
+                          (b.responsesCount || 0) - (a.responsesCount || 0)
+                      )
                       .slice(0, 2)
                       .map((player, idx) => {
-                        const progress = questions.length > 0
-                          ? ((player.responsesCount || 0) / questions.length) * 100
-                          : 0;
-                        
+                        const progress =
+                          questions.length > 0
+                            ? ((player.responsesCount || 0) /
+                                questions.length) *
+                              100
+                            : 0;
+
                         return (
                           <motion.div
                             key={player.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 300,
+                              damping: 30,
+                            }}
                             className={`p-6 rounded-lg shadow-md ${
-                              idx === 0 
-                                ? "bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300" 
+                              idx === 0
+                                ? "bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300"
                                 : "bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300"
                             }`}
                           >
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center space-x-3">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
-                                  idx === 0 ? "bg-gradient-to-r from-yellow-500 to-yellow-400" : "bg-gradient-to-r from-gray-500 to-gray-400"
-                                }`}>
+                                <div
+                                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
+                                    idx === 0
+                                      ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
+                                      : "bg-gradient-to-r from-gray-500 to-gray-400"
+                                  }`}
+                                >
                                   {idx + 1}
                                 </div>
-                                <h3 className="text-xl font-bold">{player.nickname}</h3>
+                                <h3 className="text-xl font-bold">
+                                  {player.nickname}
+                                </h3>
                               </div>
                               <motion.div
                                 className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  idx === 0 ? "bg-yellow-200 text-yellow-800" : "bg-gray-200 text-gray-800"
+                                  idx === 0
+                                    ? "bg-yellow-200 text-yellow-800"
+                                    : "bg-gray-200 text-gray-800"
                                 }`}
                                 initial={{ scale: 1 }}
                                 animate={{ scale: [1, 1.1, 1] }}
                                 key={player.responsesCount}
                                 transition={{ duration: 0.5 }}
                               >
-                                {player.responsesCount || 0}/{questions.length} soal
+                                {player.responsesCount || 0}/{questions.length}{" "}
+                                soal
                               </motion.div>
                             </div>
                             <div className="space-y-2">
@@ -760,19 +810,25 @@ const setupRealTimeSubscription = useCallback(() => {
                                 <span>Progress</span>
                                 <span>{Math.round(progress)}%</span>
                               </div>
-                              <motion.div 
+                              <motion.div
                                 className="w-full bg-gray-200 rounded-full h-4 overflow-hidden"
                                 initial={{ width: 0 }}
                                 animate={{ width: "100%" }}
                                 transition={{ duration: 0.5 }}
                               >
-                                <motion.div 
+                                <motion.div
                                   className={`h-full rounded-full ${
-                                    idx === 0 ? "bg-gradient-to-r from-yellow-500 to-yellow-400" : "bg-gradient-to-r from-gray-500 to-gray-400"
+                                    idx === 0
+                                      ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
+                                      : "bg-gradient-to-r from-gray-500 to-gray-400"
                                   }`}
                                   initial={{ width: "0%" }}
                                   animate={{ width: `${progress}%` }}
-                                  transition={{ type: "spring", stiffness: 100, damping: 25 }}
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 100,
+                                    damping: 25,
+                                  }}
                                 ></motion.div>
                               </motion.div>
                             </div>
@@ -785,14 +841,20 @@ const setupRealTimeSubscription = useCallback(() => {
                   <AnimatePresence>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[...participants]
-                        .sort((a, b) => (b.responsesCount || 0) - (a.responsesCount || 0))
+                        .sort(
+                          (a, b) =>
+                            (b.responsesCount || 0) - (a.responsesCount || 0)
+                        )
                         .slice(2)
                         .map((player, idx) => {
-                          const progress = questions.length > 0
-                            ? ((player.responsesCount || 0) / questions.length) * 100
-                            : 0;
+                          const progress =
+                            questions.length > 0
+                              ? ((player.responsesCount || 0) /
+                                  questions.length) *
+                                100
+                              : 0;
                           const rank = idx + 3; // Starting from rank 3
-                          
+
                           return (
                             <motion.div
                               key={player.id}
@@ -800,7 +862,11 @@ const setupRealTimeSubscription = useCallback(() => {
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, height: 0 }}
-                              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 30,
+                              }}
                               className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm"
                             >
                               <div className="flex items-center justify-between mb-2">
@@ -808,7 +874,9 @@ const setupRealTimeSubscription = useCallback(() => {
                                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                                     {rank}
                                   </div>
-                                  <div className="font-medium">{player.nickname}</div>
+                                  <div className="font-medium">
+                                    {player.nickname}
+                                  </div>
                                 </div>
                                 <motion.div
                                   className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
@@ -817,7 +885,8 @@ const setupRealTimeSubscription = useCallback(() => {
                                   key={player.responsesCount}
                                   transition={{ duration: 0.5 }}
                                 >
-                                  {player.responsesCount || 0}/{questions.length}
+                                  {player.responsesCount || 0}/
+                                  {questions.length}
                                 </motion.div>
                               </div>
                               <div className="space-y-1">
@@ -826,11 +895,15 @@ const setupRealTimeSubscription = useCallback(() => {
                                   <span>{Math.round(progress)}%</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                                  <motion.div 
+                                  <motion.div
                                     className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
                                     initial={{ width: "0%" }}
                                     animate={{ width: `${progress}%` }}
-                                    transition={{ type: "spring", stiffness: 100, damping: 25 }}
+                                    transition={{
+                                      type: "spring",
+                                      stiffness: 100,
+                                      damping: 25,
+                                    }}
                                   ></motion.div>
                                 </div>
                               </div>

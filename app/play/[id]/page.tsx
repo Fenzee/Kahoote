@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
-import { Users, Trophy, AlertCircle, Play } from "lucide-react";
+import { Users, Trophy, AlertCircle, Play, ArrowLeft } from "lucide-react";
 import { use } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -38,11 +38,13 @@ interface Participant {
   id: string;
   nickname: string;
   score: number;
-  profiles?: {
-    avatar_url?: string | null;
-  } | Array<{
-    avatar_url?: string | null;
-  }>;
+  profiles?:
+    | {
+        avatar_url?: string | null;
+      }
+    | Array<{
+        avatar_url?: string | null;
+      }>;
 }
 
 function getInitials(name: string) {
@@ -176,8 +178,8 @@ export default function PlayGamePage({
     fetchGameData().finally(() => {
       setLoading(false);
       router.prefetch(
-      `/play-active/${resolvedParams.id}?participant=${participantId}`
-    );
+        `/play-active/${resolvedParams.id}?participant=${participantId}`
+      );
     });
   }, [participantId, fetchGameData, router]);
 
@@ -253,7 +255,9 @@ export default function PlayGamePage({
       gameSession?.countdown_started_at &&
       participantId
     ) {
-      router.prefetch(`/play-active/${resolvedParams.id}?participant=${participantId}`);
+      router.prefetch(
+        `/play-active/${resolvedParams.id}?participant=${participantId}`
+      );
       const startTime = new Date(gameSession.started_at).getTime();
       const now = Date.now();
       const timeLeft = Math.ceil((startTime - now) / 1000);
@@ -278,6 +282,25 @@ export default function PlayGamePage({
       );
     }
   }, [countdownLeft, participantId, resolvedParams.id, router]);
+
+  const leaveGame = async () => {
+    if (!participantId || !gameSession) return;
+
+    try {
+      // Hapus peserta dari game
+      const { error } = await supabase
+        .from("game_participants")
+        .delete()
+        .eq("id", participantId);
+
+      if (error) throw error;
+
+      // Arahkan ke dashboard
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Error leaving game:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -433,6 +456,16 @@ export default function PlayGamePage({
                       <p className="text-lg font-semibold text-purple-600">
                         Game PIN: {gameSession.game_pin}
                       </p>
+
+                      {/* Tombol Kembali */}
+                      <Button
+                        onClick={leaveGame}
+                        variant="outline"
+                        className="mt-4 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Keluar dari Game
+                      </Button>
                     </CardContent>
                   </Card>
                 )}
@@ -470,10 +503,10 @@ export default function PlayGamePage({
                             <Avatar className="h-10 w-10 border-2 border-yellow-300">
                               <AvatarImage
                                 src={
-                                  participant.profiles && 
-                                  (Array.isArray(participant.profiles) 
-                                    ? participant.profiles[0]?.avatar_url 
-                                    : participant.profiles?.avatar_url) ||
+                                  (participant.profiles &&
+                                    (Array.isArray(participant.profiles)
+                                      ? participant.profiles[0]?.avatar_url
+                                      : participant.profiles?.avatar_url)) ||
                                   `https://robohash.org/${encodeURIComponent(
                                     participant.nickname
                                   )}.png`
@@ -506,15 +539,20 @@ export default function PlayGamePage({
 
           {/* Chat Panel */}
           {participantId && gameSession && (
-            <ChatPanel 
-              sessionId={gameSession.id} 
+            <ChatPanel
+              sessionId={gameSession.id}
               userId={null}
-              nickname={participants.find(p => p.id === participantId)?.nickname || 'Player'}
+              nickname={
+                participants.find((p) => p.id === participantId)?.nickname ||
+                "Player"
+              }
               avatarUrl={(() => {
-                const participant = participants.find(p => p.id === participantId);
+                const participant = participants.find(
+                  (p) => p.id === participantId
+                );
                 if (!participant || !participant.profiles) return null;
-                return Array.isArray(participant.profiles) 
-                  ? participant.profiles[0]?.avatar_url 
+                return Array.isArray(participant.profiles)
+                  ? participant.profiles[0]?.avatar_url
                   : participant.profiles?.avatar_url;
               })()}
               position="right"
