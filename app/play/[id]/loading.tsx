@@ -1,10 +1,14 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#105981] via-[#09799E] to-[#58B8CE] flex items-center justify-center">
-      <div className="text-center text-white">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-6"></div>
-        <h2 className="text-2xl font-bold mb-2">Memuat Game...</h2>
-        <p className="text-white/80">Mohon tunggu sebentar</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+          <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-white"></div>
+        </div>
+        <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Memuat...
+        </h2>
+        <p className="text-gray-500">Mohon tunggu sebentar</p>
       </div>
     </div>
   );
