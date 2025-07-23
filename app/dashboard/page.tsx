@@ -424,23 +424,25 @@ export default function Dashboard() {
       if (error) throw error;
 
       // Transform the data to match our interface
-      const normalized = data.map((entry) => ({
-        id: entry.id,
-        session_id: entry.session_id,
-        score: entry.score,
-        joined_at: entry.joined_at,
-        game_sessions: {
-          id: entry.game_sessions.id,
-          quiz_id: entry.game_sessions.quiz_id,
-          started_at: entry.game_sessions.started_at,
-          ended_at: entry.game_sessions.ended_at,
-          status: entry.game_sessions.status,
-          quizzes: {
-            id: entry.game_sessions.quizzes.id,
-            title: entry.game_sessions.quizzes.title,
+      const normalized = data
+        .filter((entry) => entry.game_sessions !== null) // Filter data yang game_sessions-nya null
+        .map((entry) => ({
+          id: entry.id,
+          session_id: entry.session_id,
+          score: entry.score,
+          joined_at: entry.joined_at,
+          game_sessions: {
+            id: entry.game_sessions.id,
+            quiz_id: entry.game_sessions.quiz_id,
+            started_at: entry.game_sessions.started_at,
+            ended_at: entry.game_sessions.ended_at,
+            status: entry.game_sessions.status,
+            quizzes: {
+              id: entry.game_sessions.quizzes.id,
+              title: entry.game_sessions.quizzes.title,
+            },
           },
-        },
-      }));
+        }));
 
       setGameHistory(normalized);
     } catch (error) {
