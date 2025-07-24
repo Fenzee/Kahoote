@@ -12,8 +12,52 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/auth-context";
-import { Eye, EyeOff, Mail, Lock, User, Gamepad2, ArrowLeft, Star, Trophy, Users, CheckCircle, Zap } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Gamepad2, ArrowLeft, Star, Trophy, Users, CheckCircle, Zap, Globe, Phone } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Import flag-icons CSS
+import "flag-icons/css/flag-icons.min.css";
+
+// List of countries for the dropdown
+const countries = [
+  { value: "none", label: "Pilih Negara", code: "" },
+  { value: "ID", label: "Indonesia", code: "id" },
+  { value: "MY", label: "Malaysia", code: "my" },
+  { value: "SG", label: "Singapura", code: "sg" },
+  { value: "US", label: "Amerika Serikat", code: "us" },
+  { value: "GB", label: "Inggris", code: "gb" },
+  { value: "JP", label: "Jepang", code: "jp" },
+  { value: "KR", label: "Korea Selatan", code: "kr" },
+  { value: "CN", label: "China", code: "cn" },
+  { value: "AU", label: "Australia", code: "au" },
+  { value: "DE", label: "Jerman", code: "de" },
+  { value: "FR", label: "Prancis", code: "fr" },
+  { value: "IT", label: "Italia", code: "it" },
+  { value: "ES", label: "Spanyol", code: "es" },
+  { value: "NL", label: "Belanda", code: "nl" },
+  { value: "BR", label: "Brasil", code: "br" },
+  { value: "CA", label: "Kanada", code: "ca" },
+  { value: "MX", label: "Meksiko", code: "mx" },
+  { value: "AR", label: "Argentina", code: "ar" },
+  { value: "IN", label: "India", code: "in" },
+  { value: "RU", label: "Rusia", code: "ru" },
+  { value: "ZA", label: "Afrika Selatan", code: "za" },
+  { value: "NG", label: "Nigeria", code: "ng" },
+  { value: "EG", label: "Mesir", code: "eg" },
+  { value: "SA", label: "Arab Saudi", code: "sa" },
+  { value: "AE", label: "Uni Emirat Arab", code: "ae" },
+  { value: "TH", label: "Thailand", code: "th" },
+  { value: "VN", label: "Vietnam", code: "vn" },
+  { value: "PH", label: "Filipina", code: "ph" },
+  { value: "NZ", label: "Selandia Baru", code: "nz" },
+];
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
@@ -24,6 +68,8 @@ export default function RegisterPage() {
     password: "",
     username: "",
     fullname: "",
+    phone: "", // Tambahkan nomor telepon
+    country: "none", // Tambahkan negara
   });
   const { signUp, user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -42,13 +88,28 @@ export default function RegisterPage() {
     });
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      await signUp(formData.email, formData.password, formData.username, formData.fullname);
+      // Tambahkan phone dan country ke parameter signUp
+      await signUp(
+        formData.email, 
+        formData.password, 
+        formData.username, 
+        formData.fullname, 
+        formData.country === "none" ? null : formData.country, 
+        formData.phone || null
+      );
       toast.success("Akun berhasil dibuat! Silakan cek email untuk verifikasi.");
       // Don't manually redirect here, let the useEffect handle it
     } catch (error: any) {
@@ -260,6 +321,66 @@ export default function RegisterPage() {
                         className="pl-12 h-12 border-2 border-gray-200 focus:border-blue-500 rounded-xl"
                         required
                       />
+                    </div>
+                  </div>
+
+                  {/* Tambahkan nomor telepon */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-gray-700 font-medium">
+                      Nomor Telepon <span className="text-gray-400 text-sm">(Opsional)</span>
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="Nomor telepon anda"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className="pl-12 h-12 border-2 border-gray-200 focus:border-blue-500 rounded-xl"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tambahkan dropdown negara */}
+                  <div className="space-y-2">
+                    <Label htmlFor="country" className="text-gray-700 font-medium">
+                      Negara
+                    </Label>
+                    <div className="relative">
+                      <Globe className="absolute left-4 top-3 h-5 w-5 text-gray-400 z-10" />
+                      <Select
+                        value={formData.country}
+                        onValueChange={(value) => handleSelectChange("country", value)}
+                      >
+                        <SelectTrigger className="pl-12 h-12 border-2 border-gray-200 focus:border-blue-500 rounded-xl">
+                          <SelectValue>
+                            {formData.country && formData.country !== "none" ? (
+                              <span className="flex items-center">
+                                <span className={`fi fi-${countries.find(c => c.value === formData.country)?.code} mr-2`}></span>
+                                {countries.find(c => c.value === formData.country)?.label}
+                              </span>
+                            ) : (
+                              "Pilih negara"
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countries.map((country) => (
+                            <SelectItem key={country.value} value={country.value}>
+                              {country.code ? (
+                                <span className="flex items-center">
+                                  <span className={`fi fi-${country.code} mr-2`}></span>
+                                  {country.label}
+                                </span>
+                              ) : (
+                                <span>{country.label}</span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 

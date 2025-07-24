@@ -634,7 +634,7 @@ export default function ProfilePage() {
 
                   {/* Profile Tab */}
                   <TabsContent value="profile" className="space-y-6">
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="username" className="text-gray-700 font-medium">
                           Username
@@ -775,7 +775,7 @@ export default function ProfilePage() {
                       )}
 
                       {/* Add address field to form */}
-                      <div className="space-y-2">
+                      <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="address" className="text-gray-700 font-medium">
                           Alamat
                         </Label>
@@ -814,7 +814,7 @@ export default function ProfilePage() {
                       </div>
 
                       {showMapPreview && userProfile?.latitude && userProfile?.longitude && (
-                        <div className="mt-4">
+                        <div className="md:col-span-2">
                           <h3 className="text-sm font-medium text-gray-700 mb-2">Pratinjau Lokasi</h3>
                           <DynamicLocationMap 
                             latitude={Number(userProfile.latitude)} 
@@ -826,7 +826,7 @@ export default function ProfilePage() {
                         </div>
                       )}
 
-                      <div className="space-y-2">
+                      <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="email" className="text-gray-700 font-medium">
                           Email
                         </Label>
@@ -844,23 +844,25 @@ export default function ProfilePage() {
                         <p className="text-xs text-gray-500">Email tidak dapat diubah</p>
                       </div>
 
-                      <Button
-                        onClick={handleSaveProfile}
-                        className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-4"
-                        disabled={saving}
-                      >
-                        {saving ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Menyimpan...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Simpan Perubahan
-                          </>
-                        )}
-                      </Button>
+                      <div className="md:col-span-2">
+                        <Button
+                          onClick={handleSaveProfile}
+                          className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-4"
+                          disabled={saving}
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Menyimpan...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-4 h-4 mr-2" />
+                              Simpan Perubahan
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </TabsContent>
 

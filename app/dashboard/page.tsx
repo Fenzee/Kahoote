@@ -46,6 +46,7 @@ import {
   Languages,
   Laptop,
   ArrowRight,
+  Phone,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -214,6 +215,7 @@ export default function Dashboard() {
     username: string;
     avatar_url: string | null;
     country?: string | null;
+    phone?: string | null; // Tambahkan nomor telepon
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isNavOpen, setIsNavOpen] = useState(false); // State for bottom navigation
@@ -244,7 +246,7 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("username, avatar_url, country")
+        .select("username, avatar_url, country, phone") // Tambahkan phone di sini
         .eq("id", user.id)
         .single();
 
@@ -749,8 +751,7 @@ export default function Dashboard() {
               <div className="flex items-center space-x-1">
                 {userProfile?.country && userProfile.country !== "none" && (
                   <span 
-                    className={`fi fi-${userProfile.country.toLowerCase()}`} 
-                    style={{ fontSize: "1em" }}
+                    className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-6 h-4 shadow-sm border border-white/30`}
                   ></span>
                 )}
                 <span className="text-white font-medium hidden md:block">
@@ -872,6 +873,61 @@ export default function Dashboard() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+            {/* User Profile Card - tambahkan card profil */}
+            <Card className="bg-white/90 border-none shadow-md row-span-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Profil Saya</CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/profile")}>
+                  <Edit className="h-4 w-4 text-gray-500" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center text-center mb-4">
+                  <Avatar className="h-16 w-16 mb-2">
+                    <AvatarImage
+                      src={
+                        userProfile?.avatar_url ||
+                        `https://robohash.org/${encodeURIComponent(
+                          user.email || "guest"
+                        )}.png`
+                      }
+                      alt={user.email || ""}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-blue-100 text-blue-600 text-xl">
+                      {displayName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h3 className="font-bold text-lg text-gray-900">{displayName}</h3>
+                  <p className="text-gray-600 text-sm">{user.email}</p>
+                  
+                  {userProfile?.country && userProfile.country !== "none" && (
+                    <div className="flex items-center justify-center space-x-2 mt-2">
+                      <span 
+                        className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-6 h-4 shadow-sm border border-gray-300`}
+                      ></span>
+                      <span className="text-sm text-gray-600">
+                        {userProfile.country}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {userProfile?.phone && (
+                    <div className="mt-2 flex items-center justify-center space-x-2">
+                      <Phone className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">{userProfile.phone}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <Link href="/dashboard/profile">
+                  <Button variant="outline" className="w-full border-blue-300 text-blue-600 hover:bg-blue-50">
+                    Edit Profil
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+            
             <Card className="bg-white/90 border-none shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Kuis Saya</CardTitle>
@@ -996,10 +1052,11 @@ export default function Dashboard() {
                           </Avatar>
                           <div className="flex items-center gap-2">
                             {quiz.creator.country && quiz.creator.country !== "none" && (
-                              <span 
-                                className={`fi fi-${quiz.creator.country.toLowerCase()}`}
-                                style={{ fontSize: "1em" }}
-                              ></span>
+                              <div className="inline-flex rounded-sm overflow-hidden border border-gray-300 shadow-sm">
+                                <span 
+                                  className={`fi fi-${quiz.creator.country.toLowerCase()} w-6 h-4`}
+                                ></span>
+                              </div>
                             )}
                             <span className="text-sm text-gray-600 font-medium">
                               {quiz.creator.username}
