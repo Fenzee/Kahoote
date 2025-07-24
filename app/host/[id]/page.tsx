@@ -1017,10 +1017,10 @@ export default function HostGamePage({
             </CardHeader>
             <CardContent className="px-0 pb-0 space-y-6">
               <div className="flex items-center justify-center gap-3">
-                <div className="text-6xl font-extrabold text-purple-600 left-[20px] relative">
+                <div className="text-6xl font-extrabold text-purple-600 left-[30px] relative">
                   {gameSession.game_pin}
                 </div>
-                <div className="relative inline-block left-[10px]">
+                <div className="relative inline-block left-[30px]">
                   <Button
                     onClick={copyGamePin}
                     onMouseEnter={() => setIsHovered(true)}
@@ -1028,7 +1028,7 @@ export default function HostGamePage({
                     onMouseMove={handleMouseMove}
                     variant="ghost"
                     size="icon"
-                    className="text-purple-600 hover:bg-purple-50 relative"
+                    className="text-purple-600 hover:bg-purple-50 relative bg-transparent border-2 "
                   >
                     {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                   </Button>
