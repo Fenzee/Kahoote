@@ -52,9 +52,26 @@ interface Participant {
   score: number;
   joined_at: string;
   user_id: string | null;
-  profiles?: {
-    avatar_url: string | null;
-  };
+  profiles?:
+    | {
+        avatar_url: string | null;
+      }
+    | Array<{
+        avatar_url: string | null;
+      }>
+    | null;
+  avg_response_time?: number; // Tambahkan field untuk rata-rata waktu pengerjaan
+  rank?: number; // Tambahkan field untuk peringkat
+}
+
+// Interface untuk hasil dari RPC get_leaderboard_with_tiebreaker
+interface LeaderboardEntry {
+  participant_id: string;
+  nickname: string;
+  score: number;
+  avg_time: number;
+  rank: number;
+  user_id?: string | null; // Tambahkan user_id
 }
 
 interface QuestionStats {
@@ -84,6 +101,7 @@ interface PersonalStats {
     answer_image_url: string | null;
     correct_answer: string | null;
     is_correct: boolean;
+    response_time?: number; // Tambahkan response_time
   }>;
 }
 
@@ -144,6 +162,17 @@ export default function ResultsPage({
     fetchResults();
   }, [resolvedParams.id, user, participantId]);
 
+  // Tambahkan useEffect untuk log personalStats
+  useEffect(() => {
+    if (personalStats) {
+      console.log("PersonalStats updated:", {
+        rank: personalStats.rank,
+        total: personalStats.total_participants,
+        score: personalStats.total_points,
+      });
+    }
+  }, [personalStats]);
+
   const fetchResults = async () => {
     try {
       console.log("Fetching results for session:", resolvedParams.id);
@@ -198,37 +227,118 @@ export default function ResultsPage({
       const userIsHost = user ? session.host_id === user.id : false;
       setIsHost(userIsHost);
 
-      const { data: participantsData, error: participantsError } =
-        await supabase
-          .from("game_participants")
-          .select(
+      let participantsData: Participant[] = [];
+      let leaderboardEntries: LeaderboardEntry[] = [];
+
+      // Gunakan fungsi get_leaderboard_with_tiebreaker untuk mendapatkan data peserta dengan rata-rata waktu
+      try {
+        const { data: leaderboardData, error: leaderboardError } =
+          await supabase.rpc("get_leaderboard_with_tiebreaker", {
+            session_id_input: resolvedParams.id,
+          });
+
+        if (leaderboardError) {
+          console.error(
+            "Error fetching leaderboard with tiebreaker:",
+            leaderboardError
+          );
+
+          // Fallback ke cara lama jika fungsi RPC tidak tersedia
+          const { data: fallbackData, error: participantsError } =
+            await supabase
+              .from("game_participants")
+              .select(
+                `
+              id,
+              nickname,
+              score,
+              joined_at,
+              user_id,
+              profiles (
+                avatar_url
+              )
             `
-      id,
-      nickname,
-      score,
-      joined_at,
-      user_id,
-      profiles (
-        avatar_url
-      )
-    `
-          )
-          .eq("session_id", resolvedParams.id)
-          .order("score", { ascending: false });
+              )
+              .eq("session_id", resolvedParams.id)
+              .order("score", { ascending: false });
 
-      if (participantsError) {
-        console.error("Error fetching participants:", participantsError);
-        throw new Error("Gagal memuat data peserta");
+          if (participantsError) {
+            console.error("Error fetching participants:", participantsError);
+            throw new Error("Gagal memuat data peserta");
+          }
+
+          participantsData = fallbackData as Participant[];
+        } else {
+          // Simpan data leaderboard asli untuk digunakan nanti
+          leaderboardEntries = leaderboardData;
+          console.log("Leaderboard entries with rank:", leaderboardEntries);
+
+          // Transformasi data leaderboard ke format yang sesuai dengan interface Participant
+          const transformedParticipants = await Promise.all(
+            leaderboardData.map(async (entry: LeaderboardEntry) => {
+              // Ambil data profil untuk setiap peserta
+              let avatarUrl = null;
+
+              // Ambil user_id dari game_participants
+              const { data: participantData } = await supabase
+                .from("game_participants")
+                .select("user_id")
+                .eq("id", entry.participant_id)
+                .single();
+
+              const userId = participantData?.user_id;
+
+              // Jika ada user_id, ambil avatar dari profiles
+              if (userId) {
+                const { data: profileData } = await supabase
+                  .from("profiles")
+                  .select("avatar_url")
+                  .eq("id", userId)
+                  .single();
+
+                avatarUrl = profileData?.avatar_url;
+              }
+
+              return {
+                id: entry.participant_id,
+                nickname: entry.nickname,
+                score: entry.score,
+                joined_at: "", // Tidak digunakan lagi
+                user_id: userId,
+                avg_response_time: entry.avg_time,
+                profiles: {
+                  avatar_url: avatarUrl,
+                },
+                rank: entry.rank, // Tambahkan rank dari leaderboard
+              };
+            })
+          );
+
+          console.log(
+            "Leaderboard with avg times and avatars:",
+            transformedParticipants
+          );
+          participantsData = transformedParticipants;
+        }
+
+        console.log("Participants data:", participantsData);
+        setParticipants(participantsData);
+      } catch (error) {
+        console.error("Error processing participants:", error);
+        throw new Error("Gagal memproses data peserta");
       }
-
-      console.log("Participants:", participantsData);
-      setParticipants(participantsData);
 
       if (userIsHost) {
         await fetchQuestionStats(session.quiz_id);
       }
 
       if (participantId) {
+        // Log untuk debugging
+        console.log(
+          "Participant data before fetchPersonalStats:",
+          participantsData.find((p) => p.id === participantId)
+        );
+
         await fetchPersonalStats(
           participantId,
           participantsData,
@@ -318,6 +428,18 @@ export default function ResultsPage({
     quizId: string
   ) => {
     try {
+      // Cari participant dalam data leaderboard
+      const participant = allParticipants.find((p) => p.id === participantId);
+      if (!participant) throw new Error("Participant tidak ditemukan");
+
+      // Log untuk debugging
+      console.log("Found participant in leaderboard:", {
+        id: participant.id,
+        nickname: participant.nickname,
+        score: participant.score,
+        rank: participant.rank,
+      });
+
       const { data: responses, error: responsesError } = await supabase
         .from("game_responses")
         .select(
@@ -339,14 +461,11 @@ export default function ResultsPage({
 
       if (responsesError) throw responsesError;
 
-      const participant = allParticipants.find((p) => p.id === participantId);
-      if (!participant) throw new Error("Participant tidak ditemukan");
-
       // 🆕 Tambahkan bagian ini
       const { data: questions, error: questionsError } = await supabase
         .from("questions")
         .select("id")
-        .eq("quiz_id", quizId); // Pakai non-null assertion karena sudah dicek di atas
+        .eq("quiz_id", quizId);
 
       if (questionsError) throw questionsError;
 
@@ -357,26 +476,74 @@ export default function ResultsPage({
         (r) => r.answers?.is_correct
       ).length;
       const totalPoints = participant.score;
-      const averageTime =
-        responses.length > 0
-          ? responses.reduce((sum, r) => sum + (r.response_time || 0), 0) /
-            responses.length /
-            1000
-          : 0;
-      const fastestAnswer =
-        responses.length > 0
-          ? Math.min(...responses.map((r) => r.response_time || 0)) / 1000
-          : 0;
 
-      const participantsWithHigherScores = allParticipants.filter(
-        (p) => p.score > participant.score
-      );
-      const rank = participantsWithHigherScores.length + 1;
+      // Hitung rata-rata waktu berdasarkan started_at dan ended_at
+      let totalTime = 0;
+      let validTimeCount = 0;
+      let fastestTime = Number.MAX_VALUE;
+
+      for (const response of responses) {
+        if (response.started_at && response.ended_at) {
+          const startTime = new Date(response.started_at);
+          const endTime = new Date(response.ended_at);
+          const timeDiffSeconds =
+            (endTime.getTime() - startTime.getTime()) / 1000;
+
+          if (timeDiffSeconds > 0) {
+            totalTime += timeDiffSeconds;
+            validTimeCount++;
+
+            if (timeDiffSeconds < fastestTime) {
+              fastestTime = timeDiffSeconds;
+            }
+          }
+        }
+      }
+
+      const averageTime =
+        validTimeCount > 0 ? Math.round(totalTime / validTimeCount) : 0;
+      const fastestAnswer =
+        fastestTime !== Number.MAX_VALUE ? Math.round(fastestTime) : 0;
+
+      // Gunakan rank dari participant jika tersedia, atau cari dari leaderboard
+      let rank;
+
+      // Jika participant memiliki rank dari leaderboard, gunakan itu
+      if (participant.rank !== undefined) {
+        rank = participant.rank;
+        console.log("Using rank from leaderboard:", rank);
+      } else {
+        // Fallback ke cara lama jika tidak ada rank
+        const participantsWithHigherScores = allParticipants.filter(
+          (p) => p.score > participant.score
+        );
+        rank = participantsWithHigherScores.length + 1;
+        console.log("Calculated rank fallback:", rank);
+      }
 
       // Fetch correct answers with images for each question
-      const questionDetails = [];
+      const questionDetails: Array<{
+        question_id: string;
+        question_text: string;
+        image_url: string | null;
+        answer_image_url: string | null;
+        correct_answer: string | null;
+        is_correct: boolean;
+        response_time?: number;
+      }> = [];
+
       for (const response of responses) {
         const questionId = response.question_id;
+
+        // Hitung waktu pengerjaan untuk soal ini
+        let responseTime: number | undefined = undefined;
+        if (response.started_at && response.ended_at) {
+          const startTime = new Date(response.started_at);
+          const endTime = new Date(response.ended_at);
+          responseTime = Math.round(
+            (endTime.getTime() - startTime.getTime()) / 1000
+          );
+        }
 
         // Get correct answer with image
         const { data: correctAnswerData, error: answerError } = await supabase
@@ -394,6 +561,7 @@ export default function ResultsPage({
             answer_image_url: correctAnswerData.image_url,
             correct_answer: correctAnswerData.answer_text,
             is_correct: response.answers?.is_correct || false,
+            response_time: responseTime,
           });
         }
       }
@@ -402,11 +570,23 @@ export default function ResultsPage({
         total_questions: totalQuestions,
         correct_answers: correctAnswers,
         total_points: totalPoints,
-        average_time: Math.round(averageTime),
-        fastest_answer: Math.round(fastestAnswer),
+        average_time: averageTime,
+        fastest_answer: fastestAnswer,
         rank,
         total_participants: allParticipants.length,
         question_details: questionDetails,
+      });
+
+      console.log("Personal stats with rank:", {
+        participantId,
+        participantRank: participant.rank,
+        calculatedRank: rank,
+        participantScore: participant.score,
+        allParticipants: allParticipants.map((p) => ({
+          id: p.id,
+          score: p.score,
+          rank: p.rank,
+        })),
       });
     } catch (error) {
       console.error("Error fetching personal stats:", error);
@@ -728,7 +908,16 @@ export default function ResultsPage({
                         <Avatar className="w-10 h-10 border-2 border-white shadow">
                           <AvatarImage
                             src={
-                              participant.profiles?.avatar_url ||
+                              // Handle profiles yang bisa jadi objek atau array
+                              (() => {
+                                if (!participant.profiles) return null;
+                                if (Array.isArray(participant.profiles)) {
+                                  return (
+                                    participant.profiles[0]?.avatar_url || null
+                                  );
+                                }
+                                return participant.profiles.avatar_url;
+                              })() ||
                               `https://robohash.org/${encodeURIComponent(
                                 participant.nickname
                               )}.png`
@@ -746,10 +935,13 @@ export default function ResultsPage({
                           {participant.nickname}
                         </span>
                         <span className="text-xs text-gray-500">
-                          Bergabung:{" "}
-                          {new Date(participant.joined_at).toLocaleTimeString(
-                            "id-ID"
-                          )}
+                          {participant.avg_response_time !== undefined
+                            ? `Waktu: ${participant.avg_response_time.toFixed(
+                                1
+                              )} detik`
+                            : `Bergabung: ${new Date(
+                                participant.joined_at
+                              ).toLocaleTimeString("id-ID")}`}
                         </span>
                       </div>
                     </div>
@@ -1000,12 +1192,17 @@ export default function ResultsPage({
               <p className="text-gray-600">Selamat telah menyelesaikan game!</p>
             </CardHeader>
             <CardContent>
+              {/* Log untuk debugging */}
+              {console.log("Rendering personalStats:", personalStats)}
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-purple-50 rounded-lg transform transition-all hover:scale-105 hover:bg-purple-100">
                   <div className="text-3xl font-bold text-purple-600 animate-number-pop">
-                    #{personalStats.rank}
+                    #{personalStats.rank || "?"}
                   </div>
                   <div className="text-sm text-gray-600">Peringkat</div>
+                  <div className="text-xs text-purple-500 mt-1">
+                    dari {personalStats.total_participants} pemain
+                  </div>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg transform transition-all hover:scale-105 hover:bg-green-100">
                   <div className="text-3xl font-bold text-green-600 animate-number-pop">
@@ -1019,6 +1216,27 @@ export default function ResultsPage({
                     {personalStats.total_questions}
                   </div>
                   <div className="text-sm text-gray-600">Benar</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="text-center p-4 bg-yellow-50 rounded-lg transform transition-all hover:scale-105 hover:bg-yellow-100">
+                  <div className="text-3xl font-bold text-yellow-600 animate-number-pop">
+                    {personalStats.average_time}s
+                  </div>
+                  <div className="text-sm text-gray-600">Rata-rata Waktu</div>
+                  <div className="text-xs text-yellow-500 mt-1">
+                    Semua Jawaban
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg transform transition-all hover:scale-105 hover:bg-orange-100">
+                  <div className="text-3xl font-bold text-orange-600 animate-number-pop">
+                    {personalStats.fastest_answer}s
+                  </div>
+                  <div className="text-sm text-gray-600">Tercepat</div>
+                  <div className="text-xs text-orange-500 mt-1">
+                    Semua Jawaban
+                  </div>
                 </div>
               </div>
 
@@ -1098,11 +1316,25 @@ export default function ResultsPage({
                                 </span>
                               )}
                             </h4>
-                            {question.is_correct ? (
-                              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                            )}
+                            <div className="flex items-center gap-2">
+                              {question.response_time && (
+                                <Badge
+                                  className={`${
+                                    question.is_correct
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-red-100 text-red-800"
+                                  } flex items-center gap-1`}
+                                >
+                                  <Clock className="w-3 h-3" />
+                                  {question.response_time}s
+                                </Badge>
+                              )}
+                              {question.is_correct ? (
+                                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              ) : (
+                                <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                              )}
+                            </div>
                           </div>
 
                           {question.image_url && (

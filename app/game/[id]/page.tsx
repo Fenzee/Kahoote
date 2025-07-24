@@ -303,7 +303,7 @@ export default function GamePage({
   const fetchResponses = useCallback(async () => {
     const { data, error } = await supabase
       .from("game_responses")
-      .select("participant_id, question_id")
+      .select("participant_id, question_id, answer_id")
       .eq("session_id", resolvedParams.id);
 
     if (error) throw error;
@@ -316,15 +316,38 @@ export default function GamePage({
       fetchResponses(),
     ]);
 
+    // Log untuk debugging
+    console.log(
+      "Responses data:",
+      responsesData.map((r) => ({
+        participant_id: r.participant_id,
+        question_id: r.question_id,
+        has_answer: !!r.answer_id,
+      }))
+    );
+
+    // Hitung jumlah soal yang sudah dijawab (memiliki answer_id) per participant
     const responseMap = responsesData.reduce((acc, curr) => {
-      acc[curr.participant_id] = (acc[curr.participant_id] || 0) + 1;
+      // Hanya hitung jika ada answer_id (sudah dijawab)
+      if (curr.answer_id) {
+        acc[curr.participant_id] = (acc[curr.participant_id] || 0) + 1;
+      }
       return acc;
     }, {} as Record<string, number>);
+
+    // Log untuk debugging
+    console.log("Response map (jawaban per participant):", responseMap);
 
     const updatedParticipants = participantsData.map((p) => ({
       ...p,
       responsesCount: responseMap[p.id] || 0,
     }));
+
+    // Log untuk debugging
+    console.log(
+      "Updated participants with response count:",
+      updatedParticipants
+    );
 
     setParticipants(updatedParticipants);
   }, [fetchParticipants, fetchResponses]);
@@ -759,6 +782,13 @@ export default function GamePage({
                               100
                             : 0;
 
+                        // Log untuk debugging
+                        console.log(
+                          `Player ${player.nickname}: ${
+                            player.responsesCount || 0
+                          }/${questions.length} soal (${Math.round(progress)}%)`
+                        );
+
                         return (
                           <motion.div
                             key={player.id}
@@ -854,6 +884,15 @@ export default function GamePage({
                                 100
                               : 0;
                           const rank = idx + 3; // Starting from rank 3
+
+                          // Log untuk debugging
+                          console.log(
+                            `Other player ${player.nickname} (rank ${rank}): ${
+                              player.responsesCount || 0
+                            }/${questions.length} soal (${Math.round(
+                              progress
+                            )}%)`
+                          );
 
                           return (
                             <motion.div

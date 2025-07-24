@@ -77,30 +77,104 @@ export default function PlayActiveGamePage({
   );
   const [isConnected, setIsConnected] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Tambahkan state untuk melacak soal yang sedang dikerjakan dan waktunya
+  const [activeQuestionTracker, setActiveQuestionTracker] = useState<{
+    questionId: string | null;
+    startedAt: Date | null;
+  }>({ questionId: null, startedAt: null });
 
   // Use refs to prevent infinite loops
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(false);
 
-  // Initial load - only once
-  useEffect(() => {
-    if (!participantId) {
-      router.push("/join");
-      return;
+  // Deklarasi awal fungsi startTimers untuk digunakan oleh loadGameData
+  const startTimers = (gameData: GameState) => {
+    // Clear existing timers
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (pollRef.current) clearInterval(pollRef.current);
+
+    // Start game timer if needed
+    if (
+      gameData.totalTimeMinutes &&
+      gameData.gameStartTime &&
+      gameData.status === "active"
+    ) {
+      timerRef.current = setInterval(() => {
+        const now = new Date();
+        const totalTimeMs = gameData.totalTimeMinutes! * 60 * 1000;
+        const endTime = new Date(
+          gameData.gameStartTime!.getTime() + totalTimeMs
+        );
+        const remaining = Math.max(0, endTime.getTime() - now.getTime());
+        const timeLeftSeconds = Math.ceil(remaining / 1000);
+
+        if (remaining <= 0) {
+          if (timerRef.current) clearInterval(timerRef.current);
+
+          // Hitung skor sebelum redirect
+          (async () => {
+            try {
+              // Hitung skor
+              await supabase.rpc("calculate_score", {
+                session_id_input: gameData.sessionId,
+                participant_id_input: gameData.participantId,
+              });
+              console.log("Score calculated when time is up");
+            } catch (error) {
+              console.error("Error calculating score when time is up:", error);
+            } finally {
+              // Redirect ke halaman hasil
+              router.push(
+                `/results/${resolvedParams.id}?participant=${participantId}`
+              );
+            }
+          })();
+          return;
+        }
+
+        setGameState((prev) =>
+          prev ? { ...prev, timeLeft: timeLeftSeconds } : null
+        );
+      }, 1000);
     }
 
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      loadGameData();
-    }
+    // Start polling for game status
+    pollRef.current = setInterval(async () => {
+      try {
+        const { data: session, error } = await supabase
+          .from("game_sessions")
+          .select("status")
+          .eq("id", resolvedParams.id)
+          .single();
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, []);
+        if (!error && session.status === "finished") {
+          // Hitung skor sebelum redirect
+          try {
+            await supabase.rpc("calculate_score", {
+              session_id_input: gameData.sessionId,
+              participant_id_input: gameData.participantId,
+            });
+            console.log("Score calculated when game is finished by host");
+          } catch (err) {
+            console.error(
+              "Error calculating score when game is finished:",
+              err
+            );
+          } finally {
+            router.push(
+              `/results/${resolvedParams.id}?participant=${participantId}`
+            );
+          }
+        }
+        setIsConnected(true);
+      } catch (error) {
+        setIsConnected(false);
+      }
+    }, 3000);
+  };
 
+  // Fungsi untuk memuat data game
   const loadGameData = async () => {
     try {
       // Get game session
@@ -231,91 +305,362 @@ export default function PlayActiveGamePage({
     }
   };
 
-  const startTimers = (gameData: GameState) => {
-    // Clear existing timers
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (pollRef.current) clearInterval(pollRef.current);
+  // Initial load - only once
+  useEffect(() => {
+    if (!participantId) {
+      router.push("/join");
+      return;
+    }
 
-    // Start game timer if needed
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      loadGameData();
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  // Inisialisasi waktu mulai soal pertama saat komponen dimuat
+  useEffect(() => {
     if (
-      gameData.totalTimeMinutes &&
-      gameData.gameStartTime &&
-      gameData.status === "active"
+      gameState &&
+      gameState.questions.length > 0 &&
+      currentQuestionIndex >= 0
     ) {
-      timerRef.current = setInterval(() => {
-        const now = new Date();
-        const totalTimeMs = gameData.totalTimeMinutes! * 60 * 1000;
-        const endTime = new Date(
-          gameData.gameStartTime!.getTime() + totalTimeMs
-        );
-        const remaining = Math.max(0, endTime.getTime() - now.getTime());
-        const timeLeftSeconds = Math.ceil(remaining / 1000);
+      const currentQuestion = gameState.questions[currentQuestionIndex];
+      if (currentQuestion) {
+        const startedAt = new Date();
 
-        if (remaining <= 0) {
-          if (timerRef.current) clearInterval(timerRef.current);
+        // Periksa apakah sudah ada response untuk soal ini
+        (async () => {
+          try {
+            const { data } = await supabase
+              .from("game_responses")
+              .select("id, started_at")
+              .eq("session_id", gameState.sessionId)
+              .eq("participant_id", gameState.participantId)
+              .eq("question_id", currentQuestion.id)
+              .maybeSingle();
 
-          // Hitung skor sebelum redirect
-          (async () => {
-            try {
-              // Hitung skor
-              await supabase.rpc("calculate_score", {
-                session_id_input: gameData.sessionId,
-                participant_id_input: gameData.participantId,
+            if (data) {
+              // Soal sudah pernah dikerjakan, gunakan started_at yang sudah ada
+              setActiveQuestionTracker({
+                questionId: currentQuestion.id,
+                startedAt: data.started_at
+                  ? new Date(data.started_at)
+                  : startedAt,
               });
-              console.log("Score calculated when time is up");
-            } catch (error) {
-              console.error("Error calculating score when time is up:", error);
-            } finally {
-              // Redirect ke halaman hasil
-              router.push(
-                `/results/${resolvedParams.id}?participant=${participantId}`
-              );
+            } else {
+              // Soal belum pernah dikerjakan, catat waktu mulai
+              setActiveQuestionTracker({
+                questionId: currentQuestion.id,
+                startedAt: startedAt,
+              });
             }
-          })();
+          } catch (error) {
+            console.error("Error initializing question timer:", error);
+          }
+        })();
+      }
+    }
+  }, [gameState, currentQuestionIndex]);
+
+  // Inisialisasi data soal pertama saat halaman dimuat
+  useEffect(() => {
+    if (
+      gameState &&
+      gameState.questions.length > 0 &&
+      currentQuestionIndex === 0
+    ) {
+      const firstQuestion = gameState.questions[0];
+      const startedAt = new Date();
+
+      // Buat record untuk soal pertama jika belum ada
+      (async () => {
+        try {
+          const { data } = await supabase
+            .from("game_responses")
+            .select("id")
+            .eq("session_id", gameState.sessionId)
+            .eq("participant_id", gameState.participantId)
+            .eq("question_id", firstQuestion.id)
+            .maybeSingle();
+
+          if (!data) {
+            // Soal pertama belum pernah dicatat, buat record
+            const { data: newResponse, error } = await supabase
+              .from("game_responses")
+              .insert({
+                session_id: gameState.sessionId,
+                participant_id: gameState.participantId,
+                question_id: firstQuestion.id,
+                started_at: startedAt.toISOString(),
+                ended_at: null,
+              })
+              .select()
+              .single();
+
+            if (error) {
+              console.error("Error creating record for first question:", error);
+            } else {
+              console.log("Created record for first question:", newResponse);
+
+              // Set active question tracker
+              setActiveQuestionTracker({
+                questionId: firstQuestion.id,
+                startedAt: startedAt,
+              });
+            }
+          } else {
+            // Record sudah ada, update tracker
+            const { data: existingRecord } = await supabase
+              .from("game_responses")
+              .select("started_at")
+              .eq("id", data.id)
+              .single();
+
+            setActiveQuestionTracker({
+              questionId: firstQuestion.id,
+              startedAt: existingRecord?.started_at
+                ? new Date(existingRecord.started_at)
+                : startedAt,
+            });
+          }
+        } catch (error) {
+          console.error("Error initializing first question:", error);
+        }
+      })();
+    }
+  }, [gameState, currentQuestionIndex]);
+
+  // Update ended_at ketika sesi tiba-tiba berhenti
+  useEffect(() => {
+    // Handler untuk menangani unload/beforeunload
+    const handleUnload = () => {
+      // Jika ada pertanyaan aktif, catat waktu akhir
+      if (activeQuestionTracker.questionId && gameState) {
+        const endedAt = new Date();
+
+        // Gunakan fetch langsung karena navigator.sendBeacon tidak didukung di semua browser
+        fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/game_responses`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({
+              ended_at: endedAt.toISOString(),
+            }),
+            keepalive: true,
+          }
+        );
+      }
+    };
+
+    // Polling untuk mendeteksi perubahan status game
+    const checkGameStatus = async () => {
+      if (!gameState) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("game_sessions")
+          .select("status")
+          .eq("id", gameState.sessionId)
+          .single();
+
+        if (error) {
+          console.error("Error checking game status:", error);
           return;
         }
 
-        setGameState((prev) =>
-          prev ? { ...prev, timeLeft: timeLeftSeconds } : null
-        );
-      }, 1000);
+        if (data.status === "finished" && activeQuestionTracker.questionId) {
+          // Game berakhir, update ended_at untuk soal aktif
+          const endedAt = new Date();
+
+          await supabase
+            .from("game_responses")
+            .update({ ended_at: endedAt.toISOString() })
+            .eq("session_id", gameState.sessionId)
+            .eq("participant_id", gameState.participantId)
+            .eq("question_id", activeQuestionTracker.questionId);
+
+          console.log("Updated ended_at for active question on game end");
+        }
+      } catch (error) {
+        console.error("Error in game status check:", error);
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener("beforeunload", handleUnload);
+
+    // Set up polling
+    const statusInterval = setInterval(checkGameStatus, 3000);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      clearInterval(statusInterval);
+
+      // Update ended_at saat komponen unmount
+      if (activeQuestionTracker.questionId && gameState) {
+        const endedAt = new Date();
+
+        // Gunakan supabase.js di cleanup karena masih di dalam browser
+        supabase
+          .from("game_responses")
+          .update({ ended_at: endedAt.toISOString() })
+          .eq("session_id", gameState.sessionId)
+          .eq("participant_id", gameState.participantId)
+          .eq("question_id", activeQuestionTracker.questionId)
+          .then((result) => {
+            if (result.error) {
+              console.error(
+                "Error updating ended_at on unmount:",
+                result.error
+              );
+            }
+          });
+      }
+    };
+  }, [gameState, activeQuestionTracker]);
+
+  // Fungsi helper untuk menangani navigasi (digunakan oleh tombol prev dan next)
+  const handleQuestionNavigation = (targetIndex: number) => {
+    if (
+      !gameState ||
+      targetIndex < 0 ||
+      targetIndex >= gameState.totalQuestions
+    )
+      return;
+
+    // Jika ada soal aktif, catat waktu akhir
+    if (activeQuestionTracker.questionId && activeQuestionTracker.startedAt) {
+      const currentQuestion = gameState.questions[currentQuestionIndex];
+      if (
+        currentQuestion &&
+        currentQuestion.id === activeQuestionTracker.questionId
+      ) {
+        const endedAt = new Date();
+        // Update ended_at di database
+        (async () => {
+          try {
+            // Cari apakah sudah ada response untuk soal ini
+            const { data } = await supabase
+              .from("game_responses")
+              .select("id, answer_id")
+              .eq("session_id", gameState.sessionId)
+              .eq("participant_id", gameState.participantId)
+              .eq("question_id", activeQuestionTracker.questionId)
+              .maybeSingle();
+
+            if (data) {
+              // Update response yang sudah ada
+              await supabase
+                .from("game_responses")
+                .update({
+                  ended_at: endedAt.toISOString(),
+                })
+                .eq("id", data.id);
+            }
+          } catch (error) {
+            console.error("Error updating ended_at:", error);
+          }
+        })();
+      }
     }
 
-    // Start polling for game status
-    pollRef.current = setInterval(async () => {
-      try {
-        const { data: session, error } = await supabase
-          .from("game_sessions")
-          .select("status")
-          .eq("id", resolvedParams.id)
-          .single();
+    // Set soal baru sebagai aktif
+    setCurrentQuestionIndex(targetIndex);
+    const newActiveQuestion = gameState.questions[targetIndex];
+    if (newActiveQuestion) {
+      const startedAt = new Date();
 
-        if (!error && session.status === "finished") {
-          // Hitung skor sebelum redirect
-          try {
-            await supabase.rpc("calculate_score", {
-              session_id_input: gameData.sessionId,
-              participant_id_input: gameData.participantId,
+      // Cek apakah soal ini sudah pernah dikerjakan
+      (async () => {
+        try {
+          const { data } = await supabase
+            .from("game_responses")
+            .select("id, started_at, answer_id")
+            .eq("session_id", gameState.sessionId)
+            .eq("participant_id", gameState.participantId)
+            .eq("question_id", newActiveQuestion.id)
+            .maybeSingle();
+
+          if (data) {
+            // Soal sudah pernah dikerjakan, gunakan started_at yang sudah ada
+            setActiveQuestionTracker({
+              questionId: newActiveQuestion.id,
+              startedAt: data.started_at
+                ? new Date(data.started_at)
+                : startedAt,
             });
-            console.log("Score calculated when game is finished by host");
-          } catch (err) {
-            console.error(
-              "Error calculating score when game is finished:",
-              err
-            );
-          } finally {
-            router.push(
-              `/results/${resolvedParams.id}?participant=${participantId}`
-            );
+
+            // Update ended_at saja
+            await supabase
+              .from("game_responses")
+              .update({
+                ended_at: null, // Reset ended_at karena soal sedang aktif lagi
+              })
+              .eq("id", data.id);
+
+            // Jika sudah ada jawaban, perbarui state
+            if (data.answer_id) {
+              setPlayerAnswers((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(newActiveQuestion.id, {
+                  question_id: newActiveQuestion.id,
+                  answer_id: data.answer_id,
+                  response_time: 1000,
+                });
+                return newMap;
+              });
+            }
+          } else {
+            // Soal belum pernah dikerjakan, buat catatan baru di database
+            const { data: newResponse, error } = await supabase
+              .from("game_responses")
+              .insert({
+                session_id: gameState.sessionId,
+                participant_id: gameState.participantId,
+                question_id: newActiveQuestion.id,
+                started_at: startedAt.toISOString(),
+                ended_at: null,
+                // Jawaban belum ada, jadi answer_id dan response_time belum diisi
+              })
+              .select()
+              .single();
+
+            if (error) {
+              console.error("Error creating new response record:", error);
+            } else {
+              console.log("Created new response record:", newResponse);
+            }
+
+            // Catat di tracker
+            setActiveQuestionTracker({
+              questionId: newActiveQuestion.id,
+              startedAt: startedAt,
+            });
           }
+        } catch (error) {
+          console.error("Error tracking question timing:", error);
         }
-        setIsConnected(true);
-      } catch (error) {
-        setIsConnected(false);
-      }
-    }, 3000);
+      })();
+    }
   };
 
+  // Ganti navigateToQuestion dengan handleQuestionNavigation
+  const navigateToQuestion = (index: number) => {
+    handleQuestionNavigation(index);
+  };
+
+  // Modifikasi selectAnswer untuk hanya memperbarui jawaban, tidak membuat record baru
   const selectAnswer = async (answerId: string) => {
     if (!gameState || isSubmitting) return;
 
@@ -325,24 +670,46 @@ export default function PlayActiveGamePage({
     setIsSubmitting(true);
 
     try {
-      // Delete existing answer
-      await supabase
+      // Cari record game_responses yang sudah ada
+      const { data } = await supabase
         .from("game_responses")
-        .delete()
+        .select("id")
         .eq("session_id", gameState.sessionId)
         .eq("participant_id", gameState.participantId)
-        .eq("question_id", currentQuestion.id);
+        .eq("question_id", currentQuestion.id)
+        .maybeSingle();
 
-      // Insert new answer
-      const { error } = await supabase.from("game_responses").insert({
-        session_id: gameState.sessionId,
-        participant_id: gameState.participantId,
-        question_id: currentQuestion.id,
-        answer_id: answerId,
-        response_time: 1000,
-      });
+      if (data) {
+        // Update jawaban di record yang sudah ada
+        const { error } = await supabase
+          .from("game_responses")
+          .update({
+            answer_id: answerId,
+            response_time: 1000, // Tetap isi untuk kompatibilitas
+          })
+          .eq("id", data.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Jika belum ada record (seharusnya tidak terjadi), buat record baru
+        const startedAt =
+          activeQuestionTracker.questionId === currentQuestion.id &&
+          activeQuestionTracker.startedAt
+            ? activeQuestionTracker.startedAt
+            : new Date();
+
+        const { error } = await supabase.from("game_responses").insert({
+          session_id: gameState.sessionId,
+          participant_id: gameState.participantId,
+          question_id: currentQuestion.id,
+          answer_id: answerId,
+          response_time: 1000,
+          started_at: startedAt.toISOString(),
+          ended_at: null,
+        });
+
+        if (error) throw error;
+      }
 
       // Update local state
       const newAnswer: PlayerAnswer = {
@@ -363,13 +730,34 @@ export default function PlayActiveGamePage({
     }
   };
 
-  const navigateToQuestion = (index: number) => {
-    if (!gameState || index < 0 || index >= gameState.totalQuestions) return;
-    setCurrentQuestionIndex(index);
-  };
-
+  // Modifikasi submitQuiz untuk memperbarui ended_at soal terakhir
   const submitQuiz = async () => {
     if (!gameState) return;
+
+    // Perbarui ended_at soal terakhir yang aktif
+    if (activeQuestionTracker.questionId && activeQuestionTracker.startedAt) {
+      const endedAt = new Date();
+      try {
+        const { data } = await supabase
+          .from("game_responses")
+          .select("id")
+          .eq("session_id", gameState.sessionId)
+          .eq("participant_id", gameState.participantId)
+          .eq("question_id", activeQuestionTracker.questionId)
+          .maybeSingle();
+
+        if (data) {
+          await supabase
+            .from("game_responses")
+            .update({
+              ended_at: endedAt.toISOString(),
+            })
+            .eq("id", data.id);
+        }
+      } catch (error) {
+        console.error("Error updating final question ended_at:", error);
+      }
+    }
 
     // Pastikan semua pertanyaan dijawab
     const unansweredQuestions = gameState.questions.filter(
