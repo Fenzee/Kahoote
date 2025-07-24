@@ -1192,8 +1192,6 @@ export default function ResultsPage({
               <p className="text-gray-600">Selamat telah menyelesaikan game!</p>
             </CardHeader>
             <CardContent>
-              {/* Log untuk debugging */}
-              {console.log("Rendering personalStats:", personalStats)}
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-purple-50 rounded-lg transform transition-all hover:scale-105 hover:bg-purple-100">
                   <div className="text-3xl font-bold text-purple-600 animate-number-pop">

@@ -168,90 +168,6 @@ export default function GamePage({
     };
   }, [gameSession]);
 
-  // const fetchGameData = useCallback(async () => {
-  //   try {
-  //     const { data: session, error: sessionError } = await supabase
-  //       .from("game_sessions")
-  //       .select("*")
-  //       .eq("id", resolvedParams.id)
-  //       .single();
-
-  //     if (sessionError) throw sessionError;
-  //     setGameSession(session);
-
-  //     const { data: questionsData, error: questionsError } = await supabase
-  //       .from("questions")
-  //       .select(
-  //         `
-  //       id,
-  //       question_text,
-  //       time_limit,
-  //       points,
-  //       order_index,
-  //       answers (
-  //         id,
-  //         answer_text,
-  //         is_correct,
-  //         color,
-  //         order_index
-  //       )
-  //     `
-  //       )
-  //       .eq("quiz_id", session.quiz_id)
-  //       .order("order_index");
-
-  //     if (questionsError) throw questionsError;
-  //     setQuestions(questionsData);
-
-  //     const { data: participantsData, error: participantsError } =
-  //       await supabase
-  //         .from("game_participants")
-  //         .select("id, nickname, score")
-  //         .eq("session_id", resolvedParams.id)
-  //         .order("score", { ascending: false });
-
-  //     if (participantsError) throw participantsError;
-  //     setParticipants(participantsData);
-
-  //     const { data: responsesData, error: responsesError } = await supabase
-  //       .from("game_responses")
-  //       .select("participant_id, question_id")
-  //       .eq("session_id", resolvedParams.id);
-
-  //     if (responsesError) throw responsesError;
-
-  //     const responseMap = responsesData.reduce((acc, curr) => {
-  //       acc[curr.participant_id] = (acc[curr.participant_id] || 0) + 1;
-  //       return acc;
-  //     }, {} as Record<string, number>);
-
-  //     const updatedParticipants = participantsData.map((p) => ({
-  //       ...p,
-  //       responsesCount: responseMap[p.id] || 0,
-  //     }));
-  //     setParticipants(updatedParticipants);
-  //   } catch (error) {
-  //     console.error("Error fetching game data:", error);
-  //     toast.error("Gagal memuat data game");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }, [resolvedParams.id, router]);
-
-  // useEffect(() => {
-  //   fetchGameData();
-
-  //   const interval = setInterval(() => {
-  //     fetchGameData();
-  //   }, 2000);
-
-  //   return () => clearInterval(interval);
-  // }, [fetchGameData]);
-
-  // Redirect otomatis jika status finished
-
-  // mulai mencoba progress
-
   const fetchGameSession = useCallback(async () => {
     const { data, error } = await supabase
       .from("game_sessions")
@@ -422,52 +338,6 @@ export default function GamePage({
       router.push(`/results/${resolvedParams.id}`);
     }
   }, [gameSession, resolvedParams.id, router]);
-
-  // const setupRealTimeSubscription = useCallback(() => {
-  //   const channel = supabase
-  //   .channel(`game_control_${resolvedParams.id}`)
-  //   .on(
-  //     "postgres_changes",
-  //     {
-  //       event: "*",
-  //       schema: "public",
-  //       table: "game_participants",
-  //       filter: `session_id=eq.${resolvedParams.id}`,
-  //     },
-  //     () => {
-  //       fetchGameData();
-  //     }
-  //   )
-  //   .on(
-  //     "postgres_changes",
-  //     {
-  //       event: "*",
-  //       schema: "public",
-  //       table: "game_responses",
-  //       filter: `session_id=eq.${resolvedParams.id}`,
-  //     },
-  //     () => {
-  //       fetchGameData();
-  //     }
-  //   )
-  //   .on(
-  //     "postgres_changes",
-  //     {
-  //       event: "*",
-  //       schema: "public",
-  //       table: "game_sessions",
-  //       filter: `id=eq.${resolvedParams.id}`,
-  //     },
-  //     () => {
-  //       fetchGameData();
-  //     }
-  //   )
-  //   .subscribe();
-
-  //   return () => {
-  //     supabase.removeChannel(channel);
-  //   };
-  // }, [resolvedParams.id, fetchGameData]);
 
   useEffect(() => {
     const cleanup = setupRealTimeSubscription();
@@ -640,115 +510,117 @@ export default function GamePage({
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-2 pb-8">
         <div className="max-w-6xl mx-auto">
-          {/* Game Timer Card */}
-          <Card className="bg-white/90 backdrop-blur-sm mb-6 shadow-xl border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Timer className="w-8 h-8 text-purple-600" />
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      Timer Game
-                    </h3>
-                    <p className="text-gray-600">
-                      Total waktu: {gameSession.total_time_minutes} menit
-                    </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Game Timer Card */}
+            <Card className="bg-white/90 backdrop-blur-sm mb-6 shadow-xl border-0">
+              <CardContent className="p-6 flex flex-col justify-between h-full">
+                <div className="flex md:flex-col items-center justify-between md:gap-2">
+                  <div className="flex items-center md:justify-center space-x-3 md:pr-12">
+                    <Timer className="w-8 h-8 text-purple-600" />
+                    <div className="md:text-center">
+                      <h3 className="text-xl font-bold text-gray-900">
+                        Timer Game
+                      </h3>
+                      <p className="text-gray-600">
+                        Total waktu: {gameSession.total_time_minutes} menit
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div
-                    className={`text-4xl font-bold ${
-                      timeLeft <= 60
-                        ? "text-red-600 animate-pulse"
+                  <div className="text-right md:text-center">
+                    <div
+                      className={`text-4xl font-bold ${
+                        timeLeft <= 60
+                          ? "text-red-600 animate-pulse"
+                          : timeLeft <= 300
+                          ? "text-yellow-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {formatTime(timeLeft)}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {timeLeft <= 60
+                        ? "SEGERA BERAKHIR!"
                         : timeLeft <= 300
-                        ? "text-yellow-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {formatTime(timeLeft)}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {timeLeft <= 60
-                      ? "SEGERA BERAKHIR!"
-                      : timeLeft <= 300
-                      ? "Waktu hampir habis"
-                      : "Game berjalan"}
+                        ? "Waktu hampir habis"
+                        : "Game berjalan"}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="mt-4">
-                <Progress
-                  value={
-                    gameSession.total_time_minutes
-                      ? ((gameSession.total_time_minutes * 60 - timeLeft) /
-                          (gameSession.total_time_minutes * 60)) *
-                        100
-                      : 0
-                  }
-                  className="h-3 bg-gray-200"
-                />
-              </div>
-            </CardContent>
-          </Card>
+                <div className="mt-4">
+                  <Progress
+                    value={
+                      gameSession.total_time_minutes
+                        ? ((gameSession.total_time_minutes * 60 - timeLeft) /
+                            (gameSession.total_time_minutes * 60)) *
+                          100
+                        : 0
+                    }
+                    className="h-3 bg-gray-200"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Game Controls */}
-          <Card className="bg-white/90 backdrop-blur-sm mb-6 shadow-xl border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Kontrol Game</span>
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={handleEndGame}
-                    disabled={isEnding}
-                    className="bg-red-500 hover:bg-red-600 text-white"
-                    size="lg"
-                  >
-                    {isEnding ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Mengakhiri...
-                      </>
-                    ) : (
-                      <>
-                        <Square className="w-4 h-4 mr-2" />
-                        Akhiri Game
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {questions.length}
+            {/* Game Controls */}
+            <Card className="bg-white/90 backdrop-blur-sm mb-6 shadow-xl border-0">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Kontrol Game</span>
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={handleEndGame}
+                      disabled={isEnding}
+                      className="bg-red-500 hover:bg-red-600 text-white"
+                      size="lg"
+                    >
+                      {isEnding ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Mengakhiri...
+                        </>
+                      ) : (
+                        <>
+                          <Square className="w-4 h-4 mr-2" />
+                          Akhiri Game
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <div className="text-sm text-gray-600">Total Pertanyaan</div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
-                  <div className="text-2xl font-bold text-green-600">
-                    {participants.length}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {questions.length}
+                    </div>
+                    <div className="text-sm text-gray-600">Total soal</div>
                   </div>
-                  <div className="text-sm text-gray-600">Pemain Aktif</div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-100">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {Math.max(
-                      0,
-                      Math.floor(
-                        (gameSession.total_time_minutes * 60 - timeLeft) / 60
-                      )
-                    )}
-                    m
+                  <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
+                    <div className="text-2xl font-bold text-green-600">
+                      {participants.length}
+                    </div>
+                    <div className="text-sm text-gray-600">Pemain Aktif</div>
                   </div>
-                  <div className="text-sm text-gray-600">Waktu Berlalu</div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-100">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {Math.max(
+                        0,
+                        Math.floor(
+                          (gameSession.total_time_minutes * 60 - timeLeft) / 60
+                        )
+                      )}
+                      m
+                    </div>
+                    <div className="text-sm text-gray-600">Waktu Berlalu</div>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Progress Leaderboard */}
           <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
@@ -767,7 +639,7 @@ export default function GamePage({
               ) : (
                 <div className="space-y-4">
                   {/* Top 2 Players */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {[...participants]
                       .sort(
                         (a, b) =>
@@ -799,16 +671,16 @@ export default function GamePage({
                               stiffness: 300,
                               damping: 30,
                             }}
-                            className={`p-6 rounded-lg shadow-md ${
+                            className={`p-3 rounded-lg shadow-md ${
                               idx === 0
                                 ? "bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300"
                                 : "bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300"
                             }`}
                           >
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center space-x-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
                                 <div
-                                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
                                     idx === 0
                                       ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
                                       : "bg-gradient-to-r from-gray-500 to-gray-400"
@@ -821,7 +693,7 @@ export default function GamePage({
                                 </h3>
                               </div>
                               <motion.div
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                className={`px-3 py-1 md:text-xs rounded-full md:text-center text-sm font-medium ${
                                   idx === 0
                                     ? "bg-yellow-200 text-yellow-800"
                                     : "bg-gray-200 text-gray-800"
@@ -869,7 +741,7 @@ export default function GamePage({
 
                   {/* Other Players */}
                   <AnimatePresence>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {[...participants]
                         .sort(
                           (a, b) =>
