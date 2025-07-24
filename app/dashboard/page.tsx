@@ -59,6 +59,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ActionSearchBar from "@/components/ui/action-search-bar";
 
+// Import flag-icons CSS
+import "flag-icons/css/flag-icons.min.css";
+
 interface SupabaseQuizResponse {
   id: string;
   title: string;
@@ -89,6 +92,7 @@ interface NormalizedQuiz {
   creator: {
     username: string;
     avatar_url: string | null;
+    country?: string | null;
   };
   questions: Array<{
     id: string;
@@ -127,6 +131,7 @@ const normalizeQuiz = (quiz: any): NormalizedQuiz => {
     creator: {
       username: quiz.profiles?.username || "Unknown User",
       avatar_url: quiz.profiles?.avatar_url || null,
+      country: quiz.profiles?.country || null,
     },
     questions: quiz.questions || [],
   };
@@ -208,6 +213,7 @@ export default function Dashboard() {
   const [userProfile, setUserProfile] = useState<{
     username: string;
     avatar_url: string | null;
+    country?: string | null;
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isNavOpen, setIsNavOpen] = useState(false); // State for bottom navigation
@@ -238,7 +244,7 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("username, avatar_url")
+        .select("username, avatar_url, country")
         .eq("id", user.id)
         .single();
 
@@ -274,7 +280,8 @@ export default function Dashboard() {
           ),
           profiles!quizzes_creator_id_fkey (
             username,
-            avatar_url
+            avatar_url,
+            country
           )
         `
         )
@@ -342,7 +349,8 @@ export default function Dashboard() {
           ),
           profiles!quizzes_creator_id_fkey (
             username,
-            avatar_url
+            avatar_url,
+            country
           )
         `
         )
@@ -738,9 +746,17 @@ export default function Dashboard() {
                   {displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-white font-medium hidden md:block">
-                {displayName}
-              </span>
+              <div className="flex items-center space-x-1">
+                {userProfile?.country && userProfile.country !== "none" && (
+                  <span 
+                    className={`fi fi-${userProfile.country.toLowerCase()}`} 
+                    style={{ fontSize: "1em" }}
+                  ></span>
+                )}
+                <span className="text-white font-medium hidden md:block">
+                  {displayName}
+                </span>
+              </div>
             </div>
             <Button
               onClick={() => setIsNavOpen(true)}
@@ -978,9 +994,17 @@ export default function Dashboard() {
                               {quiz.creator.username.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm text-gray-600 font-medium">
-                            {quiz.creator.username}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {quiz.creator.country && quiz.creator.country !== "none" && (
+                              <span 
+                                className={`fi fi-${quiz.creator.country.toLowerCase()}`}
+                                style={{ fontSize: "1em" }}
+                              ></span>
+                            )}
+                            <span className="text-sm text-gray-600 font-medium">
+                              {quiz.creator.username}
+                            </span>
+                          </div>
                           {quiz.creator_id === user?.id && (
                             <Badge
                               variant="secondary"
