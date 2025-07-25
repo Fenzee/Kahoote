@@ -130,7 +130,7 @@ export function ChatPanel({
   position = 'right',
   isHost = false
 }: ChatPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true); // Default terbuka
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -150,6 +150,25 @@ export function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+  const chatPanelRef = useRef<HTMLDivElement>(null); // Ref untuk panel chat
+
+  // Effect untuk mendeteksi klik di luar panel chat
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (chatPanelRef.current && !chatPanelRef.current.contains(event.target as Node)) {
+        // Klik di luar panel chat
+        setIsOpen(false);
+      }
+    }
+
+    // Tambahkan event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      // Cleanup event listener
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Initialize notification sound
   useEffect(() => {
@@ -547,6 +566,7 @@ export function ChatPanel({
 
       {/* Chat Panel */}
       <div
+        ref={chatPanelRef} // Tambahkan ref untuk panel chat
         className={`fixed ${
           position === 'right' 
             ? 'right-0 top-0 bottom-0 w-80 md:w-96 transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white' 
@@ -628,16 +648,6 @@ export function ChatPanel({
                 </div>
               </PopoverContent>
             </Popover>
-            
-            {/* Close Button */}
-            <Button
-              onClick={() => setIsOpen(false)}
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-full hover:bg-purple-100"
-            >
-              <X className="w-4 h-4" />
-            </Button>
           </div>
         </div>
 

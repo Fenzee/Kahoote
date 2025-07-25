@@ -752,7 +752,8 @@ export default function Dashboard() {
               <div className="flex items-center space-x-1">
                 {userProfile?.country && userProfile.country !== "none" && (
                   <span 
-                    className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-6 h-4 shadow-sm border border-white/30`}
+                    className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-6 h-4 overflow-hidden shadow-sm border border-white/30`}
+                    style={{ display: 'inline-block', verticalAlign: 'middle' }}
                   ></span>
                 )}
                 <span className="text-white font-medium hidden md:block">
@@ -1056,6 +1057,7 @@ export default function Dashboard() {
                               <div className="inline-flex rounded-sm overflow-hidden border border-gray-300 shadow-sm">
                                 <span 
                                   className={`fi fi-${quiz.creator.country.toLowerCase()} w-6 h-4`}
+                                  style={{ display: 'inline-block', verticalAlign: 'middle' }}
                                 ></span>
                               </div>
                             )}
@@ -1472,7 +1474,8 @@ export default function Dashboard() {
                       {userProfile?.country && userProfile.country !== "none" && (
                         <div className="flex items-center space-x-2 mt-1">
                           <span 
-                            className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-5 h-3 shadow-sm border border-gray-300`}
+                            className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-5 h-3 overflow-hidden border border-gray-200 shadow-sm`}
+                            style={{ display: 'inline-block', verticalAlign: 'middle' }}
                           ></span>
                           <span className="text-xs text-gray-600">
                             {userProfile.country}
