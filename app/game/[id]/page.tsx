@@ -455,23 +455,25 @@ export default function GamePage({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col gap-2 md:gap-0 md:flex-row items-center justify-between">
+          <div className="w-full flex items-center justify-between relative md:justify-start">
             <Button
               variant="outline"
               size="sm"
               onClick={() => router.push(`/host/${resolvedParams.id}`)}
-              className="border-2 border-gray-200"
+              className="border-2 border-gray-200 absolute left-0 z-10 md:relative md:z-auto"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Kembali
+              <ChevronLeft className="w-4 h-4 md:mr-1" />
+              <span className="hidden md:block">Kembali</span>
             </Button>
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Gamepad2 className="w-6 h-6 text-white" />
+            <div className="flex gap-2 items-center justify-center w-full md:justify-start md:w-auto md:ml-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <Gamepad2 className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Game Control
+              </span>
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Game Control
-            </span>
           </div>
           <div className="flex items-center space-x-2">
             {/* Game Timer */}
@@ -592,7 +594,7 @@ export default function GamePage({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
                     <div className="text-2xl font-bold text-blue-600">
                       {questions.length}
@@ -638,14 +640,13 @@ export default function GamePage({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Top 2 Players */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {/* Semua Pemain dalam satu grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {[...participants]
                       .sort(
                         (a, b) =>
                           (b.responsesCount || 0) - (a.responsesCount || 0)
                       )
-                      .slice(0, 2)
                       .map((player, idx) => {
                         const progress =
                           questions.length > 0
@@ -656,7 +657,7 @@ export default function GamePage({
 
                         // Log untuk debugging
                         console.log(
-                          `Player ${player.nickname}: ${
+                          `Player ${player.nickname} (rank ${idx + 1}): ${
                             player.responsesCount || 0
                           }/${questions.length} soal (${Math.round(progress)}%)`
                         );
@@ -674,7 +675,11 @@ export default function GamePage({
                             className={`p-3 rounded-lg shadow-md ${
                               idx === 0
                                 ? "bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300"
-                                : "bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300"
+                                : idx === 1
+                                ? "bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300"
+                                : idx === 2
+                                ? "bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300"
+                                : "bg-white border border-gray-200"
                             }`}
                           >
                             <div className="flex items-center justify-between mb-2">
@@ -683,12 +688,16 @@ export default function GamePage({
                                   className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
                                     idx === 0
                                       ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
-                                      : "bg-gradient-to-r from-gray-500 to-gray-400"
+                                      : idx === 1
+                                      ? "bg-gradient-to-r from-gray-500 to-gray-400"
+                                      : idx === 2
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-400"
+                                      : "bg-gradient-to-r from-blue-500 to-purple-600"
                                   }`}
                                 >
                                   {idx + 1}
                                 </div>
-                                <h3 className="text-xl font-bold">
+                                <h3 className="text-lg font-bold truncate max-w-[100px] sm:max-w-[120px] md:max-w-[80px] lg:max-w-[100px]">
                                   {player.nickname}
                                 </h3>
                               </div>
@@ -696,7 +705,11 @@ export default function GamePage({
                                 className={`px-3 py-1 md:text-xs rounded-full md:text-center text-sm font-medium ${
                                   idx === 0
                                     ? "bg-yellow-200 text-yellow-800"
-                                    : "bg-gray-200 text-gray-800"
+                                    : idx === 1
+                                    ? "bg-gray-200 text-gray-800"
+                                    : idx === 2
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-blue-100 text-blue-800"
                                 }`}
                                 initial={{ scale: 1 }}
                                 animate={{ scale: [1, 1.1, 1] }}
@@ -722,7 +735,11 @@ export default function GamePage({
                                   className={`h-full rounded-full ${
                                     idx === 0
                                       ? "bg-gradient-to-r from-yellow-500 to-yellow-400"
-                                      : "bg-gradient-to-r from-gray-500 to-gray-400"
+                                      : idx === 1
+                                      ? "bg-gradient-to-r from-gray-500 to-gray-400"
+                                      : idx === 2
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-400"
+                                      : "bg-gradient-to-r from-blue-500 to-purple-600"
                                   }`}
                                   initial={{ width: "0%" }}
                                   animate={{ width: `${progress}%` }}
@@ -738,91 +755,6 @@ export default function GamePage({
                         );
                       })}
                   </div>
-
-                  {/* Other Players */}
-                  <AnimatePresence>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {[...participants]
-                        .sort(
-                          (a, b) =>
-                            (b.responsesCount || 0) - (a.responsesCount || 0)
-                        )
-                        .slice(2)
-                        .map((player, idx) => {
-                          const progress =
-                            questions.length > 0
-                              ? ((player.responsesCount || 0) /
-                                  questions.length) *
-                                100
-                              : 0;
-                          const rank = idx + 3; // Starting from rank 3
-
-                          // Log untuk debugging
-                          console.log(
-                            `Other player ${player.nickname} (rank ${rank}): ${
-                              player.responsesCount || 0
-                            }/${questions.length} soal (${Math.round(
-                              progress
-                            )}%)`
-                          );
-
-                          return (
-                            <motion.div
-                              key={player.id}
-                              layout
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 300,
-                                damping: 30,
-                              }}
-                              className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm"
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                                    {rank}
-                                  </div>
-                                  <div className="font-medium">
-                                    {player.nickname}
-                                  </div>
-                                </div>
-                                <motion.div
-                                  className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
-                                  initial={{ scale: 1 }}
-                                  animate={{ scale: [1, 1.1, 1] }}
-                                  key={player.responsesCount}
-                                  transition={{ duration: 0.5 }}
-                                >
-                                  {player.responsesCount || 0}/
-                                  {questions.length}
-                                </motion.div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="flex justify-between text-xs text-gray-500">
-                                  <span>Progress</span>
-                                  <span>{Math.round(progress)}%</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                                  <motion.div
-                                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
-                                    initial={{ width: "0%" }}
-                                    animate={{ width: `${progress}%` }}
-                                    transition={{
-                                      type: "spring",
-                                      stiffness: 100,
-                                      damping: 25,
-                                    }}
-                                  ></motion.div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                    </div>
-                  </AnimatePresence>
                 </div>
               )}
             </CardContent>

@@ -54,7 +54,7 @@ interface Participant {
   user_id: string | null;
   profiles?:
     | {
-        avatar_url: string | null;
+    avatar_url: string | null;
       }
     | Array<{
         avatar_url: string | null;
@@ -245,27 +245,27 @@ export default function ResultsPage({
 
           // Fallback ke cara lama jika fungsi RPC tidak tersedia
           const { data: fallbackData, error: participantsError } =
-            await supabase
-              .from("game_participants")
-              .select(
-                `
-              id,
-              nickname,
-              score,
-              joined_at,
-              user_id,
-              profiles (
-                avatar_url
-              )
+        await supabase
+          .from("game_participants")
+          .select(
             `
-              )
-              .eq("session_id", resolvedParams.id)
-              .order("score", { ascending: false });
+      id,
+      nickname,
+      score,
+      joined_at,
+      user_id,
+      profiles (
+        avatar_url
+      )
+    `
+          )
+          .eq("session_id", resolvedParams.id)
+          .order("score", { ascending: false });
 
-          if (participantsError) {
-            console.error("Error fetching participants:", participantsError);
-            throw new Error("Gagal memuat data peserta");
-          }
+      if (participantsError) {
+        console.error("Error fetching participants:", participantsError);
+        throw new Error("Gagal memuat data peserta");
+      }
 
           participantsData = fallbackData as Participant[];
         } else {
@@ -322,7 +322,7 @@ export default function ResultsPage({
         }
 
         console.log("Participants data:", participantsData);
-        setParticipants(participantsData);
+      setParticipants(participantsData);
       } catch (error) {
         console.error("Error processing participants:", error);
         throw new Error("Gagal memproses data peserta");
@@ -514,9 +514,9 @@ export default function ResultsPage({
         console.log("Using rank from leaderboard:", rank);
       } else {
         // Fallback ke cara lama jika tidak ada rank
-        const participantsWithHigherScores = allParticipants.filter(
-          (p) => p.score > participant.score
-        );
+      const participantsWithHigherScores = allParticipants.filter(
+        (p) => p.score > participant.score
+      );
         rank = participantsWithHigherScores.length + 1;
         console.log("Calculated rank fallback:", rank);
       }
@@ -778,7 +778,7 @@ export default function ResultsPage({
         </nav>
       </header>
 
-      <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16 space-y-8">
+      <main className="container mx-auto px-4 pt-4 pb-8 md:pb-12 lg:pb-16 space-y-8">
         {topThree.length > 0 && (
           <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl">
             <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center justify-center gap-2">
@@ -1327,11 +1327,11 @@ export default function ResultsPage({
                                   {question.response_time}s
                                 </Badge>
                               )}
-                              {question.is_correct ? (
-                                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                              ) : (
-                                <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                              )}
+                            {question.is_correct ? (
+                              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                            )}
                             </div>
                           </div>
 
