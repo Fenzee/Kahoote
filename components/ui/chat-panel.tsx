@@ -155,7 +155,10 @@ export function ChatPanel({
   // Effect untuk mendeteksi klik di luar panel chat
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (chatPanelRef.current && !chatPanelRef.current.contains(event.target as Node)) {
+      if (chatPanelRef.current && 
+          !chatPanelRef.current.contains(event.target as Node) && 
+          !showSoundSettings &&
+          !showTemplates) { // Jangan tutup jika settings atau template terbuka
         // Klik di luar panel chat
         setIsOpen(false);
       }
@@ -168,7 +171,7 @@ export function ChatPanel({
       // Cleanup event listener
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showSoundSettings, showTemplates]); // Tambahkan showTemplates sebagai dependency
 
   // Initialize notification sound
   useEffect(() => {
@@ -565,7 +568,7 @@ export function ChatPanel({
       </Button>
 
       {/* Overlay untuk mendeteksi klik di luar chat */}
-      {isOpen && (
+      {isOpen && !showSoundSettings && !showTemplates && ( // Jangan tampilkan overlay jika settings atau template terbuka
         <div 
           className="fixed inset-0 z-30" 
           onClick={() => setIsOpen(false)}
@@ -628,7 +631,7 @@ export function ChatPanel({
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-64 p-4">
+              <PopoverContent align="end" className="w-64 p-4 z-50" onClick={(e) => e.stopPropagation()}>
                 <div className="font-medium text-sm mb-3">Pilih Suara Notifikasi</div>
                 <RadioGroup 
                   value={selectedSound} 
@@ -768,7 +771,7 @@ export function ChatPanel({
 
         {/* Template Messages */}
         {showTemplates && (
-          <div className="max-h-60 overflow-y-auto border-t">
+          <div className="max-h-60 overflow-y-auto border-t" onClick={(e) => e.stopPropagation()}>
             <Tabs defaultValue="Game Start">
               <TabsList className="w-full justify-start p-2 bg-gray-50">
                 {chatTemplates.map((category) => (
