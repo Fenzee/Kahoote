@@ -990,7 +990,7 @@ export default function Dashboard() {
             <div className="col-span-1 sm:col-span-2">
               <div className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative group">
                 <IndonesiaMap title="Pengguna di Indonesia" height="250px" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="absolute inset-0 bg-black/0  transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <Button 
                     variant="outline" 
                     className="bg-white text-blue-700 hover:bg-blue-50" 
