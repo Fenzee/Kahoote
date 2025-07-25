@@ -564,24 +564,33 @@ export function ChatPanel({
         )}
       </Button>
 
+      {/* Overlay untuk mendeteksi klik di luar chat */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-30" 
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       {/* Chat Panel */}
       <div
-        ref={chatPanelRef} // Tambahkan ref untuk panel chat
+        ref={chatPanelRef}
         className={`fixed ${
           position === 'right' 
-            ? 'right-0 top-0 bottom-0 w-80 md:w-96 transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white' 
-            : 'right-0 bottom-0 w-full md:w-96 h-96 transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white'
+            ? 'right-0 top-0 h-[calc(100vh-80px)] w-80 md:w-96 transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white' 
+            : 'right-0 bottom-0 w-full md:w-96 h-[500px] transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white'
         } ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         } flex flex-col border-l`}
+        onClick={(e) => e.stopPropagation()} // Mencegah event propagasi ke overlay
       >
         {/* Header */}
-        <div className="p-3 border-b flex items-center justify-between bg-purple-50">
+        <div className="p-3 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-blue-500 text-white">
           <div className="flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-purple-600" />
+            <MessageCircle className="w-5 h-5" />
             <h3 className="font-semibold">Game Chat</h3>
             {isHost && (
-              <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200 text-xs">
+              <Badge variant="outline" className="bg-white/20 text-white border-white/30 text-xs">
                 Host
               </Badge>
             )}
@@ -593,13 +602,13 @@ export function ChatPanel({
               onClick={toggleNotifications}
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-full hover:bg-purple-100"
+              className="h-7 w-7 rounded-full hover:bg-white/10 text-white"
               title={notificationsEnabled ? "Matikan notifikasi" : "Aktifkan notifikasi"}
             >
               {notificationsEnabled ? (
-                <Bell className="w-4 h-4 text-purple-600" />
+                <Bell className="w-4 h-4" />
               ) : (
-                <BellOff className="w-4 h-4 text-gray-400" />
+                <BellOff className="w-4 h-4 opacity-70" />
               )}
             </Button>
             
@@ -609,13 +618,13 @@ export function ChatPanel({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 rounded-full hover:bg-purple-100"
+                  className="h-7 w-7 rounded-full hover:bg-white/10 text-white"
                   title="Pengaturan suara"
                 >
                   {selectedSound !== 'none' ? (
                     <Volume2 className="w-4 h-4" />
                   ) : (
-                    <VolumeX className="w-4 h-4 text-gray-400" />
+                    <VolumeX className="w-4 h-4 opacity-70" />
                   )}
                 </Button>
               </PopoverTrigger>
@@ -653,7 +662,7 @@ export function ChatPanel({
 
         {/* Messages */}
         <ScrollArea 
-          className="flex-1 p-4"
+          className="flex-1 p-4 bg-gray-50"
           ref={scrollAreaRef}
         >
           {isLoading ? (
@@ -705,7 +714,7 @@ export function ChatPanel({
                       msg.user_id === userId ? "flex-row-reverse" : "flex-row"
                     } gap-2 items-start`}
                   >
-                    <Avatar className={`h-8 w-8 ${msg.user_id === userId ? 'ml-2' : 'mr-2'}`}>
+                    <Avatar className={`h-8 w-8 ${msg.user_id === userId ? 'ml-2' : 'mr-2'} border-2 border-white shadow-sm`}>
                       <AvatarImage
                         src={msg.avatar_url || `https://robohash.org/${encodeURIComponent(msg.nickname)}.png`}
                         alt={msg.nickname}
@@ -721,8 +730,8 @@ export function ChatPanel({
                             ? "bg-amber-100 border border-amber-300 text-amber-800"
                             : msg.user_id === userId
                             ? "bg-purple-600 text-white"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
+                            : "bg-white border border-gray-200 text-gray-800"
+                        } shadow-sm`}
                       >
                         <div className="flex items-center justify-between gap-1 mb-1">
                           <p className={`text-xs font-semibold ${
@@ -797,7 +806,7 @@ export function ChatPanel({
 
         {/* Input */}
         <form
-          className="p-3 border-t flex flex-col gap-2"
+          className="p-3 border-t flex flex-col gap-2 bg-white"
           onSubmit={handleSubmit}
         >
           <div className="flex items-center gap-1">
