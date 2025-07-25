@@ -48,6 +48,7 @@ import {
   Laptop,
   ArrowRight,
   Phone,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -884,7 +885,7 @@ export default function Dashboard() {
             {showCategoryFilter && <div className="h-20"></div>}
           </div>
 
-                    {/* Stats Cards */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mb-8">
             {/* User Profile Card - tambahkan card profil */}
             <Card className="bg-white/90 border-none shadow-md row-span-2">
@@ -931,75 +932,51 @@ export default function Dashboard() {
                       <span className="text-sm text-gray-600">{userProfile.phone}</span>
                     </div>
                   )}
+                  
+                  {/* Statistik profil */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-blue-600">{myQuizzes.length}</div>
+                        <p className="text-xs text-gray-500">Kuis Saya</p>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-purple-600">{totalGamesPlayed}</div>
+                        <p className="text-xs text-gray-500">Permainan</p>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-yellow-600">{bestGameScore}</div>
+                        <p className="text-xs text-gray-500">Skor Terbaik</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Link href="/dashboard/profile">
+                    <Button variant="outline" className="w-full mt-4 border-blue-300 text-blue-600 hover:bg-blue-50">
+                      Edit Profil
+                    </Button>
+                  </Link>
                 </div>
-                
-                <Link href="/dashboard/profile">
-                  <Button variant="outline" className="w-full border-blue-300 text-blue-600 hover:bg-blue-50">
-                    Edit Profil
-                  </Button>
-                </Link>
               </CardContent>
             </Card>
             
-            <div className="grid grid-cols-1 gap-4 md:gap-6">
-              <Card className="bg-white/90 border-none shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Kuis Saya</CardTitle>
-                  <BookOpen className="h-5 w-5 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{myQuizzes.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Total kuis yang Anda buat
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white/90 border-none shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Permainan Dimainkan
-                  </CardTitle>
-                  <Target className="h-5 w-5 text-purple-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{totalGamesPlayed}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Jumlah kuis yang pernah dimainkan
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white/90 border-none shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Skor Terbaik
-                  </CardTitle>
-                  <Award className="h-5 w-5 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{bestGameScore}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Skor tertinggi Anda di kuis 
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Indonesia Map - Diperbesar */}
-            <div className="col-span-1 sm:col-span-2">
-              <div className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative group">
-                <IndonesiaMap title="Pengguna di Indonesia" height="250px" />
-                <div className="absolute inset-0 bg-black/0  transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <Button 
-                    variant="outline" 
-                    className="bg-white text-blue-700 hover:bg-blue-50" 
-                    onClick={() => router.push("/dashboard/map")}
-                  >
-                    Lihat Peta Lengkap
-                  </Button>
+            {/* Indonesia Map di sebelah kanan profil */}
+            <div className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative">
+              <div className="flex flex-row items-center justify-between space-y-0 px-6 py-2">
+                <div className="text-sm font-medium text-gray-900 flex items-center">
+                  <MapPin className="h-5 w-5 text-blue-500 mr-2" />
+                  Pengguna di Indonesia
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-blue-600 hover:bg-blue-50 h-8" 
+                  onClick={() => router.push("/dashboard/map")}
+                >
+                  Lihat Peta Lengkap
+                </Button>
               </div>
+              <IndonesiaMap height="250px" />
             </div>
           </div>
 

@@ -104,7 +104,7 @@ interface IndonesiaMapProps {
 }
 
 export default function IndonesiaMap({ 
-  title = "Pengguna di Seluruh Indonesia", 
+  title = "", 
   height = "320px" 
 }: IndonesiaMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -221,10 +221,6 @@ export default function IndonesiaMap({
 
   return (
     <Card className="bg-white/90 border-none shadow-md h-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <MapPin className="h-5 w-5 text-blue-500" />
-      </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex flex-col items-center justify-center h-[250px]">
