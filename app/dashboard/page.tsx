@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Plus,
   Play,
@@ -59,6 +60,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ActionSearchBar from "@/components/ui/action-search-bar";
+
+// Import Indonesia Map dengan dynamic import untuk menghindari error SSR
+const IndonesiaMap = dynamic(() => import("@/components/ui/indonesia-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full w-full py-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div>
+  ),
+});
 
 // Import flag-icons CSS
 import "flag-icons/css/flag-icons.min.css";
@@ -873,8 +884,8 @@ export default function Dashboard() {
             {showCategoryFilter && <div className="h-20"></div>}
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+                    {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mb-8">
             {/* User Profile Card - tambahkan card profil */}
             <Card className="bg-white/90 border-none shadow-md row-span-2">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -930,46 +941,66 @@ export default function Dashboard() {
               </CardContent>
             </Card>
             
-            <Card className="bg-white/90 border-none shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Kuis Saya</CardTitle>
-                <BookOpen className="h-5 w-5 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{myQuizzes.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Total kuis yang Anda buat
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white/90 border-none shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Permainan Dimainkan
-                </CardTitle>
-                <Target className="h-5 w-5 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{totalGamesPlayed}</div>
-                <p className="text-xs text-muted-foreground">
-                  Jumlah kuis yang pernah dimainkan
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white/90 border-none shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Skor Terbaik
-                </CardTitle>
-                <Award className="h-5 w-5 text-yellow-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{bestGameScore}</div>
-                <p className="text-xs text-muted-foreground">
-                  Skor tertinggi Anda di kuis
-                </p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 gap-4 md:gap-6">
+              <Card className="bg-white/90 border-none shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Kuis Saya</CardTitle>
+                  <BookOpen className="h-5 w-5 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{myQuizzes.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Total kuis yang Anda buat
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white/90 border-none shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Permainan Dimainkan
+                  </CardTitle>
+                  <Target className="h-5 w-5 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{totalGamesPlayed}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Jumlah kuis yang pernah dimainkan
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white/90 border-none shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Skor Terbaik
+                  </CardTitle>
+                  <Award className="h-5 w-5 text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{bestGameScore}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Skor tertinggi Anda di kuis 
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Indonesia Map - Diperbesar */}
+            <div className="col-span-1 sm:col-span-2">
+              <div className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative group">
+                <IndonesiaMap title="Pengguna di Indonesia" height="250px" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <Button 
+                    variant="outline" 
+                    className="bg-white text-blue-700 hover:bg-blue-50" 
+                    onClick={() => router.push("/dashboard/map")}
+                  >
+                    Lihat Peta Lengkap
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Main Content Tabs */}
