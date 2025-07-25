@@ -56,8 +56,9 @@ interface LearnGameState {
   timeLeft: number;
   hasAnswered: boolean;
   selectedAnswer: string | null;
-  gamePhase: "question" | "answered" | "finished";
+  gamePhase: "countdown" | "question" | "answered" | "finished";
   isSkipped: boolean; // Add this flag to track if question was skipped
+  countdownValue: number;
 }
 
 export default function LearnModePage({
@@ -78,8 +79,9 @@ export default function LearnModePage({
     timeLeft: 0,
     hasAnswered: false,
     selectedAnswer: null,
-    gamePhase: "question",
+    gamePhase: "countdown", // Start with countdown phase
     isSkipped: false,
+    countdownValue: 10, // Change from 3 to 10 seconds
   });
 
   useEffect(() => {
@@ -91,6 +93,29 @@ export default function LearnModePage({
       router.push("/auth/login");
     }
   }, [user, router]);
+
+  // Add countdown timer effect
+  useEffect(() => {
+    if (gameState.gamePhase === "countdown" && gameState.countdownValue > 0) {
+      const countdownTimer = setTimeout(() => {
+        setGameState(prev => ({
+          ...prev,
+          countdownValue: prev.countdownValue - 1
+        }));
+      }, 1000);
+      
+      return () => clearTimeout(countdownTimer);
+    } else if (gameState.gamePhase === "countdown" && gameState.countdownValue === 0 && quiz) {
+      // When countdown reaches 0, start the actual game
+      setTimeout(() => {
+        setGameState(prev => ({
+          ...prev,
+          gamePhase: "question",
+          timeLeft: quiz.questions[0].time_limit
+        }));
+      }, 500); // Small delay before starting the game
+    }
+  }, [gameState.countdownValue, gameState.gamePhase, quiz]);
 
   useEffect(() => {
     // Only start timer if we're in question phase, have time left, and quiz is loaded
@@ -163,14 +188,13 @@ export default function LearnModePage({
         questions,
       });
 
-      // Start first question with proper timer
-      if (questions.length > 0) {
-        setGameState((prev) => ({
-          ...prev,
-          timeLeft: questions[0].time_limit,
-          gamePhase: "question",
-        }));
-      }
+      // Start with countdown phase instead of directly starting first question
+      setGameState((prev) => ({
+        ...prev,
+        gamePhase: "countdown",
+        countdownValue: 10  // Change from 3 to 10 seconds
+      }));
+      
     } catch (error) {
       console.error("Error fetching quiz:", error);
       router.push("/dashboard");
@@ -253,11 +277,12 @@ export default function LearnModePage({
       currentQuestionIndex: 0,
       score: 0,
       correctAnswers: 0,
-      timeLeft: quiz.questions[0].time_limit,
+      timeLeft: 0,
       hasAnswered: false,
       selectedAnswer: null,
-      gamePhase: "question",
+      gamePhase: "countdown", // Change to countdown first
       isSkipped: false,
+      countdownValue: 10,  // Change from 3 to 10 seconds
     });
   };
 
@@ -288,6 +313,52 @@ export default function LearnModePage({
             </Link>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (gameState.gamePhase === "countdown") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 flex items-center justify-center overflow-hidden">
+        <div className="relative z-10">
+          {/* Decorative elements */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          </div>
+
+          <Card className="bg-white/95 backdrop-blur-sm w-80 md:w-96 shadow-2xl border-0 rounded-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2"></div>
+            <CardContent className="p-8 text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Bersiap!
+              </h2>
+              <p className="text-gray-600 mb-8">
+                Kuis akan dimulai dalam...
+              </p>
+              
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center mx-auto mb-6 shadow-lg animate-pulse">
+                <span className="text-5xl font-bold text-white animate-bounce-slight">
+                  {gameState.countdownValue}
+                </span>
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                {quiz.title}
+                <div className="mt-2 font-medium text-purple-600">{quiz.questions.length} Pertanyaan</div>
+              </div>
+              
+              <div className="mt-8">
+                <Link href="/dashboard">
+                  <Button variant="outline" className="w-full bg-transparent border-purple-300 text-purple-700 hover:bg-purple-50 rounded-xl flex items-center justify-center">
+                    <Home className="w-4 h-4 mr-2" />
+                    Kembali ke Dashboard
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -444,6 +515,16 @@ export default function LearnModePage({
               <div className="text-xs opacity-80">Benar</div>
             </div>
           </div>
+        </div>
+
+        {/* Back to Dashboard Button */}
+        <div className="mb-6">
+          <Link href="/dashboard">
+            <Button variant="ghost" className="bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 rounded-xl border border-white/10 shadow-md flex items-center">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Kembali ke Dashboard
+            </Button>
+          </Link>
         </div>
 
         {/* Progress */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -36,7 +36,7 @@ import {
   Lock,
   Menu,
   ChevronUp,
-  Filter,
+  Filter, 
   Book,
   Beaker,
   Calculator,
@@ -206,6 +206,7 @@ const languages = [
 export default function Dashboard() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const [publicQuizzes, setPublicQuizzes] = useState<NormalizedQuiz[]>([]);
   const [myQuizzes, setMyQuizzes] = useState<NormalizedQuiz[]>([]);
@@ -616,27 +617,27 @@ export default function Dashboard() {
         </svg>
       ),
     },
-    {
-      title: "Teman",
-      href: "../dashboard/friends",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-5 w-5"
-        >
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-    },
+    // {
+    //   title: "Teman",
+    //   href: "../dashboard/friends",
+    //   icon: (
+    //     <svg
+    //       xmlns="http://www.w3.org/2000/svg"
+    //       viewBox="0 0 24 24"
+    //       fill="none"
+    //       stroke="currentColor"
+    //       strokeWidth="2"
+    //       strokeLinecap="round"
+    //       strokeLinejoin="round"
+    //       className="h-5 w-5"
+    //     >
+    //       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    //       <circle cx="9" cy="7" r="4" />
+    //       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    //       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    //     </svg>
+    //   ),
+    // },
     {
       title: "Riwayat",
       href: "../dashboard/history",
@@ -1426,79 +1427,110 @@ export default function Dashboard() {
                 onClick={() => setIsNavOpen(false)}
               />
 
-              {/* Bottom Navigation */}
+              {/* Side Navigation (dari kanan) */}
               <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 rounded-t-2xl shadow-2xl"
-                style={{ maxHeight: "70vh", overflowY: "auto" }}
+                className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-80 md:w-96 bg-white shadow-2xl border-l border-gray-200"
+                style={{ overflowY: "auto" }}
               >
-                {/* Handle Bar untuk swipe */}
-                <div className="flex justify-center pt-2 pb-1">
-                  <div className="w-12 h-1 rounded-full bg-gray-300" />
+                {/* Header navigasi */}
+                <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 flex justify-between items-center shadow-md">
+                  <h3 className="font-bold text-xl">Menu</h3>
+                  <Button variant="ghost" size="icon" onClick={() => setIsNavOpen(false)} className="text-white hover:bg-white/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x">
+                      <path d="M18 6 6 18"/>
+                      <path d="m6 6 12 12"/>
+                    </svg>
+                  </Button>
                 </div>
 
-                <div className="p-4">
-                  <h3 className="font-medium text-lg mb-4 px-2 text-gray-900">
-                    Menu Navigasi
-                  </h3>
-
-                  {/* Navigation Links */}
-                  <div className="space-y-1">
-                    {navigationLinks.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        onClick={() => setIsNavOpen(false)}
-                      >
-                        <Button
-                          variant={
-                            link.href === "/dashboard" ? "default" : "ghost"
-                          }
-                          className="w-full justify-start text-lg py-6"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={
-                                link.href === "/dashboard"
-                                  ? "text-white"
-                                  : "text-gray-700"
-                              }
-                            >
-                              {link.icon}
-                            </div>
-                            <span>{link.title}</span>
-                          </div>
-                        </Button>
-                      </Link>
-                    ))}
-
-                    {/* Logout Button */}
-                    <Button
-                      variant="destructive"
-                      className="w-full justify-start text-lg py-6 mt-4"
-                      onClick={handleSignOut}
-                    >
-                      <div className="flex items-center gap-4">
-                        <LogOut className="h-5 w-5" />
-                        <span>Keluar</span>
-                      </div>
-                    </Button>
+                {/* Profil user */}
+                <div className="px-6 py-6 border-b border-gray-100">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-16 w-16 border-2 border-blue-500">
+                      <AvatarImage
+                        src={
+                          userProfile?.avatar_url ||
+                          `https://robohash.org/${encodeURIComponent(
+                            user.email || "guest"
+                          )}.png`
+                        }
+                        alt={user.email || ""}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="bg-blue-100 text-blue-600 text-xl">
+                        {displayName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h4 className="font-semibold text-lg text-gray-900">{displayName}</h4>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                      
+                      {userProfile?.country && userProfile.country !== "none" && (
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span 
+                            className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-5 h-3 shadow-sm border border-gray-300`}
+                          ></span>
+                          <span className="text-xs text-gray-600">
+                            {userProfile.country}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4 border-blue-300 text-blue-600 hover:bg-blue-50"
+                    onClick={() => {
+                      router.push("/dashboard/profile");
+                      setIsNavOpen(false);
+                    }}
+                  >
+                    Edit Profil
+                  </Button>
+                </div>
 
-                  {/* Close Button */}
-                  <div className="pt-4 pb-8">
-                    <Button
+                {/* Navigation Links dengan efek hover yang lebih baik */}
+                <div className="p-2 space-y-1">
+                  {navigationLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
                       onClick={() => setIsNavOpen(false)}
-                      variant="outline"
-                      className="w-full gap-2"
                     >
-                      <ChevronUp className="h-4 w-4" />
-                      Tutup
-                    </Button>
-                  </div>
+                      <div
+                        className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 ${
+                          (link.href === "../dashboard" && pathname === "/dashboard") ||
+                          pathname?.includes(link.href.replace("..", ""))
+                            ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md"
+                            : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        <div>
+                          {link.icon}
+                        </div>
+                        <span className="font-medium">{link.title}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="px-6 py-4 mt-auto">
+                  {/* Logout Button dengan desain lebih baik */}
+                  <Button
+                    variant="destructive"
+                    className="w-full py-6 mt-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700"
+                    onClick={handleSignOut}
+                  >
+                    <div className="flex items-center gap-4 justify-center">
+                      <LogOut className="h-5 w-5" />
+                      <span className="font-medium">Keluar</span>
+                    </div>
+                  </Button>
                 </div>
               </motion.div>
             </>
