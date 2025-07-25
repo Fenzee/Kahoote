@@ -886,9 +886,9 @@ export default function Dashboard() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mb-8">
+          <div className="grid grid-cols-2 gap-4 md:gap-6 mb-8">
             {/* User Profile Card - tambahkan card profil */}
-            <Card className="bg-white/90 border-none shadow-md row-span-2">
+            <Card className="bg-white/90 border-none shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Profil Saya</CardTitle>
                 <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/profile")}>
@@ -961,7 +961,7 @@ export default function Dashboard() {
             </Card>
             
             {/* Indonesia Map di sebelah kanan profil */}
-            <div className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative">
+            <Card className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative">
               <div className="flex flex-row items-center justify-between space-y-0 px-6 py-2">
                 <div className="text-sm font-medium text-gray-900 flex items-center">
                   <MapPin className="h-5 w-5 text-blue-500 mr-2" />
@@ -977,7 +977,7 @@ export default function Dashboard() {
                 </Button>
               </div>
               <IndonesiaMap height="250px" />
-            </div>
+            </Card>
           </div>
 
           {/* Main Content Tabs */}
