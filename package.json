@@ -39,6 +39,7 @@
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
     "@react-google-maps/api": "^2.20.7",
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "latest",
     "@tabler/icons-react": "^3.34.1",
     "@types/uuid": "^10.0.0",

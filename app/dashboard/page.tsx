@@ -61,6 +61,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ActionSearchBar from "@/components/ui/action-search-bar";
+import WelcomeModal from "@/components/welcome-modal";
 
 // Import Indonesia Map dengan dynamic import untuk menghindari error SSR
 const IndonesiaMap = dynamic(() => import("@/components/ui/indonesia-map"), {
@@ -236,8 +237,8 @@ export default function Dashboard() {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [showCategoryFilter, setShowCategoryFilter] = useState(false);
   const [gameHistory, setGameHistory] = useState<GameHistoryEntry[]>([]);
-
   const [loadingGameHistory, setLoadingGameHistory] = useState(true);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -250,6 +251,17 @@ export default function Dashboard() {
       fetchPublicQuizzes();
       fetchMyQuizzes();
       fetchGameHistory();
+      
+      // Check if this is a new user (check for welcome parameter or first time login)
+      const urlParams = new URLSearchParams(window.location.search);
+      const isNewUser = urlParams.get('welcome') === 'true';
+      
+      if (isNewUser) {
+        setShowWelcomeModal(true);
+        // Clean up URL parameter
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
     }
   }, [user, loading, router]);
 
@@ -1548,6 +1560,13 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
       )}
+      
+      {/* Welcome Modal for new users */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        username={userProfile?.username}
+      />
     </div>
   );
 }

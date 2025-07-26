@@ -111,7 +111,9 @@ export default function RegisterPage() {
         formData.phone || null
       );
       toast.success("Akun berhasil dibuat! Silakan cek email untuk verifikasi.");
-      // Don't manually redirect here, let the useEffect handle it
+      
+      // Redirect to dashboard with welcome parameter for new users
+      router.push("/dashboard?welcome=true");
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -128,6 +130,10 @@ export default function RegisterPage() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 

@@ -10,28 +10,66 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     // Proses callback OAuth dari provider
     const handleAuthCallback = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error("Error auth callback:", error);
-        router.push("/auth/login?error=Authentication failed");
-        return;
-      }
-      
-      if (data.session) {
-        // Cek apakah user sudah memiliki profil
-        await ensureUserProfile(data.session.user);
+      try {
+        // Handle the OAuth callback
+        const { data, error } = await supabase.auth.getSession();
         
-        // Berhasil login, redirect ke dashboard
-        router.push("/dashboard");
-      } else {
-        // Tidak ada session, kembali ke login
-        router.push("/auth/login");
+        if (error) {
+          console.error("Error auth callback:", error);
+          router.push("/auth/login?error=Authentication failed");
+          return;
+        }
+        
+        if (data.session) {
+          // Cek apakah user sudah memiliki profil
+          await ensureUserProfile(data.session.user);
+          
+          // Check if this is a new user by looking at profile creation
+          const isNewUser = await checkIfNewUser(data.session.user);
+          
+          // Berhasil login, redirect ke dashboard dengan delay untuk memastikan profil tersimpan
+          setTimeout(() => {
+            const dashboardUrl = isNewUser ? "/dashboard?welcome=true" : "/dashboard";
+            router.push(dashboardUrl);
+          }, 1000);
+        } else {
+          // Tidak ada session, kembali ke login
+          router.push("/auth/login");
+        }
+      } catch (error) {
+        console.error("Unexpected error during auth callback:", error);
+        router.push("/auth/login?error=Authentication failed");
       }
     };
 
     handleAuthCallback();
   }, [router]);
+
+  // Fungsi untuk mengecek apakah user baru
+  const checkIfNewUser = async (user: any) => {
+    if (!user) return false;
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("created_at")
+        .eq("id", user.id)
+        .single();
+      
+      if (error || !profile) return false;
+      
+      // Consider user as new if profile was created in the last 5 minutes
+      const profileCreated = new Date(profile.created_at);
+      const now = new Date();
+      const timeDiff = now.getTime() - profileCreated.getTime();
+      const minutesDiff = timeDiff / (1000 * 60);
+      
+      return minutesDiff <= 5;
+    } catch (error) {
+      console.error("Error checking if user is new:", error);
+      return false;
+    }
+  };
 
   // Fungsi untuk memastikan user memiliki profil
   const ensureUserProfile = async (user: any) => {

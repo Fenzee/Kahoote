@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { Eye, EyeOff, Mail, Lock, User, Gamepad2, ArrowLeft, Star, Trophy, Users, CheckCircle, Zap } from "lucide-react";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +25,7 @@ export default function LoginPage() {
     username: "",
   });
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -47,7 +48,10 @@ export default function LoginPage() {
       if (error) throw error;
       
       toast.success("Berhasil masuk!");
-      router.push('/dashboard');
+      
+      // Check if there's a redirect URL from protected route
+      const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+      router.push(redirectTo);
     } catch (error: any) {
       console.error("Error signing in:", error);
       setError(error.message || "Gagal masuk. Periksa email dan password Anda.");
@@ -101,6 +105,10 @@ export default function LoginPage() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 
@@ -348,5 +356,20 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center text-blue-600">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Memuat...</p>
+        </div>
+      </div>
+    }>
+      <LoginPageContent />
+    </Suspense>
   );
 }
