@@ -38,10 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Only set loading false after initial load
         setLoading(false)
       }
+      
+      // Handle successful authentication events
+      if (event === 'SIGNED_IN' && session?.user && !initialLoad) {
+        // Redirect to dashboard on successful sign in
+        window.location.href = '/dashboard'
+      }
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [initialLoad])
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
