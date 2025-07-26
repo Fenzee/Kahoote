@@ -66,16 +66,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error
 
     if (data.user) {
-      // Create profile
-      const { error: profileError } = await supabase.from("profiles").insert({
+      // Create profile with all required fields
+      const profileData = {
         id: data.user.id,
         username,
         email,
-        fullname,
-        country,
-        phone,
-      })
-      if (profileError) throw profileError
+        country: country || null,
+        phone: phone || null,
+        avatar_url: null,
+        created_at: new Date().toISOString()
+      };
+
+      // Add fullname if provided
+      if (fullname) {
+        profileData.fullname = fullname;
+      }
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert(profileData);
+        
+      // If error due to missing fullname column, try without it
+      if (profileError && profileError.message?.includes('fullname')) {
+        console.log("Retrying profile creation without fullname field...");
+        const { fullname, ...profileDataWithoutFullname } = profileData;
+        
+        const { error: retryError } = await supabase
+          .from("profiles")
+          .insert(profileDataWithoutFullname);
+          
+        if (retryError) {
+          console.error("Error creating profile (retry):", retryError);
+          throw retryError;
+        }
+      } else if (profileError) {
+        console.error("Error creating profile:", profileError);
+        throw profileError;
+      }
     }
   }
 
