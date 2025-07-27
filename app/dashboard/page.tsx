@@ -739,8 +739,9 @@ export default function Dashboard() {
               GolekQuiz
             </span>
           </Link>
-          <div className="flex justify-end md:justify-normal items-center space-x-4 w-full md:w-auto">
-            <div className="flex items-center justify-center space-x-2 mr-8 md:mx-0">
+          <div className="flex justify-between md:justify-normal items-center space-x-4 w-full md:w-auto">
+            <div className="w-5"></div>
+            <div className="flex items-center justify-center space-x-2 left-[30%] mx-auto">
               <Button
                 onClick={() => router.push("/create")}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg"
