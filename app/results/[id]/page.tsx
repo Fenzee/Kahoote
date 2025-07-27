@@ -54,7 +54,7 @@ interface Participant {
   user_id: string | null;
   profiles?:
     | {
-    avatar_url: string | null;
+        avatar_url: string | null;
       }
     | Array<{
         avatar_url: string | null;
@@ -127,6 +127,7 @@ export default function ResultsPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showAnswerDetails, setShowAnswerDetails] = useState(false);
 
   // useEffect(() => {
   //   if (
@@ -245,10 +246,10 @@ export default function ResultsPage({
 
           // Fallback ke cara lama jika fungsi RPC tidak tersedia
           const { data: fallbackData, error: participantsError } =
-        await supabase
-          .from("game_participants")
-          .select(
-            `
+            await supabase
+              .from("game_participants")
+              .select(
+                `
       id,
       nickname,
       score,
@@ -258,14 +259,14 @@ export default function ResultsPage({
         avatar_url
       )
     `
-          )
-          .eq("session_id", resolvedParams.id)
-          .order("score", { ascending: false });
+              )
+              .eq("session_id", resolvedParams.id)
+              .order("score", { ascending: false });
 
-      if (participantsError) {
-        console.error("Error fetching participants:", participantsError);
-        throw new Error("Gagal memuat data peserta");
-      }
+          if (participantsError) {
+            console.error("Error fetching participants:", participantsError);
+            throw new Error("Gagal memuat data peserta");
+          }
 
           participantsData = fallbackData as Participant[];
         } else {
@@ -322,7 +323,7 @@ export default function ResultsPage({
         }
 
         console.log("Participants data:", participantsData);
-      setParticipants(participantsData);
+        setParticipants(participantsData);
       } catch (error) {
         console.error("Error processing participants:", error);
         throw new Error("Gagal memproses data peserta");
@@ -514,9 +515,9 @@ export default function ResultsPage({
         console.log("Using rank from leaderboard:", rank);
       } else {
         // Fallback ke cara lama jika tidak ada rank
-      const participantsWithHigherScores = allParticipants.filter(
-        (p) => p.score > participant.score
-      );
+        const participantsWithHigherScores = allParticipants.filter(
+          (p) => p.score > participant.score
+        );
         rank = participantsWithHigherScores.length + 1;
         console.log("Calculated rank fallback:", rank);
       }
@@ -532,8 +533,20 @@ export default function ResultsPage({
         response_time?: number;
       }> = [];
 
+      // Tambahkan Set untuk melacak pertanyaan yang sudah diproses
+      const processedQuestionIds = new Set<string>();
+
       for (const response of responses) {
         const questionId = response.question_id;
+
+        // Skip jika pertanyaan ini sudah diproses sebelumnya
+        if (processedQuestionIds.has(questionId)) {
+          console.log(`Skipping duplicate question: ${questionId}`);
+          continue;
+        }
+
+        // Tandai pertanyaan ini sebagai sudah diproses
+        processedQuestionIds.add(questionId);
 
         // Hitung waktu pengerjaan untuk soal ini
         let responseTime: number | undefined = undefined;
@@ -565,6 +578,11 @@ export default function ResultsPage({
           });
         }
       }
+
+      // Urutkan detail pertanyaan berdasarkan question_id untuk konsistensi
+      questionDetails.sort((a, b) =>
+        a.question_id.localeCompare(b.question_id)
+      );
 
       setPersonalStats({
         total_questions: totalQuestions,
@@ -1241,175 +1259,197 @@ export default function ResultsPage({
               {personalStats.question_details &&
                 personalStats.question_details.length > 0 && (
                   <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <HelpCircle className="w-5 h-5 mr-2 text-purple-600" />
-                      Detail Jawaban Anda
-                    </h3>
-                    <div className="space-y-4">
-                      {personalStats.question_details.map((question, index) => (
-                        <div
-                          key={question.question_id}
-                          className={`border rounded-lg p-4 hover:shadow-md transition-all ${
-                            question.is_correct
-                              ? "border-green-100 hover:border-green-200"
-                              : "border-red-100 hover:border-red-200"
-                          }`}
-                        >
-                          <div className="flex justify-between items-center mb-2">
-                            <h4 className="font-medium flex items-center flex-wrap">
-                              <span
-                                className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs flex-shrink-0 ${
-                                  question.is_correct
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                {index + 1}
-                              </span>
-                              <span className="break-words">
-                                {question.question_text}
-                              </span>
-                              {question.image_url && (
-                                <span className="ml-2 text-blue-500 flex-shrink-0">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold flex items-center">
+                        <HelpCircle className="w-5 h-5 mr-2 text-purple-600" />
+                        Detail Jawaban Anda
+                      </h3>
+                      <Button
+                        onClick={() => setShowAnswerDetails(!showAnswerDetails)}
+                        variant="outline"
+                        className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                      >
+                        {showAnswerDetails
+                          ? "Sembunyikan Detail"
+                          : "Lihat Detail Jawaban"}
+                      </Button>
+                    </div>
+
+                    {showAnswerDetails && (
+                      <div className="space-y-4">
+                        {personalStats.question_details.map(
+                          (question, index) => (
+                            <div
+                              key={question.question_id}
+                              className={`border rounded-lg p-4 hover:shadow-md transition-all ${
+                                question.is_correct
+                                  ? "border-green-100 hover:border-green-200"
+                                  : "border-red-100 hover:border-red-200"
+                              }`}
+                            >
+                              <div className="flex justify-between items-center mb-2">
+                                <h4 className="font-medium flex items-center flex-wrap">
+                                  <span
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs flex-shrink-0 ${
+                                      question.is_correct
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
                                   >
-                                    <rect
-                                      x="3"
-                                      y="3"
-                                      width="18"
-                                      height="18"
-                                      rx="2"
-                                      ry="2"
-                                    ></rect>
-                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                    <polyline points="21 15 16 10 5 21"></polyline>
-                                  </svg>
-                                </span>
-                              )}
-                              {question.answer_image_url && (
-                                <span className="ml-1 text-green-500 flex-shrink-0">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M5 12h14"></path>
-                                    <path d="M12 5v14"></path>
-                                  </svg>
-                                </span>
-                              )}
-                            </h4>
-                            <div className="flex items-center gap-2">
-                              {question.response_time && (
-                                <Badge
-                                  className={`${
-                                    question.is_correct
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-100 text-red-800"
-                                  } flex items-center gap-1`}
-                                >
-                                  <Clock className="w-3 h-3" />
-                                  {question.response_time}s
-                                </Badge>
-                              )}
-                            {question.is_correct ? (
-                              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                            )}
-                            </div>
-                          </div>
-
-                          {question.image_url && (
-                            <div className="flex justify-center items-center my-3">
-                              <div
-                                className="relative w-full max-w-[200px] h-32 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() =>
-                                  setPreviewImage(question.image_url)
-                                }
-                              >
-                                <Image
-                                  src={question.image_url}
-                                  alt="Question image"
-                                  className="object-contain"
-                                  fill
-                                  sizes="(max-width: 768px) 100vw, 200px"
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Always display the correct answer */}
-                          <div
-                            className={`mt-3 p-3 rounded-lg border ${
-                              question.is_correct
-                                ? "bg-green-50 border-green-100"
-                                : "bg-red-50 border-red-100"
-                            }`}
-                          >
-                            <p className="text-xs text-gray-600 mb-1 flex items-center">
-                              {question.is_correct ? (
-                                <>
-                                  <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
-                                  Jawaban Benar:
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-3 h-3 mr-1 text-red-600" />
-                                  Jawaban yang Benar:
-                                </>
-                              )}
-                            </p>
-
-                            {question.answer_image_url && (
-                              <div className="mb-2 flex justify-center">
-                                <div
-                                  className="relative w-full max-w-[200px] h-28 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() =>
-                                    setPreviewImage(question.answer_image_url)
-                                  }
-                                >
-                                  <Image
-                                    src={question.answer_image_url}
-                                    alt="Answer image"
-                                    className="object-contain"
-                                    fill
-                                    sizes="(max-width: 768px) 100vw, 200px"
-                                  />
+                                    {index + 1}
+                                  </span>
+                                  <span className="break-words">
+                                    {question.question_text}
+                                  </span>
+                                  {question.image_url && (
+                                    <span className="ml-2 text-blue-500 flex-shrink-0">
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      >
+                                        <rect
+                                          x="3"
+                                          y="3"
+                                          width="18"
+                                          height="18"
+                                          rx="2"
+                                          ry="2"
+                                        ></rect>
+                                        <circle
+                                          cx="8.5"
+                                          cy="8.5"
+                                          r="1.5"
+                                        ></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                      </svg>
+                                    </span>
+                                  )}
+                                  {question.answer_image_url && (
+                                    <span className="ml-1 text-green-500 flex-shrink-0">
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      >
+                                        <path d="M5 12h14"></path>
+                                        <path d="M12 5v14"></path>
+                                      </svg>
+                                    </span>
+                                  )}
+                                </h4>
+                                <div className="flex items-center gap-2">
+                                  {question.response_time && (
+                                    <Badge
+                                      className={`${
+                                        question.is_correct
+                                          ? "bg-green-100 text-green-800"
+                                          : "bg-red-100 text-red-800"
+                                      } flex items-center gap-1`}
+                                    >
+                                      <Clock className="w-3 h-3" />
+                                      {question.response_time}s
+                                    </Badge>
+                                  )}
+                                  {question.is_correct ? (
+                                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                  ) : (
+                                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                  )}
                                 </div>
                               </div>
-                            )}
 
-                            {question.correct_answer && (
-                              <p
-                                className={`text-sm font-medium ${
+                              {question.image_url && (
+                                <div className="flex justify-center items-center my-3">
+                                  <div
+                                    className="relative w-full max-w-[200px] h-32 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() =>
+                                      setPreviewImage(question.image_url)
+                                    }
+                                  >
+                                    <Image
+                                      src={question.image_url}
+                                      alt="Question image"
+                                      className="object-contain"
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 200px"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Always display the correct answer */}
+                              <div
+                                className={`mt-3 p-3 rounded-lg border ${
                                   question.is_correct
-                                    ? "text-green-800"
-                                    : "text-red-800"
+                                    ? "bg-green-50 border-green-100"
+                                    : "bg-red-50 border-red-100"
                                 }`}
                               >
-                                {question.correct_answer}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                                <p className="text-xs text-gray-600 mb-1 flex items-center">
+                                  {question.is_correct ? (
+                                    <>
+                                      <CheckCircle className="w-3 h-3 mr-1 text-green-600" />
+                                      Jawaban Benar:
+                                    </>
+                                  ) : (
+                                    <>
+                                      <XCircle className="w-3 h-3 mr-1 text-red-600" />
+                                      Jawaban yang Benar:
+                                    </>
+                                  )}
+                                </p>
+
+                                {question.answer_image_url && (
+                                  <div className="mb-2 flex justify-center">
+                                    <div
+                                      className="relative w-full max-w-[200px] h-28 overflow-hidden rounded-lg border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                                      onClick={() =>
+                                        setPreviewImage(
+                                          question.answer_image_url
+                                        )
+                                      }
+                                    >
+                                      <Image
+                                        src={question.answer_image_url}
+                                        alt="Answer image"
+                                        className="object-contain"
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, 200px"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {question.correct_answer && (
+                                  <p
+                                    className={`text-sm font-medium ${
+                                      question.is_correct
+                                        ? "text-green-800"
+                                        : "text-red-800"
+                                    }`}
+                                  >
+                                    {question.correct_answer}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
             </CardContent>

@@ -18,7 +18,18 @@ import {
   CheckCircle,
   Circle,
   Gamepad2,
+  HelpCircle,
+  Flag,
+  AlertCircle,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface Answer {
   id: string;
@@ -77,6 +88,12 @@ export default function PlayActiveGamePage({
   );
   const [isConnected, setIsConnected] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Tambahkan state untuk konfirmasi selesai
+  const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
+  // Tambahkan state untuk melacak soal yang ditandai ragu-ragu
+  const [doubtfulQuestions, setDoubtfulQuestions] = useState<Set<string>>(
+    new Set()
+  );
   // Tambahkan state untuk melacak soal yang sedang dikerjakan dan waktunya
   const [activeQuestionTracker, setActiveQuestionTracker] = useState<{
     questionId: string | null;
@@ -296,12 +313,46 @@ export default function PlayActiveGamePage({
       setGameState(newGameState);
       setPlayerAnswers(answersMap);
 
+      // Load doubtful questions from localStorage
+      loadDoubtfulQuestionsFromStorage(session.id, participantId!);
+
       // Start timers after state is set
       startTimers(newGameState);
     } catch (error) {
       console.error("Error loading game data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fungsi untuk menyimpan soal ragu-ragu ke localStorage
+  const saveDoubtfulQuestionsToStorage = (questionIds: Set<string>) => {
+    if (typeof window !== "undefined" && gameState) {
+      const storageKey = `doubtful_${gameState.sessionId}_${gameState.participantId}`;
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(questionIds)));
+    }
+  };
+
+  // Fungsi untuk memuat soal ragu-ragu dari localStorage
+  const loadDoubtfulQuestionsFromStorage = (
+    sessionId: string,
+    participantId: string
+  ) => {
+    if (typeof window !== "undefined") {
+      const storageKey = `doubtful_${sessionId}_${participantId}`;
+      const storedData = localStorage.getItem(storageKey);
+
+      if (storedData) {
+        try {
+          const questionIds = JSON.parse(storedData);
+          setDoubtfulQuestions(new Set(questionIds));
+        } catch (e) {
+          console.error(
+            "Error parsing doubtful questions from localStorage:",
+            e
+          );
+        }
+      }
     }
   };
 
@@ -730,8 +781,28 @@ export default function PlayActiveGamePage({
     }
   };
 
-  // Modifikasi submitQuiz untuk memperbarui ended_at soal terakhir
-  const submitQuiz = async () => {
+  // Modifikasi submitQuiz untuk menampilkan konfirmasi
+  const handleFinishClick = () => {
+    // Cek apakah ada soal yang belum dijawab
+    const unansweredQuestions =
+      gameState?.questions.filter(
+        (question) => !playerAnswers.has(question.id)
+      ) || [];
+
+    // Cek apakah ada soal yang ditandai ragu-ragu
+    const doubtfulQuestionsArray =
+      gameState?.questions.filter((question) =>
+        doubtfulQuestions.has(question.id)
+      ) || [];
+
+    // Tampilkan dialog konfirmasi
+    setShowFinishConfirmation(true);
+  };
+
+  // Fungsi untuk menyelesaikan quiz setelah konfirmasi
+  const confirmSubmitQuiz = async () => {
+    setShowFinishConfirmation(false);
+
     if (!gameState) return;
 
     // Perbarui ended_at soal terakhir yang aktif
@@ -759,18 +830,6 @@ export default function PlayActiveGamePage({
       }
     }
 
-    // Pastikan semua pertanyaan dijawab
-    const unansweredQuestions = gameState.questions.filter(
-      (question) => !playerAnswers.has(question.id)
-    );
-    if (unansweredQuestions.length > 0) {
-      const firstUnansweredIndex = gameState.questions.findIndex(
-        (question) => !playerAnswers.has(question.id)
-      );
-      setCurrentQuestionIndex(firstUnansweredIndex);
-      return;
-    }
-
     try {
       // Tandai sesi selesai
       await supabase
@@ -790,6 +849,25 @@ export default function PlayActiveGamePage({
     }
 
     router.push(`/results/${resolvedParams.id}?participant=${participantId}`);
+  };
+
+  // Fungsi untuk menandai/menghapus tanda ragu-ragu pada soal
+  const toggleDoubtful = (questionId: string) => {
+    setDoubtfulQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(questionId)) {
+        newSet.delete(questionId);
+      } else {
+        newSet.add(questionId);
+      }
+
+      // Simpan ke localStorage setiap kali ada perubahan
+      if (gameState) {
+        saveDoubtfulQuestionsToStorage(newSet);
+      }
+
+      return newSet;
+    });
   };
 
   const formatTime = (seconds: number) => {
@@ -888,9 +966,32 @@ export default function PlayActiveGamePage({
           {currentQuestion && (
             <Card className="bg-white/90 backdrop-blur-sm mb-6 w-full md:w-[60%] shadow-xl border-0">
               <CardHeader>
-                <CardTitle className="text-2xl text-center text-gray-900">
-                  {currentQuestion.question_text}
-                </CardTitle>
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-2xl text-gray-900">
+                    {currentQuestion.question_text}
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`ml-2 ${
+                      doubtfulQuestions.has(currentQuestion.id)
+                        ? "bg-red-100 border-red-300 text-red-800 hover:bg-red-200"
+                        : "bg-gray-100 border-gray-300 text-gray-800 hover:bg-gray-200"
+                    }`}
+                    onClick={() => toggleDoubtful(currentQuestion.id)}
+                  >
+                    <Flag
+                      className={`w-4 h-4 mr-1 ${
+                        doubtfulQuestions.has(currentQuestion.id)
+                          ? "text-red-600"
+                          : "text-gray-600"
+                      }`}
+                    />
+                    {doubtfulQuestions.has(currentQuestion.id)
+                      ? "Tandai Yakin"
+                      : "Ragu-ragu"}
+                  </Button>
+                </div>
                 {currentQuestion.image_url && (
                   <div className="flex justify-center mt-4">
                     <img
@@ -987,7 +1088,7 @@ export default function PlayActiveGamePage({
               />
 
               <div className="flex justify-center flex-wrap gap-2 mb-4">
-                {gameState.questions.map((_, index) => (
+                {gameState.questions.map((question, index) => (
                   <Button
                     key={index}
                     onClick={() => navigateToQuestion(index)}
@@ -1000,8 +1101,10 @@ export default function PlayActiveGamePage({
                         ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
                         : ""
                     } ${
-                      playerAnswers.has(gameState.questions[index].id)
-                        ? "bg-green-100 border-green-300 text-green-700"
+                      doubtfulQuestions.has(question.id)
+                        ? "bg-red-700 border-red-300 text-white"
+                        : playerAnswers.has(question.id)
+                        ? "bg-green-500 border-green-300 text-white"
                         : ""
                     }`}
                   >
@@ -1028,7 +1131,7 @@ export default function PlayActiveGamePage({
 
                 {answeredCount === totalQuestions ? (
                   <Button
-                    onClick={submitQuiz}
+                    onClick={handleFinishClick}
                     className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6"
                   >
                     Selesai
@@ -1053,6 +1156,68 @@ export default function PlayActiveGamePage({
           </Card>
         </div>
       </main>
+
+      {/* Dialog Konfirmasi Selesai */}
+      <Dialog
+        open={showFinishConfirmation}
+        onOpenChange={setShowFinishConfirmation}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              Konfirmasi Selesai
+            </DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menyelesaikan pengerjaan soal?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {doubtfulQuestions.size > 0 && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-700 flex items-center">
+                  <Flag className="h-4 w-4 mr-2 text-red-600" />
+                  Anda masih memiliki {doubtfulQuestions.size} soal yang
+                  ditandai ragu-ragu.
+                </p>
+              </div>
+            )}
+
+            {gameState && playerAnswers.size < gameState.totalQuestions && (
+              <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-700 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2 text-yellow-600" />
+                  Anda belum menjawab{" "}
+                  {gameState.totalQuestions - playerAnswers.size} soal.
+                </p>
+              </div>
+            )}
+
+            <p className="text-sm text-gray-600">
+              Setelah menyelesaikan, Anda tidak dapat kembali untuk mengubah
+              jawaban.
+            </p>
+          </div>
+
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowFinishConfirmation(false)}
+            >
+              Kembali ke Soal
+            </Button>
+            <Button
+              type="button"
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+              onClick={confirmSubmitQuiz}
+            >
+              Ya, Selesaikan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

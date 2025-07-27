@@ -37,7 +37,7 @@ import {
   Lock,
   Menu,
   ChevronUp,
-  Filter, 
+  Filter,
   Book,
   Beaker,
   Calculator,
@@ -763,9 +763,9 @@ export default function Dashboard() {
               </Avatar>
               <div className="flex items-center space-x-1">
                 {userProfile?.country && userProfile.country !== "none" && (
-                  <span 
+                  <span
                     className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-6 h-4 overflow-hidden shadow-sm border border-white/30`}
-                    style={{ display: 'inline-block', verticalAlign: 'middle' }}
+                    style={{ display: "inline-block", verticalAlign: "middle" }}
                   ></span>
                 )}
                 <span className="text-white font-medium hidden md:block">
@@ -795,9 +795,9 @@ export default function Dashboard() {
               <h1 className="text-4xl font-bold text-gray-900 mb-2">
                 Dashboard
               </h1>
-              <p className="text-gray-600 text-lg">
+              {/* <p className="text-gray-600 text-lg">
                 Selamat datang kembali, {displayName}!
-              </p>
+              </p> */}
             </div>
             <Button
               onClick={() => router.push("/create")}
@@ -886,12 +886,18 @@ export default function Dashboard() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-4 md:gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
             {/* User Profile Card - tambahkan card profil */}
             <Card className="bg-white/90 border-none shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Profil Saya</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/profile")}>
+                <CardTitle className="text-sm font-medium">
+                  Profil Saya
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.push("/dashboard/profile")}
+                >
                   <Edit className="h-4 w-4 text-gray-500" />
                 </Button>
               </CardHeader>
@@ -912,12 +918,14 @@ export default function Dashboard() {
                       {displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <h3 className="font-bold text-lg text-gray-900">{displayName}</h3>
+                  <h3 className="font-bold text-lg text-gray-900">
+                    {displayName}
+                  </h3>
                   <p className="text-gray-600 text-sm">{user.email}</p>
-                  
+
                   {userProfile?.country && userProfile.country !== "none" && (
                     <div className="flex items-center justify-center space-x-2 mt-2">
-                      <span 
+                      <span
                         className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-6 h-4 shadow-sm border border-gray-300`}
                       ></span>
                       <span className="text-sm text-gray-600">
@@ -925,41 +933,49 @@ export default function Dashboard() {
                       </span>
                     </div>
                   )}
-                  
+
                   {userProfile?.phone && (
                     <div className="mt-2 flex items-center justify-center space-x-2">
                       <Phone className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{userProfile.phone}</span>
+                      <span className="text-sm text-gray-600">
+                        {userProfile.phone}
+                      </span>
                     </div>
                   )}
-                  
+
                   {/* Statistik profil */}
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="mt-4 pt-4 ">
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div>
-                        <div className="text-lg font-bold text-blue-600">{myQuizzes.length}</div>
+                        <div className="text-lg font-bold text-blue-600">
+                          {myQuizzes.length}
+                        </div>
                         <p className="text-xs text-gray-500">Kuis Saya</p>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-purple-600">{totalGamesPlayed}</div>
+                        <div className="text-lg font-bold text-purple-600">
+                          {totalGamesPlayed}
+                        </div>
                         <p className="text-xs text-gray-500">Permainan</p>
                       </div>
                       <div>
-                        <div className="text-lg font-bold text-yellow-600">{bestGameScore}</div>
+                        <div className="text-lg font-bold text-yellow-600">
+                          {bestGameScore}
+                        </div>
                         <p className="text-xs text-gray-500">Skor Terbaik</p>
                       </div>
                     </div>
                   </div>
-                  
-                  <Link href="/dashboard/profile">
+
+                  {/* <Link href="/dashboard/profile">
                     <Button variant="outline" className="w-full mt-4 border-blue-300 text-blue-600 hover:bg-blue-50">
                       Edit Profil
                     </Button>
-                  </Link>
+                  </Link> */}
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* Indonesia Map di sebelah kanan profil */}
             <Card className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative">
               <div className="flex flex-row items-center justify-between space-y-0 px-6 py-2">
@@ -967,10 +983,10 @@ export default function Dashboard() {
                   <MapPin className="h-5 w-5 text-blue-500 mr-2" />
                   Pengguna di Indonesia
                 </div>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
-                  className="text-blue-600 hover:bg-blue-50 h-8" 
+                  className="text-blue-600 hover:bg-blue-50 h-8"
                   onClick={() => router.push("/dashboard/map")}
                 >
                   Lihat Peta Lengkap
@@ -982,26 +998,28 @@ export default function Dashboard() {
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="browse" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-200/50 rounded-lg p-1 shadow-inner">
-              <TabsTrigger
-                value="browse"
-                className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md transition-all duration-200"
-              >
-                Publik Quiz
-              </TabsTrigger>
-              <TabsTrigger
-                value="my-quizzes"
-                className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md transition-all duration-200"
-              >
-                Private Quiz
-              </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md transition-all duration-200"
-              >
-                Riwayat Permainan
-              </TabsTrigger>
-            </TabsList>
+            <div className="grid grid-cols-1 gap-3">
+              <TabsList className="grid md:grid-cols-3 grid-cols-2 bg-gray-200/50 rounded-lg p-1.5 shadow-inner h-24 md:h-12">
+                <TabsTrigger
+                  value="browse"
+                  className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md transition-all duration-200 py-2.5 md:py-2"
+                >
+                  Publik Quiz
+                </TabsTrigger>
+                <TabsTrigger
+                  value="my-quizzes"
+                  className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md transition-all duration-200 py-2.5 md:py-2"
+                >
+                  Private Quiz
+                </TabsTrigger>
+                <TabsTrigger
+                  value="history"
+                  className="md:col-span-1 col-span-2 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md transition-all duration-200 py-2.5 md:py-2 mt-1 md:mt-0"
+                >
+                  Riwayat Permainan
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Browse Public Quizzes Tab */}
             <TabsContent value="browse" className="space-y-6">
@@ -1061,14 +1079,18 @@ export default function Dashboard() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex items-center gap-2">
-                            {quiz.creator.country && quiz.creator.country !== "none" && (
-                              <div className="inline-flex rounded-sm overflow-hidden border border-gray-300 shadow-sm">
-                                <span 
-                                  className={`fi fi-${quiz.creator.country.toLowerCase()} w-6 h-4`}
-                                  style={{ display: 'inline-block', verticalAlign: 'middle' }}
-                                ></span>
-                              </div>
-                            )}
+                            {quiz.creator.country &&
+                              quiz.creator.country !== "none" && (
+                                <div className="inline-flex rounded-sm overflow-hidden border border-gray-300 shadow-sm">
+                                  <span
+                                    className={`fi fi-${quiz.creator.country.toLowerCase()} w-6 h-4`}
+                                    style={{
+                                      display: "inline-block",
+                                      verticalAlign: "middle",
+                                    }}
+                                  ></span>
+                                </div>
+                              )}
                             <span className="text-sm text-gray-600 font-medium">
                               {quiz.creator.username}
                             </span>
@@ -1449,10 +1471,26 @@ export default function Dashboard() {
                 {/* Header navigasi */}
                 <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 flex justify-between items-center shadow-md">
                   <h3 className="font-bold text-xl">Menu</h3>
-                  <Button variant="ghost" size="icon" onClick={() => setIsNavOpen(false)} className="text-white hover:bg-white/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x">
-                      <path d="M18 6 6 18"/>
-                      <path d="m6 6 12 12"/>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsNavOpen(false)}
+                    className="text-white hover:bg-white/20"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-x"
+                    >
+                      <path d="M18 6 6 18" />
+                      <path d="m6 6 12 12" />
                     </svg>
                   </Button>
                 </div>
@@ -1476,25 +1514,31 @@ export default function Dashboard() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h4 className="font-semibold text-lg text-gray-900">{displayName}</h4>
+                      <h4 className="font-semibold text-lg text-gray-900">
+                        {displayName}
+                      </h4>
                       <p className="text-sm text-gray-500">{user.email}</p>
-                      
-                      {userProfile?.country && userProfile.country !== "none" && (
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span 
-                            className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-5 h-3 overflow-hidden border border-gray-200 shadow-sm`}
-                            style={{ display: 'inline-block', verticalAlign: 'middle' }}
-                          ></span>
-                          <span className="text-xs text-gray-600">
-                            {userProfile.country}
-                          </span>
-                        </div>
-                      )}
+
+                      {userProfile?.country &&
+                        userProfile.country !== "none" && (
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span
+                              className={`fi fi-${userProfile.country.toLowerCase()} rounded-sm w-5 h-3 overflow-hidden border border-gray-200 shadow-sm`}
+                              style={{
+                                display: "inline-block",
+                                verticalAlign: "middle",
+                              }}
+                            ></span>
+                            <span className="text-xs text-gray-600">
+                              {userProfile.country}
+                            </span>
+                          </div>
+                        )}
                     </div>
                   </div>
-                  
-                  <Button 
-                    variant="outline" 
+
+                  <Button
+                    variant="outline"
                     className="w-full mt-4 border-blue-300 text-blue-600 hover:bg-blue-50"
                     onClick={() => {
                       router.push("/dashboard/profile");
@@ -1515,15 +1559,14 @@ export default function Dashboard() {
                     >
                       <div
                         className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 ${
-                          (link.href === "../dashboard" && pathname === "/dashboard") ||
+                          (link.href === "../dashboard" &&
+                            pathname === "/dashboard") ||
                           pathname?.includes(link.href.replace("..", ""))
                             ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md"
                             : "hover:bg-gray-100 text-gray-700"
                         }`}
                       >
-                        <div>
-                          {link.icon}
-                        </div>
+                        <div>{link.icon}</div>
                         <span className="font-medium">{link.title}</span>
                       </div>
                     </Link>
