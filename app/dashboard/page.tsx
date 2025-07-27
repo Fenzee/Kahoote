@@ -516,7 +516,7 @@ export default function Dashboard() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push("../");
+      router.push("/auth/login");
     } catch (error) {
       console.error("Error signing out:", error);
       toast({
