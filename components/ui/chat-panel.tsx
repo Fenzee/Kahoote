@@ -130,7 +130,7 @@ export function ChatPanel({
   position = 'right',
   isHost = false
 }: ChatPanelProps) {
-  const [isOpen, setIsOpen] = useState(true); // Default terbuka
+  const [isOpen, setIsOpen] = useState(false); // Default tertutup
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
