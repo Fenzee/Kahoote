@@ -1147,17 +1147,7 @@ export default function HostGamePage({
         </div>
       </main>
 
-      {/* Chat Panel */}
-      {user && gameSession && (
-        <ChatPanel
-          sessionId={gameSession.id}
-          userId={user.id}
-          nickname={displayName}
-          avatarUrl={userProfile?.avatar_url}
-          position="right"
-          isHost={true}
-        />
-      )}
+
     </div>
   );
 }
