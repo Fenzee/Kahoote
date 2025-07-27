@@ -730,7 +730,7 @@ export default function Dashboard() {
 
       {/* Header */}
       <header className="container mx-auto px-4 py-6 relative z-10">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-center justify-between">
           <Link href={"/"} className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
               <Slack className="w-5 h-5 text-cyan-950" />
@@ -740,11 +740,21 @@ export default function Dashboard() {
             </span>
           </Link>
           <div className="flex items-center space-x-4">
-            <Link href="/join">
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
-                Join Game
-              </Button>
-            </Link>
+            <Button
+              onClick={() => router.push("/create")}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg"
+              size="sm"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Buat Kuis
+            </Button>
+            <Button
+              onClick={() => router.push("/join")}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+              size="sm"
+            >
+              Join Game
+            </Button>
             <div className="flex items-center space-x-3 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm">
               <Avatar className="h-8 w-8 bg-white border-2 border-white">
                 <AvatarImage
@@ -790,14 +800,14 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 pb-8 pt-0 relative z-10">
         <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-2xl p-6 md:p-8">
           {/* Welcome Section */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          {/* <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">
                 Dashboard
               </h1>
-              {/* <p className="text-gray-600 text-lg">
+              <p className="text-gray-600 text-lg">
                 Selamat datang kembali, {displayName}!
-              </p> */}
+              </p>
             </div>
             <Button
               onClick={() => router.push("/create")}
@@ -807,7 +817,7 @@ export default function Dashboard() {
               <Plus className="w-5 h-5 mr-2" />
               Buat Kuis Baru
             </Button>
-          </div>
+          </div> */}
 
           {/* Search Bar with Categories */}
           <div className="mb-6">
