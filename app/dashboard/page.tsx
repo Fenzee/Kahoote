@@ -1585,20 +1585,6 @@ export default function Dashboard() {
                     </Link>
                   ))}
                 </div>
-
-                <div className="px-6 py-4 mt-auto">
-                  {/* Logout Button dengan desain lebih baik */}
-                  <Button
-                    variant="destructive"
-                    className="w-full py-6 mt-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700"
-                    onClick={handleSignOut}
-                  >
-                    <div className="flex items-center gap-4 justify-center">
-                      <LogOut className="h-5 w-5" />
-                      <span className="font-medium">Keluar</span>
-                    </div>
-                  </Button>
-                </div>
               </motion.div>
             </>
           )}
