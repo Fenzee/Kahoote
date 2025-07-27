@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  MessageCircle, 
-  X, 
+import {
+  MessageCircle,
+  X,
   Send,
   ChevronDown,
   Star,
@@ -16,16 +16,16 @@ import {
   CheckCheck,
   MessageSquarePlus,
   Volume2,
-  VolumeX
+  VolumeX,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
   Popover,
@@ -60,7 +60,7 @@ interface ChatPanelProps {
   userId: string | null;
   nickname: string;
   avatarUrl?: string | null;
-  position?: 'right' | 'bottom';
+  position?: "right" | "bottom";
   isHost?: boolean;
 }
 
@@ -71,42 +71,42 @@ const chatTemplates = [
     templates: [
       "Game akan dimulai dalam 1 menit. Bersiaplah!",
       "Selamat datang di quiz! Aturan: jawab dengan cepat untuk poin lebih tinggi.",
-      "Pastikan koneksi internet stabil sebelum kita mulai."
-    ]
+      "Pastikan koneksi internet stabil sebelum kita mulai.",
+    ],
   },
   {
     category: "Game Info",
     templates: [
       "Ada total 10 pertanyaan dalam quiz ini.",
       "Perhatikan pertanyaan berikutnya, agak sulit!",
-      "Quiz akan berakhir dalam 5 menit."
-    ]
+      "Quiz akan berakhir dalam 5 menit.",
+    ],
   },
   {
     category: "Support",
     templates: [
       "Jika mengalami masalah teknis, refresh halaman.",
       "Klik tombol next jika tidak melihat pertanyaan berikutnya.",
-      "Hubungi host jika ada pertanyaan."
-    ]
-  }
+      "Hubungi host jika ada pertanyaan.",
+    ],
+  },
 ];
 
 // Available notification sounds
 const notificationSounds = [
-  { id: 'default', name: 'Chime', path: '/sounds/notification.mp3' },
-  { id: 'chime', name: 'Chinese', path: '/sounds/chinese.mp3' },
-  { id: 'ding', name: 'Ding', path: '/sounds/Vine.mp3' },
-  { id: 'bell', name: 'Discord', path: '/sounds/Discord.mp3' },
-  { id: 'none', name: 'Tidak Ada', path: '' }
+  { id: "default", name: "Chime", path: "/sounds/notification.mp3" },
+  { id: "chime", name: "Chinese", path: "/sounds/chinese.mp3" },
+  { id: "ding", name: "Ding", path: "/sounds/Vine.mp3" },
+  { id: "bell", name: "Discord", path: "/sounds/Discord.mp3" },
+  { id: "none", name: "Tidak Ada", path: "" },
 ];
 
 // Fungsi untuk mengecek apakah file ada
 const checkFileExists = async (url: string): Promise<boolean> => {
   if (!url) return false;
-  
+
   try {
-    const response = await fetch(url, { method: 'HEAD' });
+    const response = await fetch(url, { method: "HEAD" });
     return response.ok;
   } catch (e) {
     return false;
@@ -122,15 +122,15 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-export function ChatPanel({ 
-  sessionId, 
-  userId, 
+export function ChatPanel({
+  sessionId,
+  userId,
   nickname,
   avatarUrl,
-  position = 'right',
-  isHost = false
+  position = "right",
+  isHost = false,
 }: ChatPanelProps) {
-  const [isOpen, setIsOpen] = useState(true); // Default terbuka
+  const [isOpen, setIsOpen] = useState(false); // Default terbuka
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -139,13 +139,13 @@ export function ChatPanel({
   const [isImportant, setIsImportant] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSoundSettings, setShowSoundSettings] = useState(false);
-  const [selectedSound, setSelectedSound] = useState('default');
+  const [selectedSound, setSelectedSound] = useState("default");
   const [soundError, setSoundError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const PAGE_SIZE = 25; // Jumlah pesan yang dimuat per halaman
-  
+
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -155,21 +155,24 @@ export function ChatPanel({
   // Effect untuk mendeteksi klik di luar panel chat
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (chatPanelRef.current && 
-          !chatPanelRef.current.contains(event.target as Node) && 
-          !showSoundSettings &&
-          !showTemplates) { // Jangan tutup jika settings atau template terbuka
+      if (
+        chatPanelRef.current &&
+        !chatPanelRef.current.contains(event.target as Node) &&
+        !showSoundSettings &&
+        !showTemplates
+      ) {
+        // Jangan tutup jika settings atau template terbuka
         // Klik di luar panel chat
         setIsOpen(false);
       }
     }
 
     // Tambahkan event listener
-    document.addEventListener('mousedown', handleClickOutside);
-    
+    document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       // Cleanup event listener
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showSoundSettings, showTemplates]); // Tambahkan showTemplates sebagai dependency
 
@@ -178,17 +181,21 @@ export function ChatPanel({
     if (typeof Audio !== "undefined") {
       try {
         setSoundError(null);
-        const soundToUse = notificationSounds.find(sound => sound.id === selectedSound);
+        const soundToUse = notificationSounds.find(
+          (sound) => sound.id === selectedSound
+        );
         if (soundToUse && soundToUse.path) {
           const audio = new Audio(soundToUse.path);
-          
+
           // Handle error jika file tidak ada
-          audio.addEventListener('error', () => {
-            console.warn(`Notification sound error: ${soundToUse.path} not found or not supported`);
+          audio.addEventListener("error", () => {
+            console.warn(
+              `Notification sound error: ${soundToUse.path} not found or not supported`
+            );
             notificationSoundRef.current = null;
             setSoundError(`File suara '${soundToUse.name}' tidak ditemukan`);
           });
-          
+
           // Mulai proses loading
           audio.load();
           notificationSoundRef.current = audio;
@@ -202,7 +209,7 @@ export function ChatPanel({
       }
     }
   }, [selectedSound]);
-  
+
   // Load initial messages and set up real-time listener
   useEffect(() => {
     const loadMessages = async () => {
@@ -210,27 +217,27 @@ export function ChatPanel({
         setIsLoading(true);
         const { data, error, count } = await supabase
           .from("game_chat_messages")
-          .select("*", { count: 'exact' })
+          .select("*", { count: "exact" })
           .eq("session_id", sessionId)
           .order("created_at", { ascending: false })
           .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
-        
+
         if (error) throw error;
-        
+
         // Reverse data agar urutan kronologis (lama ke baru)
         const sortedData = [...(data || [])].reverse();
         setMessages(sortedData);
-        
+
         // Cek apakah ada lebih banyak pesan
         if (count && count > currentPage * PAGE_SIZE) {
           setHasMoreMessages(true);
         } else {
           setHasMoreMessages(false);
         }
-        
+
         // Mark all messages as read
         if (userId && data && data.length > 0) {
-          const messageIds = data.map(msg => msg.id);
+          const messageIds = data.map((msg) => msg.id);
           await markMessagesAsRead(messageIds);
         }
       } catch (error) {
@@ -243,7 +250,7 @@ export function ChatPanel({
     if (isOpen) {
       loadMessages();
       setUnreadCount(0);
-      
+
       // Set up realtime subscription for messages
       const messageChannel = supabase
         .channel(`chat_messages_${sessionId}`)
@@ -258,7 +265,7 @@ export function ChatPanel({
           (payload) => {
             const newMessage = payload.new as ChatMessage;
             setMessages((prev) => [...prev, newMessage]);
-            
+
             // Mark message as read if panel is open
             if (userId) {
               markMessagesAsRead([newMessage.id]);
@@ -266,7 +273,7 @@ export function ChatPanel({
           }
         )
         .subscribe();
-        
+
       // Set up realtime subscription for read receipts
       const readReceiptChannel = supabase
         .channel(`chat_read_receipts_${sessionId}`)
@@ -285,8 +292,11 @@ export function ChatPanel({
               .select("*")
               .eq("session_id", sessionId)
               .order("created_at", { ascending: false })
-              .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
-              
+              .range(
+                (currentPage - 1) * PAGE_SIZE,
+                currentPage * PAGE_SIZE - 1
+              );
+
             if (data) {
               // Reverse data agar urutan kronologis
               const sortedData = [...(data || [])].reverse();
@@ -314,18 +324,23 @@ export function ChatPanel({
           },
           (payload) => {
             const newMessage = payload.new as ChatMessage;
-            
+
             // Only notify if the message is from someone else
             if (newMessage.user_id !== userId) {
-              setUnreadCount(prev => prev + 1);
-              
+              setUnreadCount((prev) => prev + 1);
+
               // Play notification sound if enabled
-              if (notificationsEnabled && notificationSoundRef.current && selectedSound !== 'none') {
+              if (
+                notificationsEnabled &&
+                notificationSoundRef.current &&
+                selectedSound !== "none"
+              ) {
                 try {
                   // Clone audio untuk memastikan bisa diputar lagi meskipun belum selesai dari pemutaran sebelumnya
-                  const soundClone = notificationSoundRef.current.cloneNode() as HTMLAudioElement;
+                  const soundClone =
+                    notificationSoundRef.current.cloneNode() as HTMLAudioElement;
                   soundClone.volume = 0.5; // Set volume 50%
-                  soundClone.play().catch(err => {
+                  soundClone.play().catch((err) => {
                     console.error("Error playing notification:", err);
                   });
                 } catch (err) {
@@ -341,42 +356,50 @@ export function ChatPanel({
         supabase.removeChannel(channel);
       };
     }
-  }, [sessionId, isOpen, userId, notificationsEnabled, selectedSound, currentPage, PAGE_SIZE]);
-  
+  }, [
+    sessionId,
+    isOpen,
+    userId,
+    notificationsEnabled,
+    selectedSound,
+    currentPage,
+    PAGE_SIZE,
+  ]);
+
   // Fungsi untuk memuat lebih banyak pesan
   const loadMoreMessages = async () => {
     if (loadingMoreMessages || !hasMoreMessages) return;
-    
+
     try {
       setLoadingMoreMessages(true);
       const nextPage = currentPage + 1;
-      
+
       const { data, error } = await supabase
         .from("game_chat_messages")
         .select("*")
         .eq("session_id", sessionId)
         .order("created_at", { ascending: false })
         .range((nextPage - 1) * PAGE_SIZE, nextPage * PAGE_SIZE - 1);
-      
+
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         // Reverse untuk mendapatkan urutan kronologis dan gabungkan dengan pesan yang ada
         const olderMessages = [...data].reverse();
-        setMessages(prev => [...olderMessages, ...prev]);
+        setMessages((prev) => [...olderMessages, ...prev]);
         setCurrentPage(nextPage);
-        
+
         // Cek apakah masih ada lebih banyak pesan
         const { count } = await supabase
           .from("game_chat_messages")
-          .select("*", { count: 'exact', head: true })
+          .select("*", { count: "exact", head: true })
           .eq("session_id", sessionId);
-        
+
         setHasMoreMessages(count !== null && count > nextPage * PAGE_SIZE);
-        
+
         // Mark older messages as read
         if (userId) {
-          const messageIds = data.map(msg => msg.id);
+          const messageIds = data.map((msg) => msg.id);
           await markMessagesAsRead(messageIds);
         }
       } else {
@@ -402,21 +425,21 @@ export function ChatPanel({
       inputRef.current.focus();
     }
   }, [isOpen]);
-  
+
   const markMessagesAsRead = async (messageIds: string[]) => {
     if (!userId || !messageIds.length) return;
-    
+
     try {
       // Create one read receipt for each message
-      const receipts = messageIds.map(messageId => ({
+      const receipts = messageIds.map((messageId) => ({
         message_id: messageId,
         session_id: sessionId,
         user_id: userId,
         nickname: nickname,
         avatar_url: avatarUrl,
-        read_at: new Date().toISOString()
+        read_at: new Date().toISOString(),
       }));
-      
+
       await supabase.from("game_chat_read_receipts").upsert(receipts);
     } catch (error) {
       console.error("Error marking messages as read:", error);
@@ -425,9 +448,9 @@ export function ChatPanel({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newMessage.trim()) return;
-    
+
     try {
       const { error } = await supabase.from("game_chat_messages").insert({
         session_id: sessionId,
@@ -435,30 +458,30 @@ export function ChatPanel({
         nickname: nickname,
         message: newMessage.trim(),
         avatar_url: avatarUrl,
-        is_important: isImportant
+        is_important: isImportant,
       });
-      
+
       if (error) throw error;
-      
+
       setNewMessage("");
       setIsImportant(false);
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
-  
+
   const toggleImportant = () => {
     setIsImportant(!isImportant);
   };
-  
+
   const toggleNotifications = () => {
     setNotificationsEnabled(!notificationsEnabled);
   };
-  
+
   const toggleSoundSettings = () => {
     setShowSoundSettings(!showSoundSettings);
   };
-  
+
   const selectTemplate = (template: string) => {
     setNewMessage(template);
     setShowTemplates(false);
@@ -466,30 +489,32 @@ export function ChatPanel({
       inputRef.current.focus();
     }
   };
-  
+
   const handleSoundChange = (value: string) => {
     setSelectedSound(value);
     setSoundError(null);
-    
+
     // Test the sound
-    if (value !== 'none') {
+    if (value !== "none") {
       try {
-        const sound = notificationSounds.find(s => s.id === value);
+        const sound = notificationSounds.find((s) => s.id === value);
         if (sound && sound.path) {
           const testAudio = new Audio(sound.path);
-          
-          testAudio.addEventListener('error', () => {
-            console.warn(`Test sound error: ${sound.path} not found or not supported`);
+
+          testAudio.addEventListener("error", () => {
+            console.warn(
+              `Test sound error: ${sound.path} not found or not supported`
+            );
             setSoundError(`File suara '${sound.name}' tidak ditemukan`);
           });
-          
-          testAudio.addEventListener('canplaythrough', () => {
-            testAudio.play().catch(err => {
+
+          testAudio.addEventListener("canplaythrough", () => {
+            testAudio.play().catch((err) => {
               console.error("Error playing test sound:", err);
               setSoundError("Tidak dapat memutar suara notifikasi");
             });
           });
-          
+
           testAudio.load();
         }
       } catch (err) {
@@ -501,38 +526,52 @@ export function ChatPanel({
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
-  
+
   const renderReadReceipts = (msg: ChatMessage) => {
     if (!msg.read_by || msg.read_by.length === 0) {
       return <div className="text-xs text-gray-400">Belum dibaca</div>;
     }
-    
+
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger className="flex items-center">
             <div className="flex items-center gap-0.5">
               <CheckCheck className="h-3 w-3 text-green-500" />
-              <span className="text-xs text-gray-400">{msg.read_by.length}</span>
+              <span className="text-xs text-gray-400">
+                {msg.read_by.length}
+              </span>
             </div>
           </TooltipTrigger>
-          <TooltipContent side="left" className="p-2 bg-white rounded-md shadow-md border">
+          <TooltipContent
+            side="left"
+            className="p-2 bg-white rounded-md shadow-md border"
+          >
             <div className="text-xs font-semibold mb-1">Dibaca oleh:</div>
             <div className="flex flex-wrap gap-1 max-w-48">
               {msg.read_by.map((reader, i) => (
-                <div key={`${reader.user_id || reader.nickname}-${i}`} className="flex items-center gap-1 bg-gray-50 rounded p-1">
+                <div
+                  key={`${reader.user_id || reader.nickname}-${i}`}
+                  className="flex items-center gap-1 bg-gray-50 rounded p-1"
+                >
                   <div className="h-4 w-4 rounded-full bg-purple-100 overflow-hidden">
                     {reader.avatar_url ? (
-                      <img src={reader.avatar_url} alt="" className="h-full w-full object-cover" />
+                      <img
+                        src={reader.avatar_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center text-[8px] text-purple-600">
                         {getInitials(reader.nickname)}
                       </div>
                     )}
                   </div>
-                  <span className="text-[10px] truncate max-w-28">{reader.nickname}</span>
+                  <span className="text-[10px] truncate max-w-28">
+                    {reader.nickname}
+                  </span>
                 </div>
               ))}
             </div>
@@ -546,11 +585,14 @@ export function ChatPanel({
     <>
       {/* Chat Toggle Button with Badge */}
       <Button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation(); // Menghentikan propagasi event
+          setIsOpen(!isOpen);
+        }}
         variant="outline"
         size="icon"
         className={`fixed ${
-          position === 'right' ? 'bottom-5 right-5' : 'bottom-20 right-5'
+          position === "right" ? "bottom-5 right-5" : "bottom-20 right-5"
         } z-50 rounded-full w-12 h-12 bg-purple-600 hover:bg-purple-700 text-white shadow-lg`}
       >
         {isOpen ? (
@@ -560,7 +602,7 @@ export function ChatPanel({
             <MessageCircle className="w-5 h-5" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {unreadCount > 9 ? '9+' : unreadCount}
+                {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </>
@@ -568,22 +610,27 @@ export function ChatPanel({
       </Button>
 
       {/* Overlay untuk mendeteksi klik di luar chat */}
-      {isOpen && !showSoundSettings && !showTemplates && ( // Jangan tampilkan overlay jika settings atau template terbuka
-        <div 
-          className="fixed inset-0 z-30" 
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {isOpen &&
+        !showSoundSettings &&
+        !showTemplates && ( // Jangan tampilkan overlay jika settings atau template terbuka
+          <div
+            className="fixed inset-0 z-30"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+            }}
+          />
+        )}
 
       {/* Chat Panel */}
       <div
         ref={chatPanelRef}
         className={`fixed ${
-          position === 'right' 
-            ? 'right-0 top-0 h-[calc(100vh-80px)] w-80 md:w-96 transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white' 
-            : 'right-0 bottom-0 w-full md:w-96 h-[500px] transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white'
+          position === "right"
+            ? "right-0 top-0 h-[calc(100vh-80px)] w-80 md:w-96 transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white"
+            : "right-0 bottom-0 w-full md:w-96 h-[500px] transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white"
         } ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+          isOpen ? "translate-x-0" : "translate-x-full"
         } flex flex-col border-l`}
         onClick={(e) => e.stopPropagation()} // Mencegah event propagasi ke overlay
       >
@@ -593,12 +640,15 @@ export function ChatPanel({
             <MessageCircle className="w-5 h-5" />
             <h3 className="font-semibold">Game Chat</h3>
             {isHost && (
-              <Badge variant="outline" className="bg-white/20 text-white border-white/30 text-xs">
+              <Badge
+                variant="outline"
+                className="bg-white/20 text-white border-white/30 text-xs"
+              >
                 Host
               </Badge>
             )}
           </div>
-          
+
           <div className="flex items-center">
             {/* Notification Toggle */}
             <Button
@@ -606,7 +656,11 @@ export function ChatPanel({
               variant="ghost"
               size="icon"
               className="h-7 w-7 rounded-full hover:bg-white/10 text-white"
-              title={notificationsEnabled ? "Matikan notifikasi" : "Aktifkan notifikasi"}
+              title={
+                notificationsEnabled
+                  ? "Matikan notifikasi"
+                  : "Aktifkan notifikasi"
+              }
             >
               {notificationsEnabled ? (
                 <Bell className="w-4 h-4" />
@@ -614,9 +668,12 @@ export function ChatPanel({
                 <BellOff className="w-4 h-4 opacity-70" />
               )}
             </Button>
-            
+
             {/* Sound Settings */}
-            <Popover open={showSoundSettings} onOpenChange={setShowSoundSettings}>
+            <Popover
+              open={showSoundSettings}
+              onOpenChange={setShowSoundSettings}
+            >
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
@@ -624,37 +681,52 @@ export function ChatPanel({
                   className="h-7 w-7 rounded-full hover:bg-white/10 text-white"
                   title="Pengaturan suara"
                 >
-                  {selectedSound !== 'none' ? (
+                  {selectedSound !== "none" ? (
                     <Volume2 className="w-4 h-4" />
                   ) : (
                     <VolumeX className="w-4 h-4 opacity-70" />
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-64 p-4 z-50" onClick={(e) => e.stopPropagation()}>
-                <div className="font-medium text-sm mb-3">Pilih Suara Notifikasi</div>
-                <RadioGroup 
-                  value={selectedSound} 
+              <PopoverContent
+                align="end"
+                className="w-64 p-4 z-50"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="font-medium text-sm mb-3">
+                  Pilih Suara Notifikasi
+                </div>
+                <RadioGroup
+                  value={selectedSound}
                   onValueChange={handleSoundChange}
                   className="space-y-2"
                 >
                   {notificationSounds.map((sound) => (
-                    <div key={`sound-option-${sound.id}`} className="flex items-center space-x-2">
-                      <RadioGroupItem value={sound.id} id={`sound-${sound.id}`} />
-                      <Label htmlFor={`sound-${sound.id}`} className="cursor-pointer">
+                    <div
+                      key={`sound-option-${sound.id}`}
+                      className="flex items-center space-x-2"
+                    >
+                      <RadioGroupItem
+                        value={sound.id}
+                        id={`sound-${sound.id}`}
+                      />
+                      <Label
+                        htmlFor={`sound-${sound.id}`}
+                        className="cursor-pointer"
+                      >
                         {sound.name}
                       </Label>
                     </div>
                   ))}
                 </RadioGroup>
-                
+
                 {soundError && (
                   <div className="mt-3 text-xs text-red-500 p-2 bg-red-50 rounded border border-red-100">
                     <AlertCircle className="inline-block w-3 h-3 mr-1" />
                     {soundError}
                   </div>
                 )}
-                
+
                 <div className="mt-4 text-xs text-gray-500">
                   Letakkan file suara notifikasi di direktori /public/sounds/
                 </div>
@@ -664,10 +736,7 @@ export function ChatPanel({
         </div>
 
         {/* Messages */}
-        <ScrollArea 
-          className="flex-1 p-4 bg-gray-50"
-          ref={scrollAreaRef}
-        >
+        <ScrollArea className="flex-1 p-4 bg-gray-50" ref={scrollAreaRef}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -683,8 +752,8 @@ export function ChatPanel({
               {/* Load More Button */}
               {hasMoreMessages && (
                 <div className="flex justify-center pb-2">
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1"
                     onClick={loadMoreMessages}
@@ -704,7 +773,7 @@ export function ChatPanel({
                   </Button>
                 </div>
               )}
-              
+
               {messages.map((msg) => (
                 <div
                   key={`msg-${msg.id}`}
@@ -717,9 +786,18 @@ export function ChatPanel({
                       msg.user_id === userId ? "flex-row-reverse" : "flex-row"
                     } gap-2 items-start`}
                   >
-                    <Avatar className={`h-8 w-8 ${msg.user_id === userId ? 'ml-2' : 'mr-2'} border-2 border-white shadow-sm`}>
+                    <Avatar
+                      className={`h-8 w-8 ${
+                        msg.user_id === userId ? "ml-2" : "mr-2"
+                      } border-2 border-white shadow-sm`}
+                    >
                       <AvatarImage
-                        src={msg.avatar_url || `https://robohash.org/${encodeURIComponent(msg.nickname)}.png`}
+                        src={
+                          msg.avatar_url ||
+                          `https://robohash.org/${encodeURIComponent(
+                            msg.nickname
+                          )}.png`
+                        }
                         alt={msg.nickname}
                       />
                       <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
@@ -737,24 +815,32 @@ export function ChatPanel({
                         } shadow-sm`}
                       >
                         <div className="flex items-center justify-between gap-1 mb-1">
-                          <p className={`text-xs font-semibold ${
-                            msg.is_important
-                              ? "text-amber-800"
-                              : msg.user_id === userId 
-                                ? "text-purple-100" 
+                          <p
+                            className={`text-xs font-semibold ${
+                              msg.is_important
+                                ? "text-amber-800"
+                                : msg.user_id === userId
+                                ? "text-purple-100"
                                 : "text-gray-600"
-                          }`}>
+                            }`}
+                          >
                             {msg.nickname}
                           </p>
                           {msg.is_important && (
                             <Star className="h-3 w-3 text-amber-600 fill-amber-600" />
                           )}
                         </div>
-                        <p className="break-words whitespace-pre-wrap">{msg.message}</p>
+                        <p className="break-words whitespace-pre-wrap">
+                          {msg.message}
+                        </p>
                       </div>
-                      <div className={`flex items-center gap-2 ${
-                        msg.user_id === userId ? "justify-end" : "justify-start"
-                      }`}>
+                      <div
+                        className={`flex items-center gap-2 ${
+                          msg.user_id === userId
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
+                      >
                         <p className="text-xs text-gray-500">
                           {formatTime(msg.created_at)}
                         </p>
@@ -771,12 +857,15 @@ export function ChatPanel({
 
         {/* Template Messages */}
         {showTemplates && (
-          <div className="max-h-60 overflow-y-auto border-t" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="max-h-60 overflow-y-auto border-t"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Tabs defaultValue="Game Start">
               <TabsList className="w-full justify-start p-2 bg-gray-50">
                 {chatTemplates.map((category) => (
-                  <TabsTrigger 
-                    key={`tab-${category.category}`} 
+                  <TabsTrigger
+                    key={`tab-${category.category}`}
                     value={category.category}
                     className="text-xs"
                   >
@@ -784,10 +873,10 @@ export function ChatPanel({
                   </TabsTrigger>
                 ))}
               </TabsList>
-              
+
               {chatTemplates.map((category) => (
-                <TabsContent 
-                  key={`content-${category.category}`} 
+                <TabsContent
+                  key={`content-${category.category}`}
                   value={category.category}
                   className="p-2 space-y-1"
                 >
@@ -820,13 +909,19 @@ export function ChatPanel({
                 onClick={toggleImportant}
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 rounded-full ${isImportant ? 'bg-amber-100 text-amber-700' : ''}`}
+                className={`h-8 w-8 rounded-full ${
+                  isImportant ? "bg-amber-100 text-amber-700" : ""
+                }`}
                 title="Mark as important"
               >
-                <Star className={`w-4 h-4 ${isImportant ? 'fill-amber-500 text-amber-500' : ''}`} />
+                <Star
+                  className={`w-4 h-4 ${
+                    isImportant ? "fill-amber-500 text-amber-500" : ""
+                  }`}
+                />
               </Button>
             )}
-            
+
             {/* Template Messages */}
             {isHost && (
               <Button
@@ -834,13 +929,17 @@ export function ChatPanel({
                 onClick={() => setShowTemplates(!showTemplates)}
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 rounded-full ${showTemplates ? 'bg-blue-50' : ''}`}
+                className={`h-8 w-8 rounded-full ${
+                  showTemplates ? "bg-blue-50" : ""
+                }`}
                 title="Template messages"
               >
-                <MessageSquarePlus className={`w-4 h-4 ${showTemplates ? 'text-blue-600' : ''}`} />
+                <MessageSquarePlus
+                  className={`w-4 h-4 ${showTemplates ? "text-blue-600" : ""}`}
+                />
               </Button>
             )}
-            
+
             <Input
               ref={inputRef}
               value={newMessage}
@@ -858,7 +957,7 @@ export function ChatPanel({
               <Send className="h-4 w-4" />
             </Button>
           </div>
-          
+
           {/* Important message info */}
           {isImportant && (
             <div className="flex items-center gap-1 text-xs text-amber-600 px-1">
@@ -870,4 +969,4 @@ export function ChatPanel({
       </div>
     </>
   );
-} 
+}
