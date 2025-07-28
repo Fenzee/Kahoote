@@ -155,26 +155,42 @@ export function ChatPanel({
   // Effect untuk mendeteksi klik di luar panel chat
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        chatPanelRef.current &&
-        !chatPanelRef.current.contains(event.target as Node) &&
-        !showSoundSettings &&
-        !showTemplates
-      ) {
-        // Jangan tutup jika settings atau template terbuka
-        // Klik di luar panel chat
-        setIsOpen(false);
+      const target = event.target as Node;
+      
+      // Jangan tutup jika klik pada panel chat itu sendiri
+      if (chatPanelRef.current && chatPanelRef.current.contains(target)) {
+        return;
       }
+      
+      // Jangan tutup jika ada popover yang terbuka (sound settings)
+      const popoverContent = document.querySelector('[data-radix-popper-content-wrapper]');
+      if (popoverContent && popoverContent.contains(target)) {
+        return;
+      }
+      
+      // Jangan tutup jika template sedang terbuka
+      if (showTemplates) {
+        return;
+      }
+      
+      // Jangan tutup jika sound settings terbuka
+      if (showSoundSettings) {
+        return;
+      }
+      
+      // Tutup panel jika klik di luar
+      setIsOpen(false);
     }
 
-    // Tambahkan event listener
-    document.addEventListener("mousedown", handleClickOutside);
+    // Hanya tambahkan listener jika panel terbuka
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
 
     return () => {
-      // Cleanup event listener
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showSoundSettings, showTemplates]); // Tambahkan showTemplates sebagai dependency
+  }, [isOpen, showTemplates, showSoundSettings]); // Dependency yang tepat
 
   // Initialize notification sound
   useEffect(() => {
@@ -587,6 +603,11 @@ export function ChatPanel({
       <Button
         onClick={(e) => {
           e.stopPropagation(); // Menghentikan propagasi event
+          if (isOpen) {
+            // Tutup semua popover/dropdown yang terbuka
+            setShowSoundSettings(false);
+            setShowTemplates(false);
+          }
           setIsOpen(!isOpen);
         }}
         variant="outline"
@@ -609,18 +630,7 @@ export function ChatPanel({
         )}
       </Button>
 
-      {/* Overlay untuk mendeteksi klik di luar chat */}
-      {isOpen &&
-        !showSoundSettings &&
-        !showTemplates && ( // Jangan tampilkan overlay jika settings atau template terbuka
-          <div
-            className="fixed inset-0 z-30"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-            }}
-          />
-        )}
+
 
       {/* Chat Panel */}
       <div
@@ -649,7 +659,7 @@ export function ChatPanel({
             )}
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-1">
             {/* Notification Toggle */}
             <Button
               onClick={toggleNotifications}
@@ -732,6 +742,22 @@ export function ChatPanel({
                 </div>
               </PopoverContent>
             </Popover>
+
+            {/* Close Button */}
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSoundSettings(false);
+                setShowTemplates(false);
+                setIsOpen(false);
+              }}
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full hover:bg-white/10 text-white"
+              title="Tutup chat"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
