@@ -1065,10 +1065,10 @@ export default function HostGamePage({
                 </div>
               </div>
               <div className="flex justify-center py-4">
-                <div className="w-48 h-48 border border-gray-200 rounded-lg p-2">
+                <div className="w-48 h-48 md:w-72 md:h-72 border border-gray-200 rounded-lg p-2">
                   <QRCodeSVG
                     value={`${window.location.origin}/join?pin=${gameSession.game_pin}`}
-                    size={180}
+                    size={271}
                     bgColor="#FFFFFF"
                     fgColor="#4C1D95"
                     level="H"
@@ -1082,7 +1082,8 @@ export default function HostGamePage({
           </Card>
 
           {/* Players Card */}
-          <Card className="bg-white shadow-lg rounded-xl p-6">
+        </div>
+          <Card className="bg-white shadow-lg rounded-xl p-6 w-full md:col-span-2">
             <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2 justify-center text-center">
               <Users className="w-5 h-5 text-gray-600" />
               <CardTitle className="text-xl font-semibold">
@@ -1144,7 +1145,6 @@ export default function HostGamePage({
               )}
             </CardContent>
           </Card>
-        </div>
       </main>
 
       {/* Chat Panel */}
