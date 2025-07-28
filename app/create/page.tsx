@@ -42,6 +42,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { AIPromptHelper } from "@/components/ui/ai-prompt-helper";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -551,19 +552,31 @@ export default function CreateQuizPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="space-y-4">
+                  <div className="space-y-6">
+                    {/* AI Prompt Helper */}
+                    <AIPromptHelper
+                      currentPrompt={aiPrompt}
+                      onPromptGenerated={(prompt) => setAiPrompt(prompt)}
+                    />
+                    
+                    <Separator />
+                    
+                    {/* Manual Prompt Input */}
                     <div className="space-y-2">
                       <Label htmlFor="ai-prompt" className="text-gray-700 font-medium">
-                        Jelaskan Quiz yang Ingin Dibuat
+                        Atau Tulis Prompt Manual
                       </Label>
                       <Textarea
                         id="ai-prompt"
-                        placeholder="Contoh: Buat quiz tentang sejarah Indonesia dengan 5 pertanyaan pilihan ganda"
+                        placeholder="Contoh: PT. UBIG di Malang - bergerak di bidang teknologi"
                         value={aiPrompt}
                         onChange={(e) => setAiPrompt(e.target.value)}
                         rows={3}
                         className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
                       />
+                      <p className="text-xs text-gray-600">
+                        💡 Tip: Gunakan bantuan di atas untuk membuat prompt yang lebih spesifik dan menghasilkan soal berkualitas
+                      </p>
                     </div>
                     
                     <Accordion type="single" collapsible className="w-full">
