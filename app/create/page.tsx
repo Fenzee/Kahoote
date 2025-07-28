@@ -554,16 +554,25 @@ export default function CreateQuizPage() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="ai-prompt" className="text-gray-700 font-medium">
-                        Jelaskan Quiz yang Ingin Dibuat
+                        Jelaskan Quiz yang Ingin Dibuat (Tulis dengan Spesifik)
                       </Label>
                       <Textarea
                         id="ai-prompt"
-                        placeholder="Contoh: Buat quiz tentang sejarah Indonesia dengan 5 pertanyaan pilihan ganda"
+                        placeholder="Contoh yang BAIK:&#10;✅ Buat quiz tentang Perusahaan UBIG di Malang - sejarah, lokasi kantor, dan bidang usaha&#10;✅ Quiz tentang Universitas Brawijaya Malang - fakultas, sejarah, dan prestasi&#10;&#10;Hindari yang terlalu umum:&#10;❌ Quiz tentang perusahaan&#10;❌ Quiz tentang universitas"
                         value={aiPrompt}
                         onChange={(e) => setAiPrompt(e.target.value)}
-                        rows={3}
+                        rows={4}
                         className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
                       />
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
+                        <h4 className="text-sm font-medium text-blue-800">💡 Tips untuk Prompt yang Baik:</h4>
+                        <ul className="text-xs text-blue-700 space-y-1">
+                          <li>• <strong>Sebutkan nama spesifik:</strong> nama perusahaan, tempat, produk, atau tokoh</li>
+                          <li>• <strong>Tambahkan konteks:</strong> lokasi, tahun, bidang, atau kategori</li>
+                          <li>• <strong>Gunakan bahasa Indonesia</strong> untuk hasil dalam bahasa Indonesia</li>
+                          <li>• <strong>Contoh:</strong> "Quiz tentang Tugu Malang - sejarah, lokasi, dan makna simbolis"</li>
+                        </ul>
+                      </div>
                     </div>
                     
                     <Accordion type="single" collapsible className="w-full">
