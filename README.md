@@ -18,7 +18,7 @@ Aplikasi quiz interaktif berbasis web yang terinspirasi dari Kahoot.
 - Supabase (Auth, Database, Realtime)
 - Tailwind CSS
 - Shadcn UI
-- Cohere AI untuk generasi pertanyaan
+- OpenAI untuk generasi pertanyaan
 
 ## Konfigurasi
 
@@ -28,12 +28,13 @@ Aplikasi quiz interaktif berbasis web yang terinspirasi dari Kahoot.
 2. Jalankan script SQL di folder `scripts` secara berurutan untuk membuat skema database
 3. Salin URL dan anon key dari Supabase ke file `.env.local`
 
-### Cohere AI
+### OpenAI
 
-1. Daftar di [Cohere](https://cohere.com) untuk mendapatkan API key
+1. Daftar di [OpenAI](https://platform.openai.com) untuk mendapatkan API key
 2. Salin API key ke file `.env.local` dengan format:
    ```
-   COHERE_API_KEY=your-api-key
+   OPENAI_API_KEY=your-api-key
+   OPENAI_MODEL=gpt-3.5-turbo
    ```
 
 ## Instalasi
