@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
 // Tipe data untuk pertanyaan yang dihasilkan
 type GeneratedQuestion = {
@@ -29,16 +30,21 @@ export async function POST(request: Request) {
     }
 
     // Mendapatkan API key dari environment variable
-    const apiKey = process.env.COHERE_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     
     if (!apiKey) {
       return NextResponse.json(
-        { error: "API key Cohere tidak ditemukan" },
+        { error: "API key OpenAI tidak ditemukan" },
         { status: 500 }
       );
     }
 
-    // Format prompt untuk Cohere
+    // Inisialisasi OpenAI client
+    const openai = new OpenAI({
+      apiKey: apiKey,
+    });
+
+    // Format prompt untuk OpenAI
     const systemPrompt = `Kamu adalah pembuat quiz profesional yang ahli dalam membuat pertanyaan quiz yang menarik dan edukatif.
 Buatkan ${count} pertanyaan quiz dengan 4 pilihan jawaban untuk topik berikut: ${prompt}.
 
@@ -63,8 +69,7 @@ Format jawaban harus dalam JSON dengan struktur berikut:
         { "answer_text": "Jawaban salah 2", "is_correct": false },
         { "answer_text": "Jawaban salah 3", "is_correct": false }
       ]
-    },
-    ...
+    }
   ]
 }
 
@@ -74,37 +79,32 @@ Pastikan hanya ada satu jawaban benar untuk setiap pertanyaan.
 Jawaban harus masuk akal dan relevan dengan pertanyaan.
 Jangan tambahkan informasi atau teks lain selain JSON yang diminta.`;
 
-    // Panggil API Cohere
-    const response = await fetch("https://api.cohere.ai/v1/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "Cohere-Version": "2022-12-06",
-      },
-      body: JSON.stringify({
-        model: "command",
-        prompt: systemPrompt,
-        max_tokens: 2000,
-        temperature: 0.7,
-        stop_sequences: [],
-        return_likelihoods: "NONE",
-      }),
+    // Panggil API OpenAI
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "Kamu adalah pembuat quiz profesional. Selalu berikan respons dalam format JSON yang valid."
+        },
+        {
+          role: "user",
+          content: systemPrompt
+        }
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
     });
 
-    const data = await response.json();
+    const generatedText = completion.choices[0]?.message?.content?.trim();
 
-    if (!response.ok) {
-      console.error("Error dari Cohere API:", data);
+    if (!generatedText) {
       return NextResponse.json(
-        { error: "Gagal menghasilkan pertanyaan" },
-        { status: response.status }
+        { error: "Tidak ada respons dari OpenAI" },
+        { status: 500 }
       );
     }
 
-    // Ekstrak JSON dari respons
-    const generatedText = data.generations[0].text.trim();
-    
     // Coba parse JSON dari respons
     let parsedData: { metadata?: QuizMetadata, questions: GeneratedQuestion[] };
     try {
