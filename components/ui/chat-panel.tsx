@@ -152,9 +152,30 @@ export function ChatPanel({
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const chatPanelRef = useRef<HTMLDivElement>(null); // Ref untuk panel chat
 
+  // Fungsi untuk menangani tombol chat
+  const handleChatToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(true);
+  };
+
+  // Fungsi untuk menangani tombol close (X)
+  const handleCloseChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(false);
+  };
+
   // Effect untuk mendeteksi klik di luar panel chat
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      // Periksa apakah klik terjadi pada tombol toggle chat
+      const toggleButton = document.querySelector(
+        ".fixed.bottom-5.right-5, .fixed.bottom-20.right-5"
+      );
+      if (toggleButton && toggleButton.contains(event.target as Node)) {
+        // Jika klik terjadi pada tombol toggle, jangan lakukan apa-apa
+        return;
+      }
+
       if (
         chatPanelRef.current &&
         !chatPanelRef.current.contains(event.target as Node) &&
@@ -167,14 +188,16 @@ export function ChatPanel({
       }
     }
 
-    // Tambahkan event listener
-    document.addEventListener("mousedown", handleClickOutside);
+    // Tambahkan event listener jika panel terbuka
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
 
     return () => {
       // Cleanup event listener
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showSoundSettings, showTemplates]); // Tambahkan showTemplates sebagai dependency
+  }, [isOpen, showSoundSettings, showTemplates]); // Tambahkan isOpen sebagai dependency
 
   // Initialize notification sound
   useEffect(() => {
@@ -585,10 +608,7 @@ export function ChatPanel({
     <>
       {/* Chat Toggle Button with Badge */}
       <Button
-        onClick={(e) => {
-          e.stopPropagation(); // Menghentikan propagasi event
-          setIsOpen(!isOpen);
-        }}
+        onClick={isOpen ? handleCloseChat : handleChatToggle}
         variant="outline"
         size="icon"
         className={`fixed ${
@@ -613,13 +633,7 @@ export function ChatPanel({
       {isOpen &&
         !showSoundSettings &&
         !showTemplates && ( // Jangan tampilkan overlay jika settings atau template terbuka
-          <div
-            className="fixed inset-0 z-30"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-            }}
-          />
+          <div className="fixed inset-0 z-30" onClick={handleCloseChat} />
         )}
 
       {/* Chat Panel */}
@@ -627,7 +641,7 @@ export function ChatPanel({
         ref={chatPanelRef}
         className={`fixed ${
           position === "right"
-            ? "right-0 top-0 h-[calc(100vh-80px)] w-80 md:w-96 transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white"
+            ? "right-0 top-0 md:h-[calc(100vh-80px)] h-[calc(95vh-80px)] w-80 md:w-96 transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white"
             : "right-0 bottom-0 w-full md:w-96 h-[500px] transition-transform duration-300 ease-in-out shadow-lg z-40 bg-white"
         } ${
           isOpen ? "translate-x-0" : "translate-x-full"
