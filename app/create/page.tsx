@@ -370,8 +370,52 @@ export default function CreateQuizPage() {
     );
   };
 
+  // Helper function to validate prompt quality
+  const validatePrompt = (prompt: string) => {
+    const trimmedPrompt = prompt.trim().toLowerCase();
+    
+    // Check if prompt is too generic
+    const genericWords = ['perusahaan', 'sejarah', 'budaya', 'teknologi', 'bisnis', 'company', 'history', 'culture'];
+    const hasSpecificName = /[A-Z][a-z]+/.test(prompt); // Contains proper nouns
+    const isJustGeneric = genericWords.some(word => trimmedPrompt === word);
+    
+    if (isJustGeneric) {
+      return {
+        isValid: false,
+        message: "Prompt terlalu umum. Tambahkan nama spesifik seperti 'Perusahaan UBIG di Malang'"
+      };
+    }
+    
+    if (trimmedPrompt.length < 10) {
+      return {
+        isValid: false,
+        message: "Prompt terlalu pendek. Berikan konteks yang lebih spesifik."
+      };
+    }
+    
+    if (!hasSpecificName && trimmedPrompt.length < 20) {
+      return {
+        isValid: false,
+        message: "Tambahkan nama spesifik atau konteks yang lebih detail."
+      };
+    }
+    
+    return { isValid: true, message: "" };
+  };
+
   const generateQuestionsWithAI = async () => {
     if (!aiPrompt.trim()) return;
+    
+    // Validate prompt quality
+    const validation = validatePrompt(aiPrompt);
+    if (!validation.isValid) {
+      toast({
+        title: "Prompt perlu diperbaiki",
+        description: validation.message,
+        variant: "destructive",
+      });
+      return;
+    }
     
     setAiGenerating(true);
     try {
@@ -558,12 +602,48 @@ export default function CreateQuizPage() {
                       </Label>
                       <Textarea
                         id="ai-prompt"
-                        placeholder="Contoh: Buat quiz tentang sejarah Indonesia dengan 5 pertanyaan pilihan ganda"
+                        placeholder="Contoh yang BAIK: 'Perusahaan UBIG di Malang', 'Sejarah Universitas Brawijaya', 'Budaya Kota Malang'
+Contoh yang BURUK: 'Sejarah', 'Perusahaan'"
                         value={aiPrompt}
                         onChange={(e) => setAiPrompt(e.target.value)}
-                        rows={3}
+                        rows={4}
                         className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
                       />
+                      <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm">
+                        <div className="flex items-start space-x-2">
+                          <div className="w-4 h-4 bg-blue-500 rounded-full mt-0.5 flex-shrink-0"></div>
+                          <div>
+                            <p className="font-medium text-blue-800 mb-1">Tips untuk prompt yang baik:</p>
+                            <ul className="text-blue-700 space-y-1 text-xs">
+                              <li>• Sebutkan nama spesifik (perusahaan, tempat, organisasi)</li>
+                              <li>• Tambahkan konteks lokasi jika relevan</li>
+                              <li>• Hindari kata-kata umum tanpa konteks</li>
+                              <li>• Contoh: "Perusahaan UBIG di Malang" lebih baik dari "Perusahaan teknologi"</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm text-gray-600">Contoh prompt siap pakai:</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            "Perusahaan UBIG di Malang",
+                            "Sejarah Universitas Brawijaya Malang", 
+                            "Wisata kuliner khas Malang",
+                            "Budaya dan tradisi Kota Malang"
+                          ].map((example, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => setAiPrompt(example)}
+                              className="px-3 py-1 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full border border-purple-300 transition-colors"
+                            >
+                              {example}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                     
                     <Accordion type="single" collapsible className="w-full">
