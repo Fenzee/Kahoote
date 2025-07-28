@@ -110,8 +110,14 @@ export default function HostGamePage({
   const [isHovered, setIsHovered] = useState(false);
   const springConfig = { stiffness: 100, damping: 5 };
   const x = useMotionValue(0);
-  const rotate = useSpring(useTransform(x, [-100, 100], [-15, 15]), springConfig);
-  const translateX = useSpring(useTransform(x, [-100, 100], [-20, 20]), springConfig);
+  const rotate = useSpring(
+    useTransform(x, [-100, 100], [-15, 15]),
+    springConfig
+  );
+  const translateX = useSpring(
+    useTransform(x, [-100, 100], [-20, 20]),
+    springConfig
+  );
   const [error, setError] = useState<{
     type:
       | "permission"
@@ -1030,7 +1036,11 @@ export default function HostGamePage({
                     size="icon"
                     className="text-purple-600 hover:bg-purple-50 relative bg-transparent border-2 "
                   >
-                    {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                    {copied ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <Copy className="w-5 h-5" />
+                    )}
                   </Button>
                   <AnimatePresence mode="wait">
                     {isHovered && (
@@ -1064,11 +1074,12 @@ export default function HostGamePage({
                   </AnimatePresence>
                 </div>
               </div>
-              <div className="flex justify-center py-4">
+              <div className="flex justify-center py-4 w-full">
                 <div className="w-48 h-48 md:w-72 md:h-72 border border-gray-200 rounded-lg p-2">
                   <QRCodeSVG
                     value={`${window.location.origin}/join?pin=${gameSession.game_pin}`}
-                    size={271}
+                    size="100%"
+                    className="w-full h-full"
                     bgColor="#FFFFFF"
                     fgColor="#4C1D95"
                     level="H"
@@ -1083,68 +1094,68 @@ export default function HostGamePage({
 
           {/* Players Card */}
         </div>
-          <Card className="bg-white shadow-lg rounded-xl p-6 w-full md:col-span-2">
-            <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2 justify-center text-center">
-              <Users className="w-5 h-5 text-gray-600" />
-              <CardTitle className="text-xl font-semibold">
-                Pemain ({gameSession.participants.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-0 pb-0">
-              {gameSession.participants.length === 0 ? (
-                <div className="text-center py-4">
-                  <div className="flex justify-center py-4">
-                    <Users className="w-24 h-24 text-gray-300" />
-                  </div>
-                  <p className="text-lg font-medium text-gray-700">
-                    Menunggu pemain...
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Bagikan Game PIN untuk mengundang pemain bergabung
-                  </p>
+        <Card className="bg-white shadow-lg rounded-xl p-6 w-full md:col-span-2">
+          <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2 justify-center text-center">
+            <Users className="w-5 h-5 text-gray-600" />
+            <CardTitle className="text-xl font-semibold">
+              Pemain ({gameSession.participants.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            {gameSession.participants.length === 0 ? (
+              <div className="text-center py-4">
+                <div className="flex justify-center py-4">
+                  <Users className="w-24 h-24 text-gray-300" />
                 </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {gameSession.participants.map((participant, index) => (
-                    <div
-                      key={participant.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          <AvatarImage
-                            src={
-                              (participant.profiles &&
-                                (Array.isArray(participant.profiles)
-                                  ? participant.profiles[0]?.avatar_url
-                                  : participant.profiles?.avatar_url)) ||
-                              `https://robohash.org/${encodeURIComponent(
-                                participant.nickname
-                              )}.png`
-                            }
-                            alt={participant.nickname}
-                            className="object-cover w-full h-full"
-                          />
-                        </Avatar>
-                        <span className="font-medium">
-                          {participant.nickname}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {new Date(participant.joined_at).toLocaleTimeString(
-                          "id-ID",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
+                <p className="text-lg font-medium text-gray-700">
+                  Menunggu pemain...
+                </p>
+                <p className="text-sm text-gray-600">
+                  Bagikan Game PIN untuk mengundang pemain bergabung
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {gameSession.participants.map((participant, index) => (
+                  <div
+                    key={participant.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        <AvatarImage
+                          src={
+                            (participant.profiles &&
+                              (Array.isArray(participant.profiles)
+                                ? participant.profiles[0]?.avatar_url
+                                : participant.profiles?.avatar_url)) ||
+                            `https://robohash.org/${encodeURIComponent(
+                              participant.nickname
+                            )}.png`
                           }
-                        )}
+                          alt={participant.nickname}
+                          className="object-cover w-full h-full"
+                        />
+                      </Avatar>
+                      <span className="font-medium">
+                        {participant.nickname}
                       </span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    <span className="text-sm text-gray-500">
+                      {new Date(participant.joined_at).toLocaleTimeString(
+                        "id-ID",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       {/* Chat Panel */}
