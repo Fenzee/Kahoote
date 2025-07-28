@@ -29,6 +29,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validasi panjang prompt untuk memastikan cukup spesifik
+    if (prompt.trim().length < 20) {
+      return NextResponse.json(
+        { error: "Prompt terlalu singkat. Berikan detail lebih spesifik untuk hasil yang lebih baik." },
+        { status: 400 }
+      );
+    }
+
+    // Validasi untuk memastikan prompt tidak terlalu umum
+    const generalWords = ['perusahaan', 'tempat', 'hal', 'sesuatu', 'apa', 'siapa', 'dimana', 'kapan'];
+    const specificWords = ['tahun', 'lokasi', 'alamat', 'produk', 'layanan', 'sejarah', 'pendirian', 'prestasi', 'penghargaan', 'karyawan', 'cabang', 'fakultas', 'jurusan', 'wisata', 'kuliner', 'museum', 'taman'];
+    const promptLower = prompt.toLowerCase();
+    const hasSpecificDetails = !generalWords.some(word => 
+      promptLower.includes(word) && promptLower.split(word).length === 2
+    );
+    const hasSpecificKeywords = specificWords.some(word => promptLower.includes(word));
+    
+    if (!hasSpecificDetails && !hasSpecificKeywords && prompt.trim().length < 50) {
+      return NextResponse.json(
+        { error: "Prompt terlalu umum. Berikan detail spesifik seperti nama, lokasi, tahun, atau aspek tertentu yang ingin ditanyakan." },
+        { status: 400 }
+      );
+    }
+
     // Mendapatkan API key dari environment variable
     const apiKey = process.env.OPENAI_API_KEY;
     
@@ -46,28 +70,70 @@ export async function POST(request: Request) {
 
     // Format prompt untuk OpenAI
     const systemPrompt = `Kamu adalah pembuat quiz profesional yang ahli dalam membuat pertanyaan quiz yang menarik dan edukatif.
+
+${language === 'id' ? `
+PETUNJUK KHUSUS UNTUK BAHASA INDONESIA:
+1. Gunakan BAHASA INDONESIA untuk semua pertanyaan dan jawaban
+2. Buat pertanyaan yang SPESIFIK dan DETAIL tentang topik yang diminta
+3. Hindari pertanyaan yang terlalu umum seperti "Apa nama perusahaan?" atau "Apa kepanjangan dari singkatan?"
+4. Fokus pada aspek-aspek yang lebih mendalam seperti:
+   - Sejarah dan perkembangan
+   - Produk atau layanan spesifik
+   - Lokasi dan cabang
+   - Prestasi dan penghargaan
+   - Struktur organisasi
+   - Kontribusi kepada masyarakat
+   - Fakta-fakta unik dan menarik
+5. Jawaban harus akurat dan berdasarkan informasi yang dapat diverifikasi
+6. Gunakan bahasa yang formal namun mudah dipahami
+
+CONTOH PERTANYAAN YANG BAIK:
+- "Kapan perusahaan UBIG pertama kali didirikan di Malang?"
+- "Apa produk unggulan yang diproduksi oleh UBIG?"
+- "Di mana lokasi kantor pusat UBIG di Malang?"
+- "Berapa jumlah karyawan yang bekerja di UBIG saat ini?"
+
+CONTOH PERTANYAAN YANG KURANG BAIK:
+- "Apa nama perusahaan?" (terlalu umum)
+- "Apa kepanjangan UBIG?" (tidak spesifik)
+- "Apakah UBIG ada di Malang?" (terlalu sederhana)
+` : `
+SPECIFIC INSTRUCTIONS FOR ENGLISH:
+1. Use ENGLISH for all questions and answers
+2. Create SPECIFIC and DETAILED questions about the requested topic
+3. Avoid overly general questions like "What is the company name?" or "What does the abbreviation stand for?"
+4. Focus on deeper aspects such as:
+   - History and development
+   - Specific products or services
+   - Locations and branches
+   - Achievements and awards
+   - Organizational structure
+   - Contributions to society
+   - Unique and interesting facts
+5. Answers must be accurate and based on verifiable information
+6. Use formal but easily understandable language
+`}
+
 Buatkan ${count} pertanyaan quiz dengan 4 pilihan jawaban untuk topik berikut: ${prompt}.
 
 ${generateMetadata ? `Juga buatkan metadata quiz dengan judul menarik, deskripsi singkat, dan kategori yang sesuai dengan topik.` : ''}
 
-Bahasa: ${language === 'id' ? 'Indonesia' : 'Inggris'}
-
 Format jawaban harus dalam JSON dengan struktur berikut:
 {
   ${generateMetadata ? `"metadata": {
-    "title": "Judul Quiz yang Menarik",
-    "description": "Deskripsi singkat tentang quiz ini",
+    "title": "${language === 'id' ? 'Judul Quiz yang Menarik' : 'Interesting Quiz Title'}",
+    "description": "${language === 'id' ? 'Deskripsi singkat tentang quiz ini' : 'Brief description about this quiz'}",
     "category": "general",
     "language": "${language}"
   },` : ''}
   "questions": [
     {
-      "question_text": "Pertanyaan 1?",
+      "question_text": "${language === 'id' ? 'Pertanyaan spesifik tentang topik?' : 'Specific question about the topic?'}",
       "answers": [
-        { "answer_text": "Jawaban benar", "is_correct": true },
-        { "answer_text": "Jawaban salah 1", "is_correct": false },
-        { "answer_text": "Jawaban salah 2", "is_correct": false },
-        { "answer_text": "Jawaban salah 3", "is_correct": false }
+        { "answer_text": "${language === 'id' ? 'Jawaban yang benar dan spesifik' : 'Correct and specific answer'}", "is_correct": true },
+        { "answer_text": "${language === 'id' ? 'Jawaban salah yang masuk akal' : 'Plausible wrong answer'}", "is_correct": false },
+        { "answer_text": "${language === 'id' ? 'Jawaban salah yang masuk akal' : 'Plausible wrong answer'}", "is_correct": false },
+        { "answer_text": "${language === 'id' ? 'Jawaban salah yang masuk akal' : 'Plausible wrong answer'}", "is_correct": false }
       ]
     }
   ]
@@ -75,9 +141,13 @@ Format jawaban harus dalam JSON dengan struktur berikut:
 
 Kategori yang tersedia adalah: general, science, math, history, geography, language, technology, sports, entertainment, business.
 
-Pastikan hanya ada satu jawaban benar untuk setiap pertanyaan.
-Jawaban harus masuk akal dan relevan dengan pertanyaan.
-Jangan tambahkan informasi atau teks lain selain JSON yang diminta.`;
+PENTING:
+- Pastikan hanya ada satu jawaban benar untuk setiap pertanyaan
+- Jawaban harus masuk akal dan relevan dengan pertanyaan
+- Pertanyaan harus SPESIFIK dan tidak terlalu umum
+- Untuk bahasa Indonesia, gunakan tata bahasa yang benar dan formal
+- Jangan tambahkan informasi atau teks lain selain JSON yang diminta
+- Fokus pada aspek-aspek yang mendalam dan menarik dari topik yang diminta`;
 
     // Panggil API OpenAI
     const completion = await openai.chat.completions.create({

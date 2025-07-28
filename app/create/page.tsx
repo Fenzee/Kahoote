@@ -373,6 +373,34 @@ export default function CreateQuizPage() {
   const generateQuestionsWithAI = async () => {
     if (!aiPrompt.trim()) return;
     
+    // Validasi panjang prompt
+    if (aiPrompt.trim().length < 20) {
+      toast({
+        title: "Prompt Terlalu Singkat",
+        description: "Berikan detail lebih spesifik untuk hasil yang lebih baik. Minimal 20 karakter.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validasi untuk memastikan prompt tidak terlalu umum
+    const generalWords = ['perusahaan', 'tempat', 'hal', 'sesuatu', 'apa', 'siapa', 'dimana', 'kapan'];
+    const specificWords = ['tahun', 'lokasi', 'alamat', 'produk', 'layanan', 'sejarah', 'pendirian', 'prestasi', 'penghargaan', 'karyawan', 'cabang', 'fakultas', 'jurusan', 'wisata', 'kuliner', 'museum', 'taman'];
+    const promptLower = aiPrompt.toLowerCase();
+    const hasSpecificDetails = !generalWords.some(word => 
+      promptLower.includes(word) && promptLower.split(word).length === 2
+    );
+    const hasSpecificKeywords = specificWords.some(word => promptLower.includes(word));
+    
+    if (!hasSpecificDetails && !hasSpecificKeywords && aiPrompt.trim().length < 50) {
+      toast({
+        title: "Prompt Terlalu Umum",
+        description: "Berikan detail spesifik seperti nama, lokasi, tahun, atau aspek tertentu yang ingin ditanyakan.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setAiGenerating(true);
     try {
       // Panggil API untuk menghasilkan pertanyaan dengan Cohere
@@ -556,9 +584,25 @@ export default function CreateQuizPage() {
                       <Label htmlFor="ai-prompt" className="text-gray-700 font-medium">
                         Jelaskan Quiz yang Ingin Dibuat
                       </Label>
+                      <p className="text-xs text-gray-500 mb-2">
+                        💡 Tips: Berikan detail spesifik untuk hasil yang lebih baik. Semakin detail prompt, semakin baik kualitas soal yang dihasilkan. Fokus pada aspek tertentu seperti sejarah, lokasi, produk, atau prestasi.
+                      </p>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={`${aiPrompt.length < 20 ? 'text-red-500' : 'text-green-500'}`}>
+                          {aiPrompt.length}/20 karakter minimum
+                        </span>
+                        <span className={`${aiPrompt.length < 20 ? 'text-red-500' : 'text-green-500'}`}>
+                          {aiPrompt.length < 20 ? 'Terlalu singkat' : 
+                           (aiPrompt.length < 50 && ['perusahaan', 'tempat', 'hal', 'sesuatu', 'apa', 'siapa', 'dimana', 'kapan'].some(word => 
+                             aiPrompt.toLowerCase().includes(word) && aiPrompt.toLowerCase().split(word).length === 2
+                           ) && !['tahun', 'lokasi', 'alamat', 'produk', 'layanan', 'sejarah', 'pendirian', 'prestasi', 'penghargaan', 'karyawan', 'cabang', 'fakultas', 'jurusan', 'wisata', 'kuliner', 'museum', 'taman'].some(word => 
+                             aiPrompt.toLowerCase().includes(word)
+                           )) ? 'Terlalu umum' : 'Cukup spesifik'}
+                        </span>
+                      </div>
                       <Textarea
                         id="ai-prompt"
-                        placeholder="Contoh: Buat quiz tentang sejarah Indonesia dengan 5 pertanyaan pilihan ganda"
+                        placeholder="Contoh: Buat quiz tentang Perusahaan UBIG di Malang dengan pertanyaan spesifik tentang sejarah, produk, lokasi, dan prestasi perusahaan"
                         value={aiPrompt}
                         onChange={(e) => setAiPrompt(e.target.value)}
                         rows={3}
@@ -569,10 +613,40 @@ export default function CreateQuizPage() {
                     <Accordion type="single" collapsible className="w-full">
                       <AccordionItem value="options">
                         <AccordionTrigger className="text-sm text-purple-700">
-                          Opsi Lanjutan
+                          Opsi Lanjutan & Panduan
                         </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-4 pt-2">
+                                                  <AccordionContent>
+                            <div className="space-y-4 pt-2">
+                              <div className="bg-yellow-50 p-3 rounded-lg">
+                                <h4 className="text-sm font-medium text-yellow-800 mb-2">💡 Tips Membuat Prompt yang Baik:</h4>
+                                <ul className="text-xs text-yellow-700 space-y-1">
+                                  <li>• Sertakan nama spesifik (UBIG, Universitas Brawijaya, dll)</li>
+                                  <li>• Sebutkan lokasi atau alamat yang jelas</li>
+                                  <li>• Masukkan tahun atau periode waktu</li>
+                                  <li>• Fokus pada aspek tertentu (sejarah, produk, prestasi)</li>
+                                  <li>• Berikan detail yang unik dan menarik</li>
+                                  <li>• Hindari kata-kata yang terlalu umum seperti "perusahaan", "tempat", "hal"</li>
+                                </ul>
+                              </div>
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                              <h4 className="text-sm font-medium text-blue-800 mb-2">✅ Contoh Prompt yang Baik:</h4>
+                              <ul className="text-xs text-blue-700 space-y-1">
+                                <li>• "Buat quiz tentang Perusahaan UBIG di Malang dengan fokus pada sejarah pendirian tahun 1980-an, produk tekstil unggulan, lokasi kantor pusat di Jalan Soekarno-Hatta, dan prestasi sebagai salah satu industri tekstil terbesar di Jawa Timur"</li>
+                                <li>• "Buat quiz tentang Universitas Brawijaya dengan pertanyaan spesifik tentang fakultas-fakultas, sejarah pendirian tahun 1963, lokasi kampus utama di Malang, dan prestasi akademik dalam penelitian"</li>
+                                <li>• "Buat quiz tentang Kota Malang dengan fokus pada wisata kuliner seperti bakso Malang, tempat wisata terkenal seperti Jatim Park, sejarah kota sejak era kolonial, dan budaya lokal masyarakat"</li>
+                                <li>• "Buat quiz tentang Museum Angkut di Malang dengan pertanyaan tentang koleksi kendaraan, sejarah pendirian, lokasi di Batu, dan jam operasional"</li>
+                              </ul>
+                            </div>
+                            <div className="bg-red-50 p-3 rounded-lg">
+                              <h4 className="text-sm font-medium text-red-800 mb-2">❌ Contoh Prompt yang Kurang Baik:</h4>
+                              <ul className="text-xs text-red-700 space-y-1">
+                                <li>• "Buat quiz tentang UBIG" (terlalu singkat dan tidak spesifik)</li>
+                                <li>• "Buat soal tentang perusahaan" (terlalu umum, tidak jelas perusahaan mana)</li>
+                                <li>• "Quiz tentang Malang" (terlalu luas, tidak fokus pada aspek tertentu)</li>
+                                <li>• "Buat soal tentang tempat wisata" (terlalu umum, tidak spesifik lokasi)</li>
+                                <li>• "Quiz tentang universitas" (terlalu umum, tidak menyebutkan universitas mana)</li>
+                              </ul>
+                            </div>
                             <div className="flex items-center justify-between">
                               <div className="space-y-1">
                                 <Label htmlFor="generate-metadata" className="text-sm text-gray-700">
@@ -638,7 +712,12 @@ export default function CreateQuizPage() {
                     <div className="flex justify-end">
                       <Button
                         onClick={generateQuestionsWithAI}
-                        disabled={aiGenerating || !aiPrompt.trim()}
+                        disabled={aiGenerating || !aiPrompt.trim() || aiPrompt.trim().length < 20 || 
+                          (aiPrompt.trim().length < 50 && ['perusahaan', 'tempat', 'hal', 'sesuatu', 'apa', 'siapa', 'dimana', 'kapan'].some(word => 
+                            aiPrompt.toLowerCase().includes(word) && aiPrompt.toLowerCase().split(word).length === 2
+                          ) && !['tahun', 'lokasi', 'alamat', 'produk', 'layanan', 'sejarah', 'pendirian', 'prestasi', 'penghargaan', 'karyawan', 'cabang', 'fakultas', 'jurusan', 'wisata', 'kuliner', 'museum', 'taman'].some(word => 
+                            aiPrompt.toLowerCase().includes(word)
+                          ))}
                         className="bg-transparent border-2 text-black hover:text-white"
                       >
                         {aiGenerating ? (
