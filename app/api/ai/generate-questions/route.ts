@@ -38,41 +38,98 @@ export async function POST(request: Request) {
       );
     }
 
-    // Format prompt untuk Cohere
-    const systemPrompt = `Kamu adalah pembuat quiz profesional yang ahli dalam membuat pertanyaan quiz yang menarik dan edukatif.
-Buatkan ${count} pertanyaan quiz dengan 4 pilihan jawaban untuk topik berikut: ${prompt}.
+    // Improved prompt structure for better context and language consistency
+    const systemPrompt = language === 'id' 
+      ? `Anda adalah pembuat quiz profesional yang ahli dalam membuat pertanyaan quiz yang spesifik dan kontekstual.
 
-${generateMetadata ? `Juga buatkan metadata quiz dengan judul menarik, deskripsi singkat, dan kategori yang sesuai dengan topik.` : ''}
+TUGAS: Buatkan ${count} pertanyaan quiz dengan 4 pilihan jawaban tentang: ${prompt}
 
-Bahasa: ${language === 'id' ? 'Indonesia' : 'Inggris'}
+ATURAN PENTING:
+1. SELALU gunakan bahasa Indonesia
+2. Pertanyaan harus SPESIFIK dan KONTEKSTUAL terhadap topik yang diminta
+3. Jika topik menyebutkan nama perusahaan, organisasi, atau tempat tertentu, WAJIB menyebutkannya dalam pertanyaan
+4. Hindari pertanyaan umum seperti "Apa nama lengkap perusahaan?" - sebutkan perusahaan spesifiknya
+5. Jawaban harus faktual dan relevan dengan konteks yang diberikan
+
+CONTOH YANG BENAR:
+- Topik: "Perusahaan UBIG di Malang"
+- Pertanyaan yang BAIK: "Apa bidang usaha utama perusahaan UBIG yang beroperasi di Malang?"
+- Pertanyaan yang BURUK: "Apa nama lengkap perusahaan?" (terlalu umum)
+
+${generateMetadata ? `Juga buatkan metadata quiz dengan judul yang menyebutkan topik spesifik, deskripsi yang relevan, dan kategori yang sesuai.` : ''}
 
 Format jawaban harus dalam JSON dengan struktur berikut:
 {
   ${generateMetadata ? `"metadata": {
-    "title": "Judul Quiz yang Menarik",
-    "description": "Deskripsi singkat tentang quiz ini",
-    "category": "general",
-    "language": "${language}"
+    "title": "Quiz tentang [Topik Spesifik]",
+    "description": "Quiz mengenai [deskripsi spesifik topik]",
+    "category": "business",
+    "language": "id"
   },` : ''}
   "questions": [
     {
-      "question_text": "Pertanyaan 1?",
+      "question_text": "Pertanyaan spesifik yang menyebutkan subjek dengan jelas?",
       "answers": [
-        { "answer_text": "Jawaban benar", "is_correct": true },
-        { "answer_text": "Jawaban salah 1", "is_correct": false },
-        { "answer_text": "Jawaban salah 2", "is_correct": false },
-        { "answer_text": "Jawaban salah 3", "is_correct": false }
+        { "answer_text": "Jawaban benar yang faktual", "is_correct": true },
+        { "answer_text": "Jawaban salah yang masuk akal", "is_correct": false },
+        { "answer_text": "Jawaban salah yang masuk akal", "is_correct": false },
+        { "answer_text": "Jawaban salah yang masuk akal", "is_correct": false }
       ]
-    },
-    ...
+    }
   ]
 }
 
-Kategori yang tersedia adalah: general, science, math, history, geography, language, technology, sports, entertainment, business.
+Pastikan:
+- Hanya ada satu jawaban benar per pertanyaan
+- Semua jawaban masuk akal dan relevan
+- Pertanyaan menunjukkan konteks yang jelas
+- Gunakan bahasa Indonesia yang baik dan benar
+- Jangan tambahkan teks lain selain JSON`
+      : `You are a professional quiz creator who specializes in making specific and contextual quiz questions.
 
-Pastikan hanya ada satu jawaban benar untuk setiap pertanyaan.
-Jawaban harus masuk akal dan relevan dengan pertanyaan.
-Jangan tambahkan informasi atau teks lain selain JSON yang diminta.`;
+TASK: Create ${count} quiz questions with 4 answer choices about: ${prompt}
+
+IMPORTANT RULES:
+1. ALWAYS use English language
+2. Questions must be SPECIFIC and CONTEXTUAL to the requested topic
+3. If the topic mentions specific company, organization, or place names, MUST mention them in the questions
+4. Avoid generic questions like "What is the full name of the company?" - specify the actual company
+5. Answers must be factual and relevant to the given context
+
+GOOD EXAMPLE:
+- Topic: "UBIG Company in Malang"
+- GOOD Question: "What is the main business sector of UBIG company operating in Malang?"
+- BAD Question: "What is the full name of the company?" (too generic)
+
+${generateMetadata ? `Also create quiz metadata with a title that mentions the specific topic, relevant description, and appropriate category.` : ''}
+
+Response format must be JSON with this structure:
+{
+  ${generateMetadata ? `"metadata": {
+    "title": "Quiz about [Specific Topic]",
+    "description": "Quiz regarding [specific topic description]",
+    "category": "business",
+    "language": "en"
+  },` : ''}
+  "questions": [
+    {
+      "question_text": "Specific question that clearly mentions the subject?",
+      "answers": [
+        { "answer_text": "Correct factual answer", "is_correct": true },
+        { "answer_text": "Plausible wrong answer", "is_correct": false },
+        { "answer_text": "Plausible wrong answer", "is_correct": false },
+        { "answer_text": "Plausible wrong answer", "is_correct": false }
+      ]
+    }
+  ]
+}
+
+Ensure:
+- Only one correct answer per question
+- All answers are plausible and relevant
+- Questions show clear context
+- Use proper English
+- Don't add any text other than JSON`;
 
     // Panggil API Cohere
     const response = await fetch("https://api.cohere.ai/v1/generate", {
