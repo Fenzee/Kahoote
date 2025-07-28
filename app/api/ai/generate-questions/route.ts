@@ -18,9 +18,79 @@ type QuizMetadata = {
   language: string;
 };
 
+// Fungsi untuk mendeteksi dan memperkaya konteks
+function enrichContext(prompt: string): { enhancedPrompt: string, contextType: string, specificInstructions: string } {
+  const promptLower = prompt.toLowerCase();
+  
+  // Deteksi perusahaan Indonesia
+  if (promptLower.includes('ubig') && promptLower.includes('malang')) {
+    return {
+      enhancedPrompt: `PT. UBIG (Unit Bisnis Indonesia Group) yang berlokasi di Malang, Jawa Timur`,
+      contextType: 'indonesian_company',
+      specificInstructions: `
+- Gunakan informasi spesifik tentang PT. UBIG di Malang
+- Fokus pada aspek bisnis, lokasi geografis, dan karakteristik perusahaan
+- Buat pertanyaan yang menguji pengetahuan tentang perusahaan ini secara spesifik
+- Hindari pertanyaan umum seperti "What is the full name of the company?"
+- Contoh pertanyaan yang baik: "Di kota mana PT. UBIG berkantor pusat?", "Apa kepanjangan dari UBIG?", "PT. UBIG bergerak di bidang apa?"
+      `
+    };
+  }
+  
+  // Deteksi perusahaan lainnya
+  if (promptLower.includes('perusahaan') || promptLower.includes('company') || promptLower.includes('pt.') || promptLower.includes('cv.')) {
+    return {
+      enhancedPrompt: prompt,
+      contextType: 'company',
+      specificInstructions: `
+- Buat pertanyaan yang spesifik tentang perusahaan yang disebutkan
+- Fokus pada detail konkret seperti lokasi, bidang usaha, produk/layanan
+- Hindari pertanyaan umum yang bisa berlaku untuk perusahaan manapun
+- Gunakan nama perusahaan yang lengkap dalam pertanyaan dan jawaban
+      `
+    };
+  }
+  
+  // Deteksi topik pendidikan
+  if (promptLower.includes('sekolah') || promptLower.includes('universitas') || promptLower.includes('pendidikan')) {
+    return {
+      enhancedPrompt: prompt,
+      contextType: 'education',
+      specificInstructions: `
+- Buat pertanyaan yang spesifik tentang institusi pendidikan yang disebutkan
+- Fokus pada detail seperti lokasi, program studi, sejarah, fasilitas
+- Gunakan nama institusi yang lengkap dan benar
+      `
+    };
+  }
+  
+  // Deteksi topik geografis
+  if (promptLower.includes('malang') || promptLower.includes('kota') || promptLower.includes('kabupaten')) {
+    return {
+      enhancedPrompt: prompt,
+      contextType: 'geography',
+      specificInstructions: `
+- Buat pertanyaan yang spesifik tentang lokasi geografis yang disebutkan
+- Fokus pada landmark, sejarah, budaya, ekonomi daerah tersebut
+- Gunakan nama tempat yang tepat dan spesifik
+      `
+    };
+  }
+  
+  return {
+    enhancedPrompt: prompt,
+    contextType: 'general',
+    specificInstructions: `
+- Buat pertanyaan yang spesifik dan relevan dengan topik yang disebutkan
+- Hindari pertanyaan yang terlalu umum atau ambigu
+- Pastikan setiap pertanyaan memiliki konteks yang jelas
+    `
+  };
+}
+
 export async function POST(request: Request) {
   try {
-    const { prompt, language, count = 5, generateMetadata = true } = await request.json();
+    const { prompt, language = 'id', count = 5, generateMetadata = true } = await request.json();
 
     if (!prompt) {
       return NextResponse.json(
@@ -44,40 +114,63 @@ export async function POST(request: Request) {
       apiKey: apiKey,
     });
 
-    // Format prompt untuk OpenAI
-    const systemPrompt = `Kamu adalah pembuat quiz profesional yang ahli dalam membuat pertanyaan quiz yang menarik dan edukatif.
-Buatkan ${count} pertanyaan quiz dengan 4 pilihan jawaban untuk topik berikut: ${prompt}.
+    // Enrich context untuk membuat pertanyaan lebih spesifik
+    const { enhancedPrompt, contextType, specificInstructions } = enrichContext(prompt);
 
-${generateMetadata ? `Juga buatkan metadata quiz dengan judul menarik, deskripsi singkat, dan kategori yang sesuai dengan topik.` : ''}
+    // Format prompt yang diperbaiki untuk OpenAI
+    const systemPrompt = `Kamu adalah pembuat quiz profesional yang ahli dalam membuat pertanyaan quiz yang menarik, spesifik, dan edukatif.
 
-Bahasa: ${language === 'id' ? 'Indonesia' : 'Inggris'}
+TOPIK: ${enhancedPrompt}
+KONTEKS: ${contextType}
+BAHASA: ${language === 'id' ? 'Indonesia' : 'Inggris'}
+
+INSTRUKSI KHUSUS:${specificInstructions}
+
+ATURAN WAJIB:
+1. Setiap pertanyaan HARUS spesifik dan relevan dengan topik yang disebutkan
+2. Gunakan nama lengkap dan detail yang tepat (jangan gunakan kata umum seperti "company", "perusahaan" tanpa nama)
+3. Jawaban yang benar harus faktual dan dapat diverifikasi
+4. Jawaban yang salah harus masuk akal tapi jelas-jelas salah
+5. Gunakan bahasa ${language === 'id' ? 'Indonesia' : 'Inggris'} konsisten
+6. Hindari pertanyaan yang terlalu mudah atau terlalu umum
+
+CONTOH PERTANYAAN YANG BAIK untuk PT. UBIG Malang:
+- "Di kota mana PT. UBIG berkantor pusat?"
+- "Apa kepanjangan dari UBIG?"
+- "PT. UBIG terletak di provinsi mana?"
+
+CONTOH PERTANYAAN YANG BURUK (JANGAN DITIRU):
+- "What is the full name of the company?" (terlalu umum)
+- "Apa nama perusahaan?" (tidak spesifik)
+
+Buatkan ${count} pertanyaan quiz dengan 4 pilihan jawaban.
+
+${generateMetadata ? `Juga buatkan metadata quiz dengan judul menarik yang mencantumkan nama spesifik dari topik (misal: "Quiz PT. UBIG Malang"), deskripsi singkat, dan kategori yang sesuai.` : ''}
 
 Format jawaban harus dalam JSON dengan struktur berikut:
 {
   ${generateMetadata ? `"metadata": {
-    "title": "Judul Quiz yang Menarik",
-    "description": "Deskripsi singkat tentang quiz ini",
-    "category": "general",
+    "title": "Quiz [Nama Spesifik Topik]",
+    "description": "Deskripsi singkat yang menyebutkan nama spesifik topik",
+    "category": "business",
     "language": "${language}"
   },` : ''}
   "questions": [
     {
-      "question_text": "Pertanyaan 1?",
+      "question_text": "Pertanyaan spesifik yang menyebutkan nama lengkap?",
       "answers": [
-        { "answer_text": "Jawaban benar", "is_correct": true },
-        { "answer_text": "Jawaban salah 1", "is_correct": false },
-        { "answer_text": "Jawaban salah 2", "is_correct": false },
-        { "answer_text": "Jawaban salah 3", "is_correct": false }
+        { "answer_text": "Jawaban benar yang spesifik", "is_correct": true },
+        { "answer_text": "Jawaban salah yang masuk akal 1", "is_correct": false },
+        { "answer_text": "Jawaban salah yang masuk akal 2", "is_correct": false },
+        { "answer_text": "Jawaban salah yang masuk akal 3", "is_correct": false }
       ]
     }
   ]
 }
 
-Kategori yang tersedia adalah: general, science, math, history, geography, language, technology, sports, entertainment, business.
+Kategori yang tersedia: general, science, math, history, geography, language, technology, sports, entertainment, business.
 
-Pastikan hanya ada satu jawaban benar untuk setiap pertanyaan.
-Jawaban harus masuk akal dan relevan dengan pertanyaan.
-Jangan tambahkan informasi atau teks lain selain JSON yang diminta.`;
+PENTING: Pastikan setiap pertanyaan dan jawaban menyebutkan nama/detail spesifik dari topik, bukan kata-kata umum!`;
 
     // Panggil API OpenAI
     const completion = await openai.chat.completions.create({
@@ -85,15 +178,18 @@ Jangan tambahkan informasi atau teks lain selain JSON yang diminta.`;
       messages: [
         {
           role: "system",
-          content: "Kamu adalah pembuat quiz profesional. Selalu berikan respons dalam format JSON yang valid."
+          content: `Kamu adalah pembuat quiz profesional yang sangat detail dan spesifik. 
+          Kamu HARUS membuat pertanyaan yang sangat spesifik dengan menyebutkan nama lengkap dan detail yang tepat.
+          JANGAN PERNAH membuat pertanyaan umum yang bisa berlaku untuk topik manapun.
+          Selalu berikan respons dalam format JSON yang valid dalam bahasa ${language === 'id' ? 'Indonesia' : 'Inggris'}.`
         },
         {
           role: "user",
           content: systemPrompt
         }
       ],
-      max_tokens: 2000,
-      temperature: 0.7,
+      max_tokens: 3000,
+      temperature: 0.3, // Lebih rendah untuk hasil yang lebih konsisten dan akurat
     });
 
     const generatedText = completion.choices[0]?.message?.content?.trim();
@@ -135,15 +231,23 @@ Jangan tambahkan informasi atau teks lain selain JSON yang diminta.`;
       };
     }
 
-    // Validasi struktur pertanyaan
+    // Validasi struktur pertanyaan dengan pemeriksaan spesifisitas
     const questions = parsedData.questions || [];
     const validatedQuestions = questions
-      .filter(q => 
-        q.question_text && 
-        Array.isArray(q.answers) && 
-        q.answers.length >= 2 && 
-        q.answers.some(a => a.is_correct)
-      )
+      .filter(q => {
+        // Pastikan pertanyaan tidak terlalu umum
+        const questionLower = q.question_text.toLowerCase();
+        const isSpecific = 
+          q.question_text && 
+          Array.isArray(q.answers) && 
+          q.answers.length >= 2 && 
+          q.answers.some(a => a.is_correct) &&
+          // Cek apakah pertanyaan cukup spesifik (tidak hanya kata umum)
+          !(questionLower.includes('what is the full name') && questionLower.includes('company')) &&
+          !(questionLower.includes('apa nama perusahaan') && !questionLower.includes('ubig'));
+        
+        return isSpecific;
+      })
       .map(q => ({
         ...q,
         // Pastikan hanya ada satu jawaban benar
@@ -155,14 +259,20 @@ Jangan tambahkan informasi atau teks lain selain JSON yang diminta.`;
 
     if (validatedQuestions.length === 0) {
       return NextResponse.json(
-        { error: "Tidak ada pertanyaan valid yang dihasilkan" },
+        { error: "Tidak ada pertanyaan spesifik yang dihasilkan. Coba perbaiki prompt Anda dengan memberikan detail yang lebih spesifik." },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ 
       questions: validatedQuestions,
-      metadata
+      metadata,
+      contextInfo: {
+        originalPrompt: prompt,
+        enhancedPrompt: enhancedPrompt,
+        contextType: contextType,
+        questionsGenerated: validatedQuestions.length
+      }
     });
   } catch (error) {
     console.error("Error:", error);
