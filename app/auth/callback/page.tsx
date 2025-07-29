@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { PageWithLoading } from "@/components/ui/page-with-loading";
@@ -94,7 +94,7 @@ function AuthCallbackPageContent() {
         }
         
         // Buat profil baru dengan semua field yang diperlukan
-        const profileData = {
+        const profileData: any = {
           id: user.id,
           username: username,
           email: user.email || "",
@@ -170,12 +170,21 @@ function AuthCallbackPageContent() {
 
 export default function AuthCallbackPage() {
   return (
-    <PageWithLoading 
-      animation="fade"
-      customLoadingMessage="Memproses autentikasi..."
-      customLoadingVariant="default"
-    >
-      <AuthCallbackPageContent />
-    </PageWithLoading>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memproses autentikasi...</p>
+        </div>
+      </div>
+    }>
+      <PageWithLoading 
+        animation="fade"
+        customLoadingMessage="Memproses autentikasi..."
+        customLoadingVariant="default"
+      >
+        <AuthCallbackPageContent />
+      </PageWithLoading>
+    </Suspense>
   );
 }

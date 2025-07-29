@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { PageTransition } from "./page-transition";
 import { useRouteLoading } from "@/hooks/use-route-loading";
 
@@ -13,11 +13,11 @@ interface PageWithLoadingProps {
   customLoadingVariant?: "default" | "quiz" | "game" | "minimal";
 }
 
-export function PageWithLoading({
+function PageWithLoadingContent({
   children,
   animation = "fade",
-  enableRouteLoading = true, // Enabled by default for dummy loading
-  loadingDuration = 600, // Consistent dummy loading duration
+  enableRouteLoading = true,
+  loadingDuration = 600,
   customLoadingMessage,
   customLoadingVariant
 }: PageWithLoadingProps) {
@@ -43,39 +43,81 @@ export function PageWithLoading({
   );
 }
 
+export function PageWithLoading(props: PageWithLoadingProps) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">{props.customLoadingMessage || "Memuat halaman..."}</p>
+        </div>
+      </div>
+    }>
+      <PageWithLoadingContent {...props} />
+    </Suspense>
+  );
+}
+
 // Specialized components for different page types
 export function QuizPageWithLoading({ children, ...props }: Omit<PageWithLoadingProps, 'customLoadingVariant'>) {
   return (
-    <PageWithLoading 
-      {...props}
-      customLoadingVariant="quiz"
-      animation="slideUp"
-    >
-      {children}
-    </PageWithLoading>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat kuis...</p>
+        </div>
+      </div>
+    }>
+      <PageWithLoadingContent 
+        {...props}
+        customLoadingVariant="quiz"
+        animation="slideUp"
+      >
+        {children}
+      </PageWithLoadingContent>
+    </Suspense>
   );
 }
 
 export function GamePageWithLoading({ children, ...props }: Omit<PageWithLoadingProps, 'customLoadingVariant'>) {
   return (
-    <PageWithLoading 
-      {...props}
-      customLoadingVariant="game"
-      animation="scaleRotate"
-    >
-      {children}
-    </PageWithLoading>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Menghubungkan ke game...</p>
+        </div>
+      </div>
+    }>
+      <PageWithLoadingContent 
+        {...props}
+        customLoadingVariant="game"
+        animation="scaleRotate"
+      >
+        {children}
+      </PageWithLoadingContent>
+    </Suspense>
   );
 }
 
 export function DashboardPageWithLoading({ children, ...props }: Omit<PageWithLoadingProps, 'customLoadingVariant'>) {
   return (
-    <PageWithLoading 
-      {...props}
-      customLoadingVariant="default"
-      animation="fade"
-    >
-      {children}
-    </PageWithLoading>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat dashboard...</p>
+        </div>
+      </div>
+    }>
+      <PageWithLoadingContent 
+        {...props}
+        customLoadingVariant="default"
+        animation="fade"
+      >
+        {children}
+      </PageWithLoadingContent>
+    </Suspense>
   );
 }
