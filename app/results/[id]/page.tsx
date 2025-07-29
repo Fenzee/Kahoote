@@ -31,6 +31,7 @@ import {
   Crown,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { GamePageWithLoading } from "@/components/ui/page-with-loading";
 
 interface GameSession {
   id: string;
@@ -105,7 +106,7 @@ interface PersonalStats {
   }>;
 }
 
-export default function ResultsPage({
+function ResultsPageContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -1484,5 +1485,20 @@ export default function ResultsPage({
         </Dialog>
       </main>
     </div>
+  );
+}
+
+export default function ResultsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <GamePageWithLoading 
+      animation="fade"
+      customLoadingMessage="Memuat hasil permainan..."
+    >
+      <ResultsPageContent params={params} />
+    </GamePageWithLoading>
   );
 }

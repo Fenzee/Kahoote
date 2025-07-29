@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { QuizPageWithLoading } from "@/components/ui/page-with-loading"
 
 const categories = [
   { value: "general", label: "Umum" },
@@ -87,7 +88,7 @@ const answerColors = [
   "#f1c40f", // Yellow
 ]
 
-export default function EditQuizPage({ params }: { params: Promise<{ id: string }> }) {
+function EditQuizPageContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const { user } = useAuth()
   const router = useRouter()
@@ -982,4 +983,15 @@ export default function EditQuizPage({ params }: { params: Promise<{ id: string 
       </AlertDialog>
     </div>
   )
+}
+
+export default function EditQuizPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <QuizPageWithLoading 
+      animation="scaleRotate"
+      customLoadingMessage="Memuat halaman edit quiz..."
+    >
+      <EditQuizPageContent params={params} />
+    </QuizPageWithLoading>
+  );
 }

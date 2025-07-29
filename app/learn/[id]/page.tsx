@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
+import { QuizPageWithLoading } from "@/components/ui/page-with-loading";
 
 interface Answer {
   id: string;
@@ -61,7 +62,7 @@ interface LearnGameState {
   countdownValue: number;
 }
 
-export default function LearnModePage({
+function LearnModePageContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -847,5 +848,20 @@ export default function LearnModePage({
         </div>
       )}
     </div>
+  );
+}
+
+export default function LearnModePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <QuizPageWithLoading 
+      animation="fade"
+      customLoadingMessage="Memuat mode belajar..."
+    >
+      <LearnModePageContent params={params} />
+    </QuizPageWithLoading>
   );
 }

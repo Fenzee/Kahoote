@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, Zap, Trophy, Heart, Play, Star, CheckCircle, BookOpen, Gamepad2 } from "lucide-react"
 import NavbarDemo from "@/components/resizable-navbar-demo"
 import { AnimatedElement } from "@/components/ui/animated-element";
+import { LoadingDemo } from "@/components/ui/loading-demo";
 import { motion } from "framer-motion";
 
 export default function LandingPage() {
@@ -48,23 +49,74 @@ export default function LandingPage() {
               <AnimatedElement preset="fadeInUp" delay={0.6}>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link href="/auth/register">
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                    <motion.div
+                      whileHover={{ 
+                        scale: 1.05,
+                        transition: { type: "spring", stiffness: 400, damping: 15 }
+                      }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <Play className="mr-2 h-5 w-5" />
-                      Mulai Sekarang
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
+                      <Button
+                        size="lg"
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-8 py-3 text-lg shadow-lg hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-500 relative overflow-hidden group"
+                      >
+                        {/* Shimmer effect */}
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
+                          initial={{ x: '-100%' }}
+                          whileHover={{ x: '100%' }}
+                        />
+                        
+                        <motion.div
+                          whileHover={{ x: 2 }}
+                          className="flex items-center relative z-10"
+                        >
+                          <motion.div
+                            whileHover={{ rotate: 360 }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <Play className="mr-2 h-5 w-5" />
+                          </motion.div>
+                          Mulai Sekarang
+                          <motion.div
+                            whileHover={{ x: 4 }}
+                            transition={{ type: "spring", stiffness: 400 }}
+                          >
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                          </motion.div>
+                        </motion.div>
+                      </Button>
+                    </motion.div>
                   </Link>
+                  
                   <Link href="#features">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="px-8 py-3 text-lg bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800"
+                    <motion.div
+                      whileHover={{ 
+                        scale: 1.05,
+                        transition: { type: "spring", stiffness: 400, damping: 15 }
+                      }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      Lihat Fitur
-                    </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="px-8 py-3 text-lg bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800 border-2 hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25 group relative overflow-hidden"
+                      >
+                        {/* Subtle glow effect */}
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          initial={{ opacity: 0 }}
+                          whileHover={{ opacity: 1 }}
+                        />
+                        
+                        <motion.span
+                          whileHover={{ x: 2 }}
+                          className="relative z-10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300"
+                        >
+                          Lihat Fitur
+                        </motion.span>
+                      </Button>
+                    </motion.div>
                   </Link>
                 </div>
               </AnimatedElement>
@@ -172,63 +224,195 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <AnimatedElement preset="fadeInUp" delay={0.1}>
-              <div className="group p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <motion.div 
+                whileHover={{ 
+                  y: -8, 
+                  scale: 1.02,
+                  transition: { type: "spring", stiffness: 300, damping: 20 }
+                }}
+                className="group p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 hover:shadow-2xl hover:shadow-blue-500/25 transition-all duration-500 cursor-pointer relative overflow-hidden"
+              >
+                {/* Glow effect on hover */}
                 <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4"
+                  className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                />
+                
+                <motion.div 
+                  whileHover={{ 
+                    scale: 1.15, 
+                    rotate: 10,
+                    transition: { type: "spring", stiffness: 400, damping: 15 }
+                  }}
+                  className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 relative z-10 group-hover:shadow-lg group-hover:shadow-blue-500/50"
                 >
-                  <Users className="h-6 w-6 text-white" />
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Users className="h-6 w-6 text-white" />
+                  </motion.div>
                 </motion.div>
-                <h3 className="text-xl font-bold mb-2">Multiplayer Realtime</h3>
-                <p className="text-gray-600 dark:text-gray-300">
+                
+                <motion.h3 
+                  className="text-xl font-bold mb-2 relative z-10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300"
+                  whileHover={{ x: 2 }}
+                >
+                  Multiplayer Realtime
+                </motion.h3>
+                
+                <motion.p 
+                  className="text-gray-600 dark:text-gray-300 relative z-10 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300"
+                  whileHover={{ x: 2 }}
+                >
                   Main bersama hingga 50 pemain dalam satu sesi dengan sinkronisasi realtime
-                </p>
-              </div>
+                </motion.p>
+              </motion.div>
             </AnimatedElement>
 
             <AnimatedElement preset="fadeInUp" delay={0.2}>
-              <div className="group p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <motion.div 
+                whileHover={{ 
+                  y: -8, 
+                  scale: 1.02,
+                  transition: { type: "spring", stiffness: 300, damping: 20 }
+                }}
+                className="group p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-500 cursor-pointer relative overflow-hidden"
+              >
+                {/* Glow effect on hover */}
                 <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4"
+                  className="absolute inset-0 bg-gradient-to-r from-purple-400/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                />
+                
+                <motion.div 
+                  whileHover={{ 
+                    scale: 1.15, 
+                    rotate: 10,
+                    transition: { type: "spring", stiffness: 400, damping: 15 }
+                  }}
+                  className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 relative z-10 group-hover:shadow-lg group-hover:shadow-purple-500/50"
                 >
-                  <Zap className="h-6 w-6 text-white" />
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Zap className="h-6 w-6 text-white" />
+                  </motion.div>
                 </motion.div>
-                <h3 className="text-xl font-bold mb-2">Interaksi Langsung</h3>
-                <p className="text-gray-600 dark:text-gray-300">
+                
+                <motion.h3 
+                  className="text-xl font-bold mb-2 relative z-10 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300"
+                  whileHover={{ x: 2 }}
+                >
+                  Interaksi Langsung
+                </motion.h3>
+                
+                <motion.p 
+                  className="text-gray-600 dark:text-gray-300 relative z-10 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300"
+                  whileHover={{ x: 2 }}
+                >
                   Chat, emoji reaction, dan leaderboard yang update secara realtime
-                </p>
-              </div>
+                </motion.p>
+              </motion.div>
             </AnimatedElement>
 
             <AnimatedElement preset="fadeInUp" delay={0.3}>
-              <div className="group p-6 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <motion.div 
+                whileHover={{ 
+                  y: -8, 
+                  scale: 1.02,
+                  transition: { type: "spring", stiffness: 300, damping: 20 }
+                }}
+                className="group p-6 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 hover:shadow-2xl hover:shadow-green-500/25 transition-all duration-500 cursor-pointer relative overflow-hidden"
+              >
+                {/* Glow effect on hover */}
                 <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4"
+                  className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-green-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                />
+                
+                <motion.div 
+                  whileHover={{ 
+                    scale: 1.15, 
+                    rotate: 10,
+                    transition: { type: "spring", stiffness: 400, damping: 15 }
+                  }}
+                  className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4 relative z-10 group-hover:shadow-lg group-hover:shadow-green-500/50"
                 >
-                  <Trophy className="h-6 w-6 text-white" />
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Trophy className="h-6 w-6 text-white" />
+                  </motion.div>
                 </motion.div>
-                <h3 className="text-xl font-bold mb-2">Sistem Poin</h3>
-                <p className="text-gray-600 dark:text-gray-300">
+                
+                <motion.h3 
+                  className="text-xl font-bold mb-2 relative z-10 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300"
+                  whileHover={{ x: 2 }}
+                >
+                  Sistem Poin
+                </motion.h3>
+                
+                <motion.p 
+                  className="text-gray-600 dark:text-gray-300 relative z-10 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300"
+                  whileHover={{ x: 2 }}
+                >
                   Dapatkan poin berdasarkan kecepatan dan ketepatan jawaban
-                </p>
-              </div>
+                </motion.p>
+              </motion.div>
             </AnimatedElement>
 
             <AnimatedElement preset="fadeInUp" delay={0.4}>
-              <div className="group p-6 rounded-2xl bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <motion.div 
+                whileHover={{ 
+                  y: -8, 
+                  scale: 1.02,
+                  transition: { type: "spring", stiffness: 300, damping: 20 }
+                }}
+                className="group p-6 rounded-2xl bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 hover:shadow-2xl hover:shadow-pink-500/25 transition-all duration-500 cursor-pointer relative overflow-hidden"
+              >
+                {/* Glow effect on hover */}
                 <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-12 h-12 bg-gradient-to-r from-pink-500 to-pink-600 rounded-xl flex items-center justify-center mb-4"
+                  className="absolute inset-0 bg-gradient-to-r from-pink-400/10 to-pink-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                />
+                
+                <motion.div 
+                  whileHover={{ 
+                    scale: 1.15, 
+                    rotate: 10,
+                    transition: { type: "spring", stiffness: 400, damping: 15 }
+                  }}
+                  className="w-12 h-12 bg-gradient-to-r from-pink-500 to-pink-600 rounded-xl flex items-center justify-center mb-4 relative z-10 group-hover:shadow-lg group-hover:shadow-pink-500/50"
                 >
-                  <Heart className="h-6 w-6 text-white" />
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Heart className="h-6 w-6 text-white" />
+                  </motion.div>
                 </motion.div>
-                <h3 className="text-xl font-bold mb-2">Sistem Pertemanan</h3>
-                <p className="text-gray-600 dark:text-gray-300">
+                
+                <motion.h3 
+                  className="text-xl font-bold mb-2 relative z-10 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors duration-300"
+                  whileHover={{ x: 2 }}
+                >
+                  Sistem Pertemanan
+                </motion.h3>
+                
+                <motion.p 
+                  className="text-gray-600 dark:text-gray-300 relative z-10 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300"
+                  whileHover={{ x: 2 }}
+                >
                   Tambah teman, buat grup, dan tantang mereka dalam duel 1v1
-                </p>
-              </div>
+                </motion.p>
+              </motion.div>
             </AnimatedElement>
           </div>
         </div>
@@ -696,6 +880,9 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      
+      {/* Loading Demo Component */}
+      <LoadingDemo />
     </div>
   )
 }

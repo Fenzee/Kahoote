@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { Slack, Users, ArrowBigLeft } from "lucide-react";
 import Link from "next/link";
+import { PageWithLoading } from "@/components/ui/page-with-loading";
 
-export default function JoinGamePage() {
+function JoinGamePageContent() {
   const [gamePin, setGamePin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -259,5 +260,17 @@ export default function JoinGamePage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function JoinGamePage() {
+  return (
+    <PageWithLoading 
+      animation="slideDown"
+      customLoadingMessage="Memuat halaman bergabung..."
+      customLoadingVariant="game"
+    >
+      <JoinGamePageContent />
+    </PageWithLoading>
   );
 }

@@ -59,7 +59,22 @@ const countries = [
   { value: "NZ", label: "Selandia Baru", code: "nz" },
 ];
 
-export default function RegisterPage() {
+import { PageWithLoading } from "@/components/ui/page-with-loading";
+
+export default function Page() {
+  return (
+    <PageWithLoading 
+      animation="slideUp" 
+      loadingDuration={500}
+      customLoadingMessage="Memuat halaman registrasi..."
+      customLoadingVariant="minimal"
+    >
+      <RegisterPage />
+    </PageWithLoading>
+  );
+}
+
+function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);

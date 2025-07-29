@@ -36,6 +36,7 @@ import Link from "next/link";
 import { use } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { GamePageWithLoading } from "@/components/ui/page-with-loading";
 
 interface Quiz {
   id: string;
@@ -93,7 +94,7 @@ interface SupabaseQuizResponse {
   };
 }
 
-export default function HostGamePage({
+function HostGamePageContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -1170,5 +1171,20 @@ export default function HostGamePage({
         />
       )}
     </div>
+  );
+}
+
+export default function HostGamePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <GamePageWithLoading 
+      animation="slide"
+      customLoadingMessage="Memuat ruang host..."
+    >
+      <HostGamePageContent params={params} />
+    </GamePageWithLoading>
   );
 }

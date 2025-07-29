@@ -30,6 +30,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { GamePageWithLoading } from "@/components/ui/page-with-loading";
 
 interface Answer {
   id: string;
@@ -70,7 +71,7 @@ interface GameState {
   timeLeft: number;
 }
 
-export default function PlayActiveGamePage({
+function PlayActiveGamePageContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -1219,5 +1220,20 @@ export default function PlayActiveGamePage({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function PlayActiveGamePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <GamePageWithLoading 
+      animation="zoom"
+      customLoadingMessage="Memuat permainan aktif..."
+    >
+      <PlayActiveGamePageContent params={params} />
+    </GamePageWithLoading>
   );
 }

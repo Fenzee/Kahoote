@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { GamePageWithLoading } from "@/components/ui/page-with-loading";
 
 interface Participant {
   id: string;
@@ -75,7 +76,7 @@ interface GameState {
   timeLeft: number;
 }
 
-export default function GamePage({
+function GamePageContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -762,5 +763,20 @@ export default function GamePage({
         </div>
       </main>
     </div>
+  );
+}
+
+export default function GamePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <GamePageWithLoading 
+      animation="zoom"
+      customLoadingMessage="Memuat permainan..."
+    >
+      <GamePageContent params={params} />
+    </GamePageWithLoading>
   );
 }

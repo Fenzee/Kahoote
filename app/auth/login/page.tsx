@@ -14,8 +14,22 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Eye, EyeOff, Mail, Lock, User, Gamepad2, ArrowLeft, Star, Trophy, Users, CheckCircle, Zap } from "lucide-react";
 import Link from "next/link";
+import { PageWithLoading } from "@/components/ui/page-with-loading";
 
-export default function LoginPage() {
+export default function Page() {
+  return (
+    <PageWithLoading 
+      animation="slideUp" 
+      loadingDuration={500}
+      customLoadingMessage="Memuat halaman login..."
+      customLoadingVariant="minimal"
+    >
+      <LoginPage />
+    </PageWithLoading>
+  );
+}
+
+function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);

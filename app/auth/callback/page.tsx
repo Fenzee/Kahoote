@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { PageWithLoading } from "@/components/ui/page-with-loading";
 
-export default function AuthCallbackPage() {
+function AuthCallbackPageContent() {
   const router = useRouter();
   const [status, setStatus] = useState("Memproses login...");
   const [isError, setIsError] = useState(false);
@@ -164,5 +165,17 @@ export default function AuthCallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <PageWithLoading 
+      animation="fade"
+      customLoadingMessage="Memproses autentikasi..."
+      customLoadingVariant="default"
+    >
+      <AuthCallbackPageContent />
+    </PageWithLoading>
   );
 }

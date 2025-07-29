@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { redirect } from "next/navigation";
 import dynamic from "next/dynamic";
+import { DashboardPageWithLoading } from "@/components/ui/page-with-loading";
 import {
   Plus,
   Play,
@@ -215,7 +216,7 @@ const languages = [
   { value: "en", label: "Inggris" },
 ];
 
-export default function Dashboard() {
+function DashboardContent() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -1591,5 +1592,16 @@ export default function Dashboard() {
         </AnimatePresence>
       )}
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <DashboardPageWithLoading 
+      animation="fade"
+      customLoadingMessage="Memuat dashboard..."
+    >
+      <DashboardContent />
+    </DashboardPageWithLoading>
   );
 }

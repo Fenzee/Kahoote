@@ -57,6 +57,7 @@ import {
   DialogContent,
   DialogClose,
 } from "@/components/ui/dialog";
+import { QuizPageWithLoading } from "@/components/ui/page-with-loading";
 
 /**
  * @author: @kokonutui
@@ -183,7 +184,7 @@ const defaultQuestion: Question = {
 
 const defaultColors = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f"];
 
-export default function CreateQuizPage() {
+function CreateQuizPageContent() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -1135,5 +1136,16 @@ export default function CreateQuizPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CreateQuizPage() {
+  return (
+    <QuizPageWithLoading 
+      animation="scaleRotate"
+      customLoadingMessage="Memuat halaman buat quiz..."
+    >
+      <CreateQuizPageContent />
+    </QuizPageWithLoading>
   );
 }

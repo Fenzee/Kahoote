@@ -11,6 +11,7 @@ import { use } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ChatPanel } from "@/components/ui/chat-panel";
+import { GamePageWithLoading } from "@/components/ui/page-with-loading";
 
 interface GameSession {
   id: string;
@@ -56,7 +57,7 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-export default function PlayGamePage({
+function PlayGamePageContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -561,5 +562,20 @@ export default function PlayGamePage({
         </div>
       )}
     </div>
+  );
+}
+
+export default function PlayGamePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <GamePageWithLoading 
+      animation="zoom"
+      customLoadingMessage="Memuat ruang permainan..."
+    >
+      <PlayGamePageContent params={params} />
+    </GamePageWithLoading>
   );
 }
