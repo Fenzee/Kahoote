@@ -62,6 +62,7 @@ interface GameSession {
   status: string;
   total_time_minutes: number | null;
   countdown_started_at?: number | null;
+  game_end_mode?: 'first_finish' | 'wait_timer'; // Game end setting
   participants: Array<{
     id: string;
     nickname: string;
@@ -107,6 +108,7 @@ function HostGamePageContent({
   const [copied, setCopied] = useState(false);
   const [showTimeSetup, setShowTimeSetup] = useState(false);
   const [totalTimeMinutes, setTotalTimeMinutes] = useState<number>(10);
+  const [gameEndMode, setGameEndMode] = useState<'first_finish' | 'wait_timer'>('wait_timer'); // Game end mode state
   const [isJoining, setIsJoining] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const springConfig = { stiffness: 100, damping: 5 };
@@ -414,6 +416,7 @@ function HostGamePageContent({
           game_pin: gamePin,
           status: "waiting",
           total_time_minutes: null,
+          game_end_mode: gameEndMode, // Add game end mode to session creation
         })
         .select()
         .single();
@@ -430,6 +433,7 @@ function HostGamePageContent({
         game_pin: session.game_pin,
         status: session.status,
         total_time_minutes: session.total_time_minutes,
+        game_end_mode: session.game_end_mode || gameEndMode, // Add game end mode to state
         participants: [],
       });
     } catch (error) {
@@ -979,6 +983,43 @@ function HostGamePageContent({
                       }
                       className="w-full"
                     />
+                  </div>
+                  
+                  {/* Game End Mode Selection */}
+                  <div className="space-y-3">
+                    <Label className="block text-sm font-medium text-gray-700">
+                      Game End Mode
+                    </Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="radio"
+                          id="wait_timer"
+                          name="gameEndMode"
+                          value="wait_timer"
+                          checked={gameEndMode === 'wait_timer'}
+                          onChange={(e) => setGameEndMode(e.target.value as 'first_finish' | 'wait_timer')}
+                          className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                        />
+                        <label htmlFor="wait_timer" className="text-sm text-gray-700 cursor-pointer">
+                          <span className="font-medium">Wait for Timer</span> - Semua pemain menunggu hingga waktu habis
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="radio"
+                          id="first_finish"
+                          name="gameEndMode"
+                          value="first_finish"
+                          checked={gameEndMode === 'first_finish'}
+                          onChange={(e) => setGameEndMode(e.target.value as 'first_finish' | 'wait_timer')}
+                          className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                        />
+                        <label htmlFor="first_finish" className="text-sm text-gray-700 cursor-pointer">
+                          <span className="font-medium">First to Finish</span> - Game berakhir ketika satu pemain selesai
+                        </label>
+                      </div>
+                    </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
                     <Button

@@ -69,6 +69,7 @@ interface GameState {
   totalTimeMinutes: number | null;
   gameStartTime: Date | null;
   timeLeft: number;
+  gameEndMode?: 'first_finish' | 'wait_timer'; // New: Game end mode
 }
 
 function PlayActiveGamePageContent({
@@ -198,7 +199,7 @@ function PlayActiveGamePageContent({
       // Get game session
       const { data: session, error: sessionError } = await supabase
         .from("game_sessions")
-        .select("id, status, quiz_id, total_time_minutes, started_at")
+        .select("id, status, quiz_id, total_time_minutes, started_at, game_end_mode")
         .eq("id", resolvedParams.id)
         .single();
 
@@ -294,7 +295,7 @@ function PlayActiveGamePageContent({
         timeLeft = Math.ceil(remaining / 1000);
       }
 
-      const newGameState: GameState = {
+      const initialGameState: GameState = {
         sessionId: session.id,
         participantId: participantId!,
         totalQuestions: questions.length,
@@ -309,16 +310,17 @@ function PlayActiveGamePageContent({
         totalTimeMinutes: session.total_time_minutes,
         gameStartTime: gameStartTime,
         timeLeft: timeLeft,
+        gameEndMode: session.game_end_mode || 'wait_timer', // Add game end mode
       };
 
-      setGameState(newGameState);
+      setGameState(initialGameState);
       setPlayerAnswers(answersMap);
 
       // Load doubtful questions from localStorage
       loadDoubtfulQuestionsFromStorage(session.id, participantId!);
 
       // Start timers after state is set
-      startTimers(newGameState);
+      startTimers(initialGameState);
     } catch (error) {
       console.error("Error loading game data:", error);
     } finally {
@@ -531,18 +533,36 @@ function PlayActiveGamePageContent({
           return;
         }
 
-        if (data.status === "finished" && activeQuestionTracker.questionId) {
-          // Game berakhir, update ended_at untuk soal aktif
-          const endedAt = new Date();
+        if (data.status === "finished") {
+          // Game berakhir - handle berdasarkan mode
+          if (activeQuestionTracker.questionId) {
+            // Update ended_at untuk soal aktif
+            const endedAt = new Date();
 
-          await supabase
-            .from("game_responses")
-            .update({ ended_at: endedAt.toISOString() })
-            .eq("session_id", gameState.sessionId)
-            .eq("participant_id", gameState.participantId)
-            .eq("question_id", activeQuestionTracker.questionId);
+            await supabase
+              .from("game_responses")
+              .update({ ended_at: endedAt.toISOString() })
+              .eq("session_id", gameState.sessionId)
+              .eq("participant_id", gameState.participantId)
+              .eq("question_id", activeQuestionTracker.questionId);
 
-          console.log("Updated ended_at for active question on game end");
+            console.log("Updated ended_at for active question on game end");
+          }
+
+          // Calculate score for this participant if not already done
+          try {
+            await supabase.rpc("calculate_score", {
+              session_id_input: gameState.sessionId,
+              participant_id_input: gameState.participantId,
+            });
+            console.log("Score calculated on game end detection");
+          } catch (scoreError) {
+            console.error("Error calculating score on game end:", scoreError);
+          }
+
+          // Redirect to results page
+          console.log(`Game ended - redirecting to results (mode: ${gameState.gameEndMode})`);
+          router.push(`/results/${resolvedParams.id}?participant=${participantId}`);
         }
       } catch (error) {
         console.error("Error in game status check:", error);
@@ -832,19 +852,52 @@ function PlayActiveGamePageContent({
     }
 
     try {
-      // Tandai sesi selesai
-      await supabase
-        .from("game_sessions")
-        .update({ status: "finished", ended_at: new Date().toISOString() })
-        .eq("id", gameState.sessionId);
+      // Check game end mode and handle accordingly
+      if (gameState.gameEndMode === 'first_finish') {
+        // First to Finish mode: End game for ALL players when one finishes
+        console.log('First player finished - ending game for all players');
+        
+        // Mark session as finished for everyone
+        await supabase
+          .from("game_sessions")
+          .update({ status: "finished", ended_at: new Date().toISOString() })
+          .eq("id", gameState.sessionId);
 
-      // Hitung skor peserta
-      const { data, error } = await supabase.rpc("calculate_score", {
-        session_id_input: gameState.sessionId,
-        participant_id_input: gameState.participantId,
-      });
+        // Calculate scores for ALL participants
+        const { data: allParticipants } = await supabase
+          .from("game_participants")
+          .select("id")
+          .eq("session_id", gameState.sessionId);
 
-      if (error) console.error("Error kalkulasi skor:", error);
+        if (allParticipants) {
+          await Promise.all(
+            allParticipants.map(async (participant) => {
+              try {
+                await supabase.rpc("calculate_score", {
+                  session_id_input: gameState.sessionId,
+                  participant_id_input: participant.id,
+                });
+                console.log(`Score calculated for participant ${participant.id}`);
+              } catch (error) {
+                console.error(`Error calculating score for participant ${participant.id}:`, error);
+              }
+            })
+          );
+        }
+      } else {
+        // Wait for Timer mode: Only mark this player as finished
+        console.log('Player finished - wait for timer mode');
+        
+        // Only calculate score for this participant
+        const { data, error } = await supabase.rpc("calculate_score", {
+          session_id_input: gameState.sessionId,
+          participant_id_input: gameState.participantId,
+        });
+
+        if (error) console.error("Error kalkulasi skor:", error);
+        
+        // Don't end the session - let timer handle it
+      }
     } catch (error) {
       console.error("Gagal submit kuis:", error);
     }
@@ -941,6 +994,23 @@ function PlayActiveGamePageContent({
                 {formatTime(gameState.timeLeft)}
               </Badge>
             )}
+
+            {/* Game End Mode Indicator */}
+            <Badge
+              variant="outline"
+              className={`${
+                gameState.gameEndMode === 'first_finish'
+                  ? "bg-orange-100 text-orange-800 border-orange-300"
+                  : "bg-blue-100 text-blue-800 border-blue-300"
+              }`}
+            >
+              {gameState.gameEndMode === 'first_finish' ? (
+                <Flag className="w-3 h-3 mr-1" />
+              ) : (
+                <Timer className="w-3 h-3 mr-1" />
+              )}
+              {gameState.gameEndMode === 'first_finish' ? 'First to Finish' : 'Wait for Timer'}
+            </Badge>
 
             <Badge
               variant="outline"
