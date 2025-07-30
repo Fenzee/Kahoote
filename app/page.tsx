@@ -48,7 +48,7 @@ export default function LandingPage() {
 
               <AnimatedElement preset="fadeInUp" delay={0.6}>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/auth/register">
+                  <Link href="/play-mode">
                     <motion.div
                       whileHover={{ 
                         scale: 1.05,
@@ -77,7 +77,7 @@ export default function LandingPage() {
                           >
                             <Play className="mr-2 h-5 w-5" />
                           </motion.div>
-                          Mulai Sekarang
+                          Main Quiz
                           <motion.div
                             whileHover={{ x: 4 }}
                             transition={{ type: "spring", stiffness: 400 }}
@@ -89,7 +89,7 @@ export default function LandingPage() {
                     </motion.div>
                   </Link>
                   
-                  <Link href="#features">
+                  <Link href="/auth/register">
                     <motion.div
                       whileHover={{ 
                         scale: 1.05,
@@ -113,7 +113,7 @@ export default function LandingPage() {
                           whileHover={{ x: 2 }}
                           className="relative z-10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300"
                         >
-                          Lihat Fitur
+                          Daftar Sekarang
                         </motion.span>
                       </Button>
                     </motion.div>
