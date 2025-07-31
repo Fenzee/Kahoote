@@ -28,6 +28,47 @@ body {
       animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
     }
   }
+
+  /* Volume slider styles */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .slider::-webkit-slider-track {
+    background: #e5d5ff;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #7c3aed;
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+  }
+
+  .slider::-moz-range-track {
+    background: #e5d5ff;
+    height: 4px;
+    border-radius: 2px;
+    border: none;
+  }
+
+  .slider::-moz-range-thumb {
+    background: #7c3aed;
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+  }
 }
 
 /* Custom animations */

@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { QRCodeSVG } from "qrcode.react";
 import { ChatPanel } from "@/components/ui/chat-panel";
+import { useGameAudio } from "@/hooks/use-game-audio";
 import {
   motion,
   useTransform,
@@ -31,6 +32,11 @@ import {
   Lock,
   Clock,
   ArrowBigLeft,
+  Volume2,
+  VolumeX,
+  SkipForward,
+  SkipBack,
+  Music,
 } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
@@ -141,6 +147,17 @@ function HostGamePageContent({
     username: string;
     avatar_url: string | null;
   } | null>(null);
+  
+  // Audio states
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioVolume, setAudioVolume] = useState(0.3);
+  const [showAudioControls, setShowAudioControls] = useState(false);
+  
+  // Initialize game audio
+  const gameAudio = useGameAudio({
+    isPlaying: isAudioPlaying,
+    volume: audioVolume,
+  });
 
   useEffect(() => {
     if (user && !gameSession && !hasCreatedSession.current) {
@@ -200,6 +217,9 @@ function HostGamePageContent({
         if (remaining <= 0) {
           clearInterval(interval);
           setCountdownLeft(null);
+          // Mulai audio setelah countdown selesai
+          setIsAudioPlaying(true);
+          setShowAudioControls(true);
           router.push(`/game/${gameSession.id}`);
         }
       }, 1000);
@@ -669,10 +689,13 @@ function HostGamePageContent({
         setCountdownLeft(secondsLeft);
 
         if (secondsLeft <= 0) {
-          clearInterval(interval);
-          router.push(
-            `/play-active/${gameSession.id}?participant=${participantId}`
-          );
+                      clearInterval(interval);
+            // Mulai audio setelah countdown selesai untuk host yang ikut bermain
+            setIsAudioPlaying(true);
+            setShowAudioControls(true);
+            router.push(
+              `/play-active/${gameSession.id}?participant=${participantId}`
+            );
         }
       }, 1000);
     } catch (err) {
@@ -691,6 +714,10 @@ function HostGamePageContent({
     if (!gameSession) return;
 
     try {
+      // Stop audio when ending session
+      setIsAudioPlaying(false);
+      setShowAudioControls(false);
+      
       // Update status game menjadi finished
       const { error } = await supabase
         .from("game_sessions")
@@ -863,6 +890,66 @@ function HostGamePageContent({
           <Play className="h-6 w-6 text-purple-600" />
           <span>GolekQuiz</span>
         </div>
+        
+        {/* Audio Controls */}
+        {showAudioControls && (
+          <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-3 py-2 border border-purple-200">
+            <Music className="w-4 h-4 text-purple-600" />
+            <span className="text-sm text-purple-700 font-medium">
+              {gameAudio.getCurrentTrackName()}
+            </span>
+            {gameAudio.error && (
+              <span className="text-xs text-red-500">Audio Error</span>
+            )}
+            <div className="flex items-center gap-1">
+              <Button
+                onClick={gameAudio.prevTrack}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-100"
+                title="Lagu Sebelumnya"
+              >
+                <SkipBack className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={() => setIsAudioPlaying(!isAudioPlaying)}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-100"
+                title={isAudioPlaying ? "Pause" : "Play"}
+              >
+                {isAudioPlaying ? (
+                  <VolumeX className="w-4 h-4" />
+                ) : (
+                  <Volume2 className="w-4 h-4" />
+                )}
+              </Button>
+              <Button
+                onClick={gameAudio.nextTrack}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-100"
+                title="Lagu Selanjutnya"
+              >
+                <SkipForward className="w-4 h-4" />
+              </Button>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={audioVolume}
+              onChange={(e) => setAudioVolume(parseFloat(e.target.value))}
+              className="w-16 h-1 bg-purple-200 rounded-lg appearance-none cursor-pointer slider"
+              title={`Volume: ${Math.round(audioVolume * 100)}%`}
+            />
+            <span className="text-xs text-purple-600 font-medium">
+              {Math.round(audioVolume * 100)}%
+            </span>
+          </div>
+        )}
+        
         <Button
           onClick={endSession}
           variant="outline"
@@ -1049,6 +1136,19 @@ function HostGamePageContent({
                             : "Ikut Bermain sebagai Host"}
                         </Button>
                       )}
+                  </div>
+                  
+                  {/* Audio Info */}
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Music className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">Musik Game</span>
+                    </div>
+                    <p className="text-xs text-blue-700">
+                      Musik akan otomatis diputar untuk host setelah countdown selesai. 
+                      Terdapat 3 lagu yang akan berputar terus menerus selama permainan berlangsung.
+                      Player tidak akan mendengar musik ini.
+                    </p>
                   </div>
                 </CardContent>
               </>
