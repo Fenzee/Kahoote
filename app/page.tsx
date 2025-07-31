@@ -880,9 +880,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-      
-      {/* Loading Demo Component */}
-      <LoadingDemo />
+
     </div>
   )
 }
