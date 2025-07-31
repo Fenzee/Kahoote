@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { QRCodeSVG } from "qrcode.react";
 import { ChatPanel } from "@/components/ui/chat-panel";
+
 import {
   motion,
   useTransform,
@@ -31,6 +32,7 @@ import {
   Lock,
   Clock,
   ArrowBigLeft,
+
 } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
@@ -141,6 +143,7 @@ function HostGamePageContent({
     username: string;
     avatar_url: string | null;
   } | null>(null);
+
 
   useEffect(() => {
     if (user && !gameSession && !hasCreatedSession.current) {
@@ -669,10 +672,10 @@ function HostGamePageContent({
         setCountdownLeft(secondsLeft);
 
         if (secondsLeft <= 0) {
-          clearInterval(interval);
-          router.push(
-            `/play-active/${gameSession.id}?participant=${participantId}`
-          );
+                      clearInterval(interval);
+            router.push(
+              `/play-active/${gameSession.id}?participant=${participantId}`
+            );
         }
       }, 1000);
     } catch (err) {
@@ -863,6 +866,7 @@ function HostGamePageContent({
           <Play className="h-6 w-6 text-purple-600" />
           <span>GolekQuiz</span>
         </div>
+        
         <Button
           onClick={endSession}
           variant="outline"
@@ -1050,6 +1054,7 @@ function HostGamePageContent({
                         </Button>
                       )}
                   </div>
+
                 </CardContent>
               </>
             )}
