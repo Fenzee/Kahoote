@@ -16,10 +16,16 @@ import {
   ChevronLeft,
   Loader,
   Gamepad2,
+  Music,
+  Volume2,
+  VolumeX,
+  SkipForward,
+  SkipBack,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { GamePageWithLoading } from "@/components/ui/page-with-loading";
+import { useGameAudio } from "@/hooks/use-game-audio";
 
 interface Participant {
   id: string;
@@ -105,6 +111,17 @@ function GamePageContent({
   const [isEnding, setIsEnding] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
 
+  // Audio states
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioVolume, setAudioVolume] = useState(0.3);
+  const [showAudioControls, setShowAudioControls] = useState(false);
+  
+  // Initialize game audio
+  const gameAudio = useGameAudio({
+    isPlaying: isAudioPlaying,
+    volume: audioVolume,
+  });
+
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -141,6 +158,12 @@ function GamePageContent({
       gameSession.status === "active" &&
       gameSession.started_at
     ) {
+      // Start audio when game becomes active
+      if (!isAudioPlaying) {
+        setIsAudioPlaying(true);
+        setShowAudioControls(true);
+      }
+
       const updateTimer = () => {
         const now = new Date();
         const startTime = new Date(gameSession.started_at);
@@ -167,7 +190,7 @@ function GamePageContent({
         timerIntervalRef.current = null;
       }
     };
-  }, [gameSession]);
+  }, [gameSession, isAudioPlaying]);
 
   const fetchGameSession = useCallback(async () => {
     const { data, error } = await supabase
@@ -349,6 +372,11 @@ function GamePageContent({
 
   const handleEndGame = useCallback(async () => {
     setIsEnding(true);
+    
+    // Stop audio when game ends
+    setIsAudioPlaying(false);
+    setShowAudioControls(false);
+    
     try {
       // Update status game menjadi finished
       const { error } = await supabase
@@ -508,6 +536,65 @@ function GamePageContent({
             >
               {gameSession.status === "active" ? "Aktif" : "Selesai"}
             </Badge>
+            
+            {/* Audio Controls */}
+            {showAudioControls && (
+              <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-3 py-2 border border-purple-200">
+                <Music className="w-4 h-4 text-purple-600" />
+                <span className="text-sm text-purple-700 font-medium">
+                  {gameAudio.getCurrentTrackName()}
+                </span>
+                {gameAudio.error && (
+                  <span className="text-xs text-red-500">Audio Error</span>
+                )}
+                <div className="flex items-center gap-1">
+                  <Button
+                    onClick={gameAudio.prevTrack}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-100"
+                    title="Lagu Sebelumnya"
+                  >
+                    <SkipBack className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => setIsAudioPlaying(!isAudioPlaying)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-100"
+                    title={isAudioPlaying ? "Pause" : "Play"}
+                  >
+                    {isAudioPlaying ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <Button
+                    onClick={gameAudio.nextTrack}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-100"
+                    title="Lagu Selanjutnya"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                  </Button>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={audioVolume}
+                  onChange={(e) => setAudioVolume(parseFloat(e.target.value))}
+                  className="w-16 h-1 bg-purple-200 rounded-lg appearance-none cursor-pointer slider"
+                  title={`Volume: ${Math.round(audioVolume * 100)}%`}
+                />
+                <span className="text-xs text-purple-600 font-medium">
+                  {Math.round(audioVolume * 100)}%
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -761,6 +848,28 @@ function GamePageContent({
             </CardContent>
           </Card>
         </div>
+        
+        {/* Music Info */}
+        {showAudioControls && (
+          <div className="mt-6 max-w-4xl mx-auto">
+            <Card className="bg-purple-50/80 backdrop-blur-sm border border-purple-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <Music className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-purple-800 mb-1">Musik Game Aktif</h3>
+                    <p className="text-sm text-purple-700">
+                      Sistem musik game sedang berjalan dengan 3 lagu yang berputar otomatis [1][2][3]. 
+                      Hanya host yang mendengar musik ini, player tidak akan mendengar apapun.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   );
