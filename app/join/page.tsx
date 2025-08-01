@@ -106,16 +106,24 @@ function JoinGamePageContent() {
         profile = newProfile;
       }
 
-      // Cek session game
+      // Ganti query session menjadi:
       const { data: session, error: sessionError } = await supabase
         .from("game_sessions")
-        .select("id, status, quiz_id")
+        .select("id, status, quiz_id, allow_join_after_start")
         .eq("game_pin", gamePin.trim())
-        .eq("status", "waiting")
         .single();
 
       if (sessionError || !session) {
-        setError("Game PIN tidak valid atau game sudah dimulai");
+        setError("Game PIN tidak valid atau game tidak ditemukan");
+        setLoading(false);
+        return;
+      }
+
+      if (
+        session.status !== "waiting" &&
+        !(session.status === "active" && session.allow_join_after_start)
+      ) {
+        setError("Game sudah dimulai dan tidak menerima pemain baru.");
         setLoading(false);
         return;
       }
