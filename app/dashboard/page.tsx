@@ -991,7 +991,7 @@ function DashboardContent() {
             </Card>
 
             {/* Indonesia Map di sebelah kanan profil */}
-            <Card className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative">
+            <Card className="bg-white/90 border-none shadow-md rounded-xl overflow-hidden relative z-0">
               <div className="flex flex-row items-center justify-between space-y-0 px-6 py-2">
                 <div className="text-sm font-medium text-gray-900 flex items-center">
                   <MapPin className="h-5 w-5 text-blue-500 mr-2" />

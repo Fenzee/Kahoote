@@ -1162,7 +1162,7 @@ function HostGamePageContent({
                 </p>
               </div>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-3 max-h-96 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto">
                 {gameSession.participants.map((participant, index) => (
                   <div
                     key={participant.id}
