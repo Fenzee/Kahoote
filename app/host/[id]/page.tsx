@@ -17,6 +17,7 @@ import {
   AnimatePresence,
   useMotionValue,
   useSpring,
+  useAnimation,
 } from "framer-motion";
 
 import {
@@ -115,6 +116,9 @@ function HostGamePageContent({
   const [allowJoinAfterStart, setAllowJoinAfterStart] = useState<boolean>(false); // Allow players to join after game starts
   const [isJoining, setIsJoining] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [activeTab, setActiveTab] = useState<'settings' | 'players'>('settings');
+  
+  // Animation controls
   const springConfig = { stiffness: 100, damping: 5 };
   const x = useMotionValue(0);
   const rotate = useSpring(
@@ -125,6 +129,11 @@ function HostGamePageContent({
     useTransform(x, [-100, 100], [-20, 20]),
     springConfig
   );
+  
+  // Card animations
+  const cardAnimation = useAnimation();
+  const settingsAnimation = useAnimation();
+  const playersAnimation = useAnimation();
   const [error, setError] = useState<{
     type:
       | "permission"
@@ -865,375 +874,605 @@ function HostGamePageContent({
   const isCreator = quiz.creator_id === user?.id;
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 text-gray-900 relative">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 md:px-6 lg:px-8 border-b">
-        <div className="flex items-center gap-2 font-bold text-lg">
-          <Play className="h-6 w-6 text-purple-600" />
-          <span>GolekQuiz</span>
-        </div>
-        
-        <Button
-          onClick={endSession}
-          variant="outline"
-          className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-transparent"
+      <motion.header 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="flex items-center justify-between px-4 py-6 md:px-6 lg:px-8 border-b border-gray-200/50 bg-white/80 backdrop-blur-sm"
+      >
+        <motion.div 
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="flex items-center gap-3 font-bold text-xl"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back & end session
-        </Button>
-      </header>
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+            <Play className="h-6 w-6 text-white" />
+          </div>
+          <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            GolekQuiz
+          </span>
+        </motion.div>
+        
+        <motion.div
+          initial={{ x: 20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Button
+            onClick={endSession}
+            variant="outline"
+            className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:scale-105"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back & end session
+          </Button>
+        </motion.div>
+      </motion.header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column */}
-        <div className="space-y-8">
-          {/* Quiz Info Card */}
-          <Card className="bg-white shadow-lg rounded-xl p-6">
-            <CardHeader className="pb-4 px-0 pt-0">
-              <CardTitle className="text-xl font-semibold">
-                {quiz.title}
-              </CardTitle>
-              {quiz.description && (
-                <p className="text-gray-600 text-sm max-h-14 overflow-y-scroll">{quiz.description}</p>
-              )}
-            </CardHeader>
-            <CardContent className="px-0 pb-0 space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <div className="text-3xl font-bold text-purple-600">
-                    {quiz.questions.length}
-                  </div>
-                  <div className="text-sm text-gray-600">Pertanyaan</div>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <div className="text-3xl font-bold text-blue-600">
-                    {gameSession.participants.length}
-                  </div>
-                  <div className="text-sm text-gray-600">Pemain</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-sm text-gray-600 pt-4 border-t">
-                <div className="flex items-center gap-1">
-                  <Avatar className="h-8 w-8 bg-white border-2 border-white">
-                    <AvatarImage
-                      src={
-                        quiz.profiles.avatar_url ||
-                        (user?.email
-                          ? `https://robohash.org/${encodeURIComponent(
-                              user.email
-                            )}.png`
-                          : "/default-avatar.png") // fallback lokal
-                      }
-                      alt={user?.email || ""}
-                      className="object-cover w-full h-full"
-                    />
-                    <AvatarFallback className="bg-white text-purple-600">
-                      {displayName?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>Maker {quiz.profiles.username}</span>
-                </div>
-                <div className="flex gap-2">
-                  <div
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      quiz.is_public
-                        ? "bg-green-100 text-green-700"
-                        : "bg-orange-100 text-orange-700"
-                    }`}
-                  >
-                    {quiz.is_public ? "Public" : "Private"}
-                  </div>
-
-                  {isCreator && (
-                    <div className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                      Quiz Anda
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Game Settings Card */}
-          <Card className="bg-white shadow-lg rounded-xl p-6">
-            {/* Countdown sedang berlangsung */}
-            {countdownLeft !== null && countdownLeft > 0 ? (
-              <CardContent className="p-8 text-center">
-                <h2 className="text-4xl font-bold text-purple-700 mb-2">
-                  Mulai dalam {countdownLeft} detik...
-                </h2>
-                <p className="text-gray-600">Bersiaplah!</p>
-              </CardContent>
-            ) : (
-              <>
-                <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
-                  <Slack className="w-5 h-5 text-purple-600" />
-                  <CardTitle className="text-xl font-semibold">
-                    Pengaturan Permainan
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-0 pb-0 space-y-6">
-                  {/* Time Settings */}
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="totalTime"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Waktu Total Quiz (menit)
-                    </Label>
-                    <Input
-                      id="totalTime"
-                      type="number"
-                      min="1"
-                      max="120"
-                      value={totalTimeMinutes}
-                      onChange={(e) =>
-                        setTotalTimeMinutes(
-                          Number.parseInt(e.target.value) || 1
-                        )
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                  
-                  {/* Game End Mode Selection */}
-                  <div className="space-y-3">
-                    <Label className="block text-sm font-medium text-gray-700">
-                      Mode Akhir Permainan
-                    </Label>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="radio"
-                          id="wait_timer"
-                          name="gameEndMode"
-                          value="wait_timer"
-                          checked={gameEndMode === 'wait_timer'}
-                          onChange={(e) => setGameEndMode(e.target.value as 'first_finish' | 'wait_timer')}
-                          className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                        />
-                        <label htmlFor="wait_timer" className="text-sm text-gray-700 cursor-pointer">
-                          <span className="font-medium">Tunggu Timer</span> - Semua pemain menunggu hingga waktu habis
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="radio"
-                          id="first_finish"
-                          name="gameEndMode"
-                          value="first_finish"
-                          checked={gameEndMode === 'first_finish'}
-                          onChange={(e) => setGameEndMode(e.target.value as 'first_finish' | 'wait_timer')}
-                          className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                        />
-                        <label htmlFor="first_finish" className="text-sm text-gray-700 cursor-pointer">
-                          <span className="font-medium">Pertama Selesai</span> - Game berakhir ketika satu pemain selesai
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Allow Join After Start Setting */}
-                  <div className="space-y-3">
-                    <Label className="block text-sm font-medium text-gray-700">
-                      Izin Bergabung Setelah Game Dimulai
-                    </Label>
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="allowJoinAfterStart"
-                        checked={allowJoinAfterStart}
-                        onChange={(e) => setAllowJoinAfterStart(e.target.checked)}
-                        className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500 rounded"
-                      />
-                      <label htmlFor="allowJoinAfterStart" className="text-sm text-gray-700 cursor-pointer">
-                        <span className="font-medium">Izinkan pemain bergabung setelah game dimulai</span>
-                      </label>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Jika diaktifkan, pemain masih bisa bergabung menggunakan PIN meskipun permainan sudah berjalan
-                    </p>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
-                    <Button
-                      onClick={startCountdownBeforeGame}
-                      className="bg-purple-600 hover:bg-purple-700 text-white flex-1"
-                      disabled={
-                        gameSession.participants.length === 0 ||
-                        !totalTimeMinutes ||
-                        totalTimeMinutes < 1
-                      }
-                      size="lg"
-                    >
-                      <Play className="w-5 h-5 mr-2" />
-                      Mulai Game
-                    </Button>
-                    {gameSession?.status === "waiting" &&
-                      !gameSession?.countdown_started_at && (
-                        <Button
-                          onClick={joinAsHostAndStartCountdown}
-                          disabled={isJoining}
-                          size="lg"
-                          variant="outline"
-                          className="border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700 bg-transparent flex-1"
-                        >
-                          {isJoining
-                            ? "Memulai..."
-                            : "Ikut Bermain sebagai Host"}
-                        </Button>
-                      )}
-                  </div>
-
-                </CardContent>
-              </>
-            )}
-          </Card>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-8">
-          {/* Game PIN Card */}
-          <Card className="bg-white shadow-lg rounded-xl p-6 text-center">
-            <CardHeader className="pb-4 px-0 pt-0">
-              <CardTitle className="text-xl font-semibold">Game PIN</CardTitle>
-            </CardHeader>
-            <CardContent className="px-0 pb-0 space-y-6">
-              <div className="flex items-center justify-center gap-3">
-                <div className="text-6xl font-extrabold text-purple-600 left-[30px] relative">
-                  {gameSession.game_pin}
-                </div>
-                <div className="relative inline-block left-[30px]">
-                  <Button
-                    onClick={copyGamePin}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                    onMouseMove={handleMouseMove}
-                    variant="ghost"
-                    size="icon"
-                    className="text-purple-600 hover:bg-purple-50 relative bg-transparent border-2 "
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <Copy className="w-5 h-5" />
+      <main className="container mx-auto px-4 py-8 md:py-12 lg:py-16">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="grid grid-cols-1 xl:grid-cols-3 gap-8"
+        >
+          {/* Left Column - Quiz Info & Settings */}
+          <div className="xl:col-span-2 space-y-6">
+            {/* Quiz Info Card */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl border-0 overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
+                  <CardHeader className="pb-4 px-0 pt-0 border-0">
+                    <CardTitle className="text-2xl font-bold">
+                      {quiz.title}
+                    </CardTitle>
+                    {quiz.description && (
+                      <p className="text-purple-100 text-sm max-h-14 overflow-y-scroll">
+                        {quiz.description}
+                      </p>
                     )}
-                  </Button>
-                  <AnimatePresence mode="wait">
-                    {isHovered && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                          scale: 1,
-                          transition: {
-                            type: "spring",
-                            stiffness: 260,
-                            damping: 15,
-                          },
-                        }}
-                        exit={{ opacity: 0, y: 10, scale: 0.8 }}
-                        style={{
-                          translateX: translateX,
-                          rotate: rotate,
-                        }}
-                        className="absolute -top-12 left-[-22px] z-50 flex -translate-x-1/2 flex-col items-center justify-center rounded-md bg-black px-3 py-1.5 text-xs shadow-xl min-w-[80px]"
-                      >
-                        <div className="absolute inset-x-10 -bottom-px z-30 h-px w-[20%] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
-                        <div className="absolute -bottom-px left-10 z-30 h-px w-[40%] bg-gradient-to-r from-transparent via-sky-500 to-transparent" />
-                        <div className="relative z-30 text-sm font-medium text-white">
-                          {copied ? "Tersalin!" : "Salin PIN"}
-                        </div>
-                        <div className="absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 w-2 h-2 bg-black rotate-45 z-10"></div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  </CardHeader>
                 </div>
-              </div>
-              <div className="flex justify-center py-4 w-full">
-                <div className="w-48 h-48 md:w-72 md:h-72 border border-gray-200 rounded-lg p-2">
-                  <QRCodeSVG
-                    value={`${window.location.origin}/join?pin=${gameSession.game_pin}`}
-                    size="100%"
-                    className="w-full h-full"
-                    bgColor="#FFFFFF"
-                    fgColor="#4C1D95"
-                    level="H"
-                  />
-                </div>
-              </div>
-              <p className="text-sm text-gray-600">
-                Bagikan PIN atau scan QRCode kepada pemain untuk bergabung
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Players Card */}
-        </div>
-        <Card className="bg-white shadow-lg rounded-xl p-6 w-full md:col-span-2">
-          <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2 justify-center text-center">
-            <Users className="w-5 h-5 text-gray-600" />
-            <CardTitle className="text-xl font-semibold">
-              Pemain ({gameSession.participants.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 pb-0">
-            {gameSession.participants.length === 0 ? (
-              <div className="text-center py-4">
-                <div className="flex justify-center py-4">
-                  <Users className="w-24 h-24 text-gray-300" />
-                </div>
-                <p className="text-lg font-medium text-gray-700">
-                  Menunggu pemain...
-                </p>
-                <p className="text-sm text-gray-600">
-                  Bagikan Game PIN untuk mengundang pemain bergabung
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-96 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-y-auto">
-                {gameSession.participants.map((participant, index) => (
-                  <div
-                    key={participant.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200"
+                    >
+                      <div className="text-3xl font-bold text-purple-600">
+                        {quiz.questions.length}
+                      </div>
+                      <div className="text-sm text-gray-600 font-medium">Pertanyaan</div>
+                    </motion.div>
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200"
+                    >
+                      <div className="text-3xl font-bold text-blue-600">
+                        {gameSession.participants.length}
+                      </div>
+                      <div className="text-sm text-gray-600 font-medium">Pemain</div>
+                    </motion.div>
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200"
+                    >
+                      <div className="text-3xl font-bold text-green-600">
+                        {totalTimeMinutes}
+                      </div>
+                      <div className="text-sm text-gray-600 font-medium">Menit</div>
+                    </motion.div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-gray-600 pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 bg-gradient-to-br from-purple-600 to-blue-600 border-2 border-white shadow-lg">
                         <AvatarImage
                           src={
-                            (participant.profiles &&
-                              (Array.isArray(participant.profiles)
-                                ? participant.profiles[0]?.avatar_url
-                                : participant.profiles?.avatar_url)) ||
-                            `https://robohash.org/${encodeURIComponent(
-                              participant.nickname
-                            )}.png`
+                            quiz.profiles.avatar_url ||
+                            (user?.email
+                              ? `https://robohash.org/${encodeURIComponent(
+                                  user.email
+                                )}.png`
+                              : "/default-avatar.png")
                           }
-                          alt={participant.nickname}
+                          alt={user?.email || ""}
                           className="object-cover w-full h-full"
                         />
+                        <AvatarFallback className="bg-white text-purple-600 font-bold">
+                          {displayName?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">
-                        {participant.nickname}
-                      </span>
+                      <div>
+                        <div className="font-semibold text-gray-800">Maker {quiz.profiles.username}</div>
+                        <div className="text-xs text-gray-500">Host</div>
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {new Date(participant.joined_at).toLocaleTimeString(
-                        "id-ID",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
+                    <div className="flex gap-2">
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          quiz.is_public
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : "bg-orange-100 text-orange-700 border border-orange-200"
+                        }`}
+                      >
+                        {quiz.is_public ? "Public" : "Private"}
+                      </motion.div>
+
+                      {isCreator && (
+                        <motion.div 
+                          whileHover={{ scale: 1.05 }}
+                          className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium border border-purple-200"
+                        >
+                          Quiz Anda
+                        </motion.div>
                       )}
-                    </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Game Settings Card */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl border-0 overflow-hidden">
+                {/* Countdown sedang berlangsung */}
+                {countdownLeft !== null && countdownLeft > 0 ? (
+                  <CardContent className="p-12 text-center bg-gradient-to-br from-purple-50 to-blue-50">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="space-y-4"
+                    >
+                      <div className="w-24 h-24 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto">
+                        <Clock className="w-12 h-12 text-white" />
+                      </div>
+                      <h2 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        {countdownLeft}
+                      </h2>
+                      <p className="text-xl text-gray-600 font-medium">Mulai dalam {countdownLeft} detik...</p>
+                      <p className="text-gray-500">Bersiaplah!</p>
+                    </motion.div>
+                  </CardContent>
+                ) : (
+                  <>
+                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
+                      <CardHeader className="pb-4 px-0 pt-0 border-0">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                            <Slack className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-2xl font-bold">
+                              Pengaturan Permainan
+                            </CardTitle>
+                            <p className="text-purple-100 text-sm">Konfigurasi game sesuai preferensi Anda</p>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </div>
+                    <CardContent className="p-8 space-y-8">
+                      {/* Time Settings */}
+                      <motion.div 
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.6 }}
+                        className="space-y-3"
+                      >
+                        <Label
+                          htmlFor="totalTime"
+                          className="block text-lg font-semibold text-gray-800"
+                        >
+                          ⏱️ Waktu Total Quiz
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="totalTime"
+                            type="number"
+                            min="1"
+                            max="120"
+                            value={totalTimeMinutes}
+                            onChange={(e) =>
+                              setTotalTimeMinutes(
+                                Number.parseInt(e.target.value) || 1
+                              )
+                            }
+                            className="w-full h-12 text-lg font-medium border-2 border-gray-200 focus:border-purple-500 rounded-xl transition-all duration-300"
+                            placeholder="Masukkan waktu dalam menit"
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-medium">
+                            menit
+                          </div>
+                        </div>
+                      </motion.div>
+                      
+                      {/* Game End Mode Selection */}
+                      <motion.div 
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.7 }}
+                        className="space-y-4"
+                      >
+                        <Label className="block text-lg font-semibold text-gray-800">
+                          🎯 Mode Akhir Permainan
+                        </Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <motion.div 
+                            whileHover={{ scale: 1.02 }}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
+                              gameEndMode === 'wait_timer' 
+                                ? 'border-purple-500 bg-purple-50' 
+                                : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                            }`}
+                            onClick={() => setGameEndMode('wait_timer')}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="radio"
+                                id="wait_timer"
+                                name="gameEndMode"
+                                value="wait_timer"
+                                checked={gameEndMode === 'wait_timer'}
+                                onChange={(e) => setGameEndMode(e.target.value as 'first_finish' | 'wait_timer')}
+                                className="w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500"
+                              />
+                              <div>
+                                <div className="font-semibold text-gray-800">⏰ Tunggu Timer</div>
+                                <div className="text-sm text-gray-600">Semua pemain menunggu hingga waktu habis</div>
+                              </div>
+                            </div>
+                          </motion.div>
+                          <motion.div 
+                            whileHover={{ scale: 1.02 }}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
+                              gameEndMode === 'first_finish' 
+                                ? 'border-purple-500 bg-purple-50' 
+                                : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                            }`}
+                            onClick={() => setGameEndMode('first_finish')}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="radio"
+                                id="first_finish"
+                                name="gameEndMode"
+                                value="first_finish"
+                                checked={gameEndMode === 'first_finish'}
+                                onChange={(e) => setGameEndMode(e.target.value as 'first_finish' | 'wait_timer')}
+                                className="w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500"
+                              />
+                              <div>
+                                <div className="font-semibold text-gray-800">🏆 Pertama Selesai</div>
+                                <div className="text-sm text-gray-600">Game berakhir ketika satu pemain selesai</div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+
+                      {/* Allow Join After Start Setting */}
+                      <motion.div 
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.8 }}
+                        className="space-y-4"
+                      >
+                        <Label className="block text-lg font-semibold text-gray-800">
+                          👥 Izin Bergabung Setelah Game Dimulai
+                        </Label>
+                        <motion.div 
+                          whileHover={{ scale: 1.02 }}
+                          className="p-4 rounded-xl border-2 border-gray-200 bg-gray-50 cursor-pointer transition-all duration-300"
+                          onClick={() => setAllowJoinAfterStart(!allowJoinAfterStart)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              id="allowJoinAfterStart"
+                              checked={allowJoinAfterStart}
+                              onChange={(e) => setAllowJoinAfterStart(e.target.checked)}
+                              className="w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500 rounded"
+                            />
+                            <div className="flex-1">
+                              <div className="font-semibold text-gray-800">Izinkan pemain bergabung setelah game dimulai</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                Jika diaktifkan, pemain masih bisa bergabung menggunakan PIN meskipun permainan sudah berjalan
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </motion.div>
+
+                      {/* Action Buttons */}
+                      <motion.div 
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.9 }}
+                        className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200"
+                      >
+                        <motion.div className="flex-1" whileHover={{ scale: 1.02 }}>
+                          <Button
+                            onClick={startCountdownBeforeGame}
+                            className="w-full h-14 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                            disabled={
+                              gameSession.participants.length === 0 ||
+                              !totalTimeMinutes ||
+                              totalTimeMinutes < 1
+                            }
+                          >
+                            <Play className="w-6 h-6 mr-3" />
+                            Mulai Game
+                          </Button>
+                        </motion.div>
+                        {gameSession?.status === "waiting" &&
+                          !gameSession?.countdown_started_at && (
+                            <motion.div className="flex-1" whileHover={{ scale: 1.02 }}>
+                              <Button
+                                onClick={joinAsHostAndStartCountdown}
+                                disabled={isJoining}
+                                className="w-full h-14 border-2 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700 bg-transparent text-lg font-semibold rounded-xl transition-all duration-300"
+                              >
+                                {isJoining ? (
+                                  <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600 mr-3"></div>
+                                    Memulai...
+                                  </div>
+                                ) : (
+                                  <>
+                                    <User className="w-6 h-6 mr-3" />
+                                    Ikut Bermain sebagai Host
+                                  </>
+                                )}
+                              </Button>
+                            </motion.div>
+                          )}
+                      </motion.div>
+                    </CardContent>
+                  </>
+                )}
+              </Card>
+            </motion.div>
+        </div>
+
+          {/* Right Column - Game PIN & Players */}
+          <div className="space-y-6">
+            {/* Game PIN Card */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl border-0 overflow-hidden">
+                <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white">
+                  <CardHeader className="pb-4 px-0 pt-0 border-0">
+                    <div className="flex items-center gap-3 justify-center">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <Globe className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="text-center">
+                        <CardTitle className="text-2xl font-bold">
+                          Game PIN
+                        </CardTitle>
+                        <p className="text-green-100 text-sm">Bagikan kepada pemain untuk bergabung</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </div>
+                <CardContent className="p-8 space-y-8">
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.7 }}
+                    className="text-center space-y-4"
+                  >
+                    <div className="flex items-center justify-center gap-4">
+                      <motion.div 
+                        whileHover={{ scale: 1.05 }}
+                        className="text-7xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent tracking-wider"
+                      >
+                        {gameSession.game_pin}
+                      </motion.div>
+                      <motion.div 
+                        whileHover={{ scale: 1.1 }}
+                        className="relative"
+                      >
+                        <Button
+                          onClick={copyGamePin}
+                          onMouseEnter={() => setIsHovered(true)}
+                          onMouseLeave={() => setIsHovered(false)}
+                          onMouseMove={handleMouseMove}
+                          variant="ghost"
+                          size="icon"
+                          className="w-12 h-12 text-purple-600 hover:bg-purple-50 rounded-xl transition-all duration-300"
+                        >
+                          {copied ? (
+                            <Check className="w-6 h-6" />
+                          ) : (
+                            <Copy className="w-6 h-6" />
+                          )}
+                        </Button>
+                        <AnimatePresence mode="wait">
+                          {isHovered && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                              animate={{
+                                opacity: 1,
+                                y: 0,
+                                scale: 1,
+                                transition: {
+                                  type: "spring",
+                                  stiffness: 260,
+                                  damping: 15,
+                                },
+                              }}
+                              exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                              style={{
+                                translateX: translateX,
+                                rotate: rotate,
+                              }}
+                              className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center justify-center rounded-xl bg-black/90 backdrop-blur-sm px-4 py-2 text-sm shadow-2xl min-w-[100px]"
+                            >
+                              <div className="text-white font-medium">
+                                {copied ? "✅ Tersalin!" : "📋 Salin PIN"}
+                              </div>
+                              <div className="absolute bottom-[-6px] left-1/2 transform -translate-x-1/2 w-3 h-3 bg-black/90 rotate-45"></div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                  
+                  <motion.div 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.8 }}
+                    className="flex justify-center"
+                  >
+                    <div className="w-64 h-64 border-2 border-gray-200 rounded-2xl p-3 bg-white shadow-lg">
+                      <QRCodeSVG
+                        value={`${window.location.origin}/join?pin=${gameSession.game_pin}`}
+                        size="100%"
+                        className="w-full h-full"
+                        bgColor="#FFFFFF"
+                        fgColor="#4C1D95"
+                        level="H"
+                      />
+                    </div>
+                  </motion.div>
+                  
+                  <motion.div 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.9 }}
+                    className="text-center"
+                  >
+                    <p className="text-gray-600 font-medium">
+                      📱 Scan QR Code atau bagikan PIN kepada pemain
+                    </p>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Players Card */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+            >
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl border-0 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+                  <CardHeader className="pb-4 px-0 pt-0 border-0">
+                    <div className="flex items-center gap-3 justify-center">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <Users className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="text-center">
+                        <CardTitle className="text-2xl font-bold">
+                          Pemain ({gameSession.participants.length})
+                        </CardTitle>
+                        <p className="text-blue-100 text-sm">Daftar pemain yang telah bergabung</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </div>
+                <CardContent className="p-6">
+                  {gameSession.participants.length === 0 ? (
+                    <motion.div 
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.8 }}
+                      className="text-center py-12"
+                    >
+                      <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Users className="w-12 h-12 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                        Menunggu pemain...
+                      </h3>
+                      <p className="text-gray-500">
+                        Bagikan Game PIN untuk mengundang pemain bergabung
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.8 }}
+                      className="space-y-3 max-h-96 overflow-y-auto"
+                    >
+                      <div className="grid grid-cols-1 gap-3">
+                        {gameSession.participants.map((participant, index) => (
+                          <motion.div
+                            key={participant.id}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                            whileHover={{ scale: 1.02 }}
+                            className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-300"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <Avatar className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 border-2 border-white shadow-lg">
+                                <AvatarImage
+                                  src={
+                                    (participant.profiles &&
+                                      (Array.isArray(participant.profiles)
+                                        ? participant.profiles[0]?.avatar_url
+                                        : participant.profiles?.avatar_url)) ||
+                                    `https://robohash.org/${encodeURIComponent(
+                                      participant.nickname
+                                    )}.png`
+                                  }
+                                  alt={participant.nickname}
+                                  className="object-cover w-full h-full"
+                                />
+                                <AvatarFallback className="bg-white text-purple-600 font-bold">
+                                  {participant.nickname.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-semibold text-gray-800">
+                                  {participant.nickname}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  Bergabung {new Date(participant.joined_at).toLocaleTimeString(
+                                    "id-ID",
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                              <span className="text-sm text-gray-500 font-medium">Online</span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </motion.div>
       </main>
 
       {/* Chat Panel */}
