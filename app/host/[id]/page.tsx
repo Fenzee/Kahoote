@@ -422,7 +422,8 @@ function HostGamePageContent({
           game_pin: gamePin,
           status: "waiting",
           total_time_minutes: null,
-          game_end_mode: gameEndMode, // Add game end mode to session creation
+          game_end_mode: gameEndMode,
+          allow_join_after_start: allowJoinAfterStart,
         })
         .select()
         .single();
@@ -557,6 +558,7 @@ function HostGamePageContent({
         started_at: startedTime.toISOString(),
         status: "active",
         total_time_minutes: totalTimeMinutes,
+        allow_join_after_start: allowJoinAfterStart,
       })
       .eq("id", gameSession.id);
 
@@ -654,6 +656,7 @@ function HostGamePageContent({
           started_at: startedTime.toISOString(),
           status: "active",
           total_time_minutes: totalTimeMinutes,
+          allow_join_after_start: allowJoinAfterStart,
         })
         .eq("id", gameSession.id);
 
