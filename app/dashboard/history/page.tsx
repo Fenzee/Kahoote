@@ -29,20 +29,22 @@ import { motion } from "framer-motion";
 
 interface GameHistory {
   id: string;
-  session_id: string;
+  sessionId: string;
   score: number;
   rank?: number;
   total_players?: number;
   played_at: string;
-  game_type: 'solo' | 'multiplayer';
+  game_type: "solo" | "multiplayer";
   quiz: {
     id: string;
     title: string;
     creator?: {
       username: string;
       avatar_url: string | null;
-    }
+    };
   };
+  started_at?: string; // Tambahkan field baru
+  ended_at?: string; // Tambahkan field baru
 }
 
 export default function HistoryPage() {
@@ -50,7 +52,9 @@ export default function HistoryPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [soloHistory, setSoloHistory] = useState<GameHistory[]>([]);
-  const [multiplayerHistory, setMultiplayerHistory] = useState<GameHistory[]>([]);
+  const [multiplayerHistory, setMultiplayerHistory] = useState<GameHistory[]>(
+    []
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -70,17 +74,22 @@ export default function HistoryPage() {
     setLoading(true);
 
     try {
-      // Fetch solo game history
+      // Fetch solo game history (hanya yang memiliki completed_at)
       const { data: soloData, error: soloError } = await supabase
         .from("solo_scores")
-        .select(`
-          id,
-          quiz_id,
-          score,
-          total_questions,
-          completed_at
-        `)
+        .select(
+          `
+        id,
+        quiz_id,
+        score,
+        total_questions,
+        created_at,
+        completed_at
+      `
+        )
         .eq("user_id", user.id)
+        .not("created_at", "is", null)
+        .not("completed_at", "is", null) // Pastikan keduanya ada
         .order("completed_at", { ascending: false });
 
       if (soloError) {
@@ -89,64 +98,80 @@ export default function HistoryPage() {
         setSoloHistory([]);
       } else {
         // Fetch quiz details for each solo score
-        const formattedSoloData = await Promise.all((soloData || []).map(async (item) => {
-          // Get quiz details
-          const { data: quizData } = await supabase
-            .from("quizzes")
-            .select(`
+        const formattedSoloData = await Promise.all(
+          (soloData || []).map(async (item) => {
+            // Get quiz details
+            const { data: quizData } = await supabase
+              .from("quizzes")
+              .select(
+                `
               id, 
               title, 
               creator_id
-            `)
-            .eq("id", item.quiz_id)
-            .single();
-
-          let creator;
-          if (quizData?.creator_id) {
-            // Get creator details
-            const { data: creatorData } = await supabase
-              .from("profiles")
-              .select("username, avatar_url")
-              .eq("id", quizData.creator_id)
+            `
+              )
+              .eq("id", item.quiz_id)
               .single();
 
-            if (creatorData) {
-              creator = {
-                username: creatorData.username,
-                avatar_url: creatorData.avatar_url
-              };
-            }
-          }
+            let creator;
+            if (quizData?.creator_id) {
+              // Get creator details
+              const { data: creatorData } = await supabase
+                .from("profiles")
+                .select("username, avatar_url")
+                .eq("id", quizData.creator_id)
+                .single();
 
-          return {
-            id: item.id,
-            session_id: item.quiz_id,
-            score: item.score,
-            total_questions: item.total_questions,
-            played_at: item.completed_at,
-            game_type: 'solo' as const,
-            quiz: {
-              id: quizData?.id || item.quiz_id,
-              title: quizData?.title || "Quiz tidak ditemukan",
-              creator: creator || undefined
+              if (creatorData) {
+                creator = {
+                  username: creatorData.username,
+                  avatar_url: creatorData.avatar_url,
+                };
+              }
             }
-          };
-        }));
 
-        setSoloHistory(formattedSoloData);
+            return {
+              id: item.id,
+              sessionId: item.quiz_id,
+              score: item.score,
+              total_questions: item.total_questions,
+              played_at: item.completed_at,
+              game_type: "solo" as const,
+              quiz: {
+                id: quizData?.id || item.quiz_id,
+                title: quizData?.title || "Quiz tidak ditemukan",
+                creator: creator || undefined,
+              },
+              started_at: item.completed_at, // Untuk solo, gunakan completed_at
+              ended_at: item.completed_at, // Untuk solo, gunakan completed_at
+            };
+          })
+        );
+
+        setSoloHistory(
+          formattedSoloData.filter((game) => game.started_at && game.ended_at)
+        );
       }
 
-      // Fetch multiplayer game history
+      // Fetch multiplayer game history (hanya yang memiliki started_at dan ended_at)
       const { data: participantData, error: participantError } = await supabase
         .from("game_participants")
-        .select(`
-          id,
-          session_id,
-          nickname,
-          score,
-          joined_at
-        `)
+        .select(
+          `
+        id,
+        session_id,
+        nickname,
+        score,
+        joined_at,
+        game_sessions:game_sessions!game_participants_session_id_fkey (
+          started_at,
+          ended_at
+        )
+      `
+        )
         .eq("user_id", user.id)
+        .not("game_sessions.started_at", "is", null)
+        .not("game_sessions.ended_at", "is", null) // Pastikan keduanya ada
         .order("joined_at", { ascending: false });
 
       if (participantError) {
@@ -155,76 +180,85 @@ export default function HistoryPage() {
         setMultiplayerHistory([]);
       } else {
         // For each session, get additional data
-        const formattedMultiplayerData = await Promise.all((participantData || []).map(async (item) => {
-          // Get session details to find quiz_id
-          const { data: sessionData } = await supabase
-            .from("game_sessions")
-            .select("quiz_id")
-            .eq("id", item.session_id)
-            .single();
-
-          // Get quiz details
-          let quizData = null;
-          let creator = null;
-          
-          if (sessionData?.quiz_id) {
-            const { data: quiz } = await supabase
-              .from("quizzes")
-              .select("id, title, creator_id")
-              .eq("id", sessionData.quiz_id)
+        const formattedMultiplayerData = await Promise.all(
+          (participantData || []).map(async (item) => {
+            // Get session details to find quiz_id
+            const { data: sessionData } = await supabase
+              .from("game_sessions")
+              .select("quiz_id, started_at, ended_at")
+              .eq("id", item.session_id)
               .single();
-            
-            quizData = quiz;
-            
-            // Get creator details
-            if (quiz?.creator_id) {
-              const { data: creatorData } = await supabase
-                .from("profiles")
-                .select("username, avatar_url")
-                .eq("id", quiz.creator_id)
+
+            // Get quiz details
+            let quizData = null;
+            let creator = null;
+
+            if (sessionData?.quiz_id) {
+              const { data: quiz } = await supabase
+                .from("quizzes")
+                .select("id, title, creator_id")
+                .eq("id", sessionData.quiz_id)
                 .single();
-                
-              if (creatorData) {
-                creator = {
-                  username: creatorData.username,
-                  avatar_url: creatorData.avatar_url
-                };
+
+              quizData = quiz;
+
+              // Get creator details
+              if (quiz?.creator_id) {
+                const { data: creatorData } = await supabase
+                  .from("profiles")
+                  .select("username, avatar_url")
+                  .eq("id", quiz.creator_id)
+                  .single();
+
+                if (creatorData) {
+                  creator = {
+                    username: creatorData.username,
+                    avatar_url: creatorData.avatar_url,
+                  };
+                }
               }
             }
-          }
 
-          // Get all participants in this session to calculate rank
-          let rank = 1;
-          let totalPlayers = 1;
-          
-          const { data: participants } = await supabase
-            .from("game_participants")
-            .select("id, score")
-            .eq("session_id", item.session_id)
-            .order("score", { ascending: false });
-          
-          if (participants && participants.length > 0) {
-            rank = participants.findIndex(p => p.id === item.id) + 1;
-            totalPlayers = participants.length;
-          }
+            // Get all participants in this session to calculate rank
+            let rank = 1;
+            let totalPlayers = 1;
 
-          return {
-            id: item.id,
-            session_id: item.session_id,
-            score: item.score,
-            rank,
-            total_players: totalPlayers,
-            played_at: item.joined_at,
-            game_type: 'multiplayer' as const,
-            quiz: {
-              id: quizData?.id || "",
-              title: quizData?.title || "Quiz tidak ditemukan",
-              creator: creator || undefined
+            const { data: participants } = await supabase
+              .from("game_participants")
+              .select("id, score")
+              .eq("session_id", item.session_id)
+              .order("score", { ascending: false });
+
+            if (participants && participants.length > 0) {
+              rank = participants.findIndex((p) => p.id === item.id) + 1;
+              totalPlayers = participants.length;
             }
-          };
-        }));
 
-        setMultiplayerHistory(formattedMultiplayerData);
+            return {
+              id: item.id,
+              sessionId: item.session_id,
+              score: item.score,
+              rank,
+              total_players: totalPlayers,
+              played_at: item.joined_at,
+              game_type: "multiplayer" as const,
+              quiz: {
+                id: quizData?.id || "",
+                title: quizData?.title || "Quiz tidak ditemukan",
+                creator: creator || undefined,
+              },
+              started_at: sessionData?.started_at, // Ambil dari game_sessions
+              ended_at: sessionData?.ended_at, // Ambil dari game_sessions
+            };
+          })
+        );
+
+        setMultiplayerHistory(
+          formattedMultiplayerData.filter(
+            (game): game is GameHistory =>
+              game !== null && !!game.started_at && !!game.ended_at
+          )
+        );
       }
     } catch (error) {
       console.error("Error fetching game history:", error);
@@ -237,9 +271,15 @@ export default function HistoryPage() {
   // Filter and sort history based on search term and sort order
   const filterHistory = (history: GameHistory[]) => {
     return history
-      .filter(item => 
-        item.quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.quiz.creator?.username && item.quiz.creator.username.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(
+        (item) =>
+          item.started_at &&
+          item.ended_at &&
+          (item.quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.quiz.creator?.username &&
+              item.quiz.creator.username
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())))
       )
       .sort((a, b) => {
         const dateA = new Date(a.played_at).getTime();
@@ -254,16 +294,27 @@ export default function HistoryPage() {
 
   // Calculate stats
   const totalGames = soloHistory.length + multiplayerHistory.length;
-  const averageScore = totalGames > 0 
-    ? Math.round(([...soloHistory, ...multiplayerHistory].reduce((sum, game) => sum + game.score, 0) / totalGames))
-    : 0;
-  const bestRank = multiplayerHistory.length > 0
-    ? Math.min(...multiplayerHistory.map(game => game.rank || Infinity))
-    : 0;
+  const averageScore =
+    totalGames > 0
+      ? Math.round(
+          [...soloHistory, ...multiplayerHistory].reduce(
+            (sum, game) => sum + game.score,
+            0
+          ) / totalGames
+        )
+      : 0;
+  const bestRank =
+    multiplayerHistory.length > 0
+      ? Math.min(...multiplayerHistory.map((game) => game.rank || Infinity))
+      : 0;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return (
+      date.toLocaleDateString() +
+      " " +
+      date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    );
   };
 
   if (authLoading || loading) {
@@ -286,7 +337,7 @@ export default function HistoryPage() {
               Riwayat tidak ditemukan
             </h2>
             <p className="text-gray-600 mb-4">Silakan login terlebih dahulu</p>
-            <Button 
+            <Button
               onClick={() => router.push("/auth/login")}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
             >
@@ -311,14 +362,14 @@ export default function HistoryPage() {
               className="border-2 border-gray-200"
             >
               <ArrowLeft className="w-4 h-4 mr-0 md:mr-1" />
-              <span className="hidden md:block">
-              Dashboard
-              </span>
+              <span className="hidden md:block">Dashboard</span>
             </Button>
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Slack className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Riwayat Permainan</span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Riwayat Permainan
+            </span>
           </div>
         </div>
       </header>
@@ -331,43 +382,56 @@ export default function HistoryPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8">
               <Card className="bg-white/90 border-none shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Permainan</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Total Permainan
+                  </CardTitle>
                   <Calendar className="h-5 w-5 text-blue-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{totalGames}</div>
                   <p className="text-xs text-muted-foreground">
-                    Solo: {soloHistory.length} | Multiplayer: {multiplayerHistory.length}
+                    Solo: {soloHistory.length} | Multiplayer:{" "}
+                    {multiplayerHistory.length}
                   </p>
                 </CardContent>
               </Card>
               <Card className="bg-white/90 border-none shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Skor Rata-rata</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Skor Rata-rata
+                  </CardTitle>
                   <BarChart2 className="h-5 w-5 text-purple-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{averageScore}</div>
-                  <p className="text-xs text-muted-foreground">Dari semua permainan</p>
+                  <p className="text-xs text-muted-foreground">
+                    Dari semua permainan
+                  </p>
                 </CardContent>
               </Card>
               <Card className="bg-white/90 border-none shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Peringkat Terbaik</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Peringkat Terbaik
+                  </CardTitle>
                   <Trophy className="h-5 w-5 text-yellow-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
                     {bestRank > 0 ? `#${bestRank}` : "-"}
                   </div>
-                  <p className="text-xs text-muted-foreground">Dalam permainan multiplayer</p>
+                  <p className="text-xs text-muted-foreground">
+                    Dalam permainan multiplayer
+                  </p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Search and Filter */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Daftar Riwayat</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Daftar Riwayat
+              </h2>
               <div className="flex items-center gap-2 w-full md:w-auto">
                 <div className="relative flex-grow md:w-64">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -381,11 +445,17 @@ export default function HistoryPage() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+                  onClick={() =>
+                    setSortOrder(sortOrder === "desc" ? "asc" : "desc")
+                  }
                   className="border-gray-300"
                   title={sortOrder === "desc" ? "Terlama dulu" : "Terbaru dulu"}
                 >
-                  {sortOrder === "desc" ? <SortDesc className="h-4 w-4" /> : <SortAsc className="h-4 w-4" />}
+                  {sortOrder === "desc" ? (
+                    <SortDesc className="h-4 w-4" />
+                  ) : (
+                    <SortAsc className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -420,14 +490,18 @@ export default function HistoryPage() {
                     <CardContent className="flex flex-col items-center justify-center py-12">
                       <Calendar className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {searchTerm ? "Tidak ada riwayat yang cocok" : "Belum ada riwayat permainan"}
+                        {searchTerm
+                          ? "Tidak ada riwayat yang cocok"
+                          : "Belum ada riwayat permainan"}
                       </h3>
                       <p className="text-gray-600 text-center mb-4">
-                        {searchTerm ? "Coba kata kunci lain" : "Mainkan beberapa kuis untuk melihat riwayat di sini!"}
+                        {searchTerm
+                          ? "Coba kata kunci lain"
+                          : "Mainkan beberapa kuis untuk melihat riwayat di sini!"}
                       </p>
                       {!searchTerm && (
-                        <Button 
-                          onClick={() => router.push("/dashboard")} 
+                        <Button
+                          onClick={() => router.push("/dashboard")}
                           className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg"
                         >
                           Jelajahi Kuis
@@ -458,14 +532,18 @@ export default function HistoryPage() {
                     <CardContent className="flex flex-col items-center justify-center py-12">
                       <Users className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {searchTerm ? "Tidak ada riwayat solo yang cocok" : "Belum ada riwayat permainan solo"}
+                        {searchTerm
+                          ? "Tidak ada riwayat solo yang cocok"
+                          : "Belum ada riwayat permainan solo"}
                       </h3>
                       <p className="text-gray-600 text-center mb-4">
-                        {searchTerm ? "Coba kata kunci lain" : "Mainkan beberapa kuis solo untuk melihat riwayat di sini!"}
+                        {searchTerm
+                          ? "Coba kata kunci lain"
+                          : "Mainkan beberapa kuis solo untuk melihat riwayat di sini!"}
                       </p>
                       {!searchTerm && (
-                        <Button 
-                          onClick={() => router.push("/dashboard")} 
+                        <Button
+                          onClick={() => router.push("/dashboard")}
                           className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg"
                         >
                           Jelajahi Kuis Solo
@@ -496,14 +574,18 @@ export default function HistoryPage() {
                     <CardContent className="flex flex-col items-center justify-center py-12">
                       <Users className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {searchTerm ? "Tidak ada riwayat multiplayer yang cocok" : "Belum ada riwayat permainan multiplayer"}
+                        {searchTerm
+                          ? "Tidak ada riwayat multiplayer yang cocok"
+                          : "Belum ada riwayat permainan multiplayer"}
                       </h3>
                       <p className="text-gray-600 text-center mb-4">
-                        {searchTerm ? "Coba kata kunci lain" : "Mainkan beberapa kuis multiplayer untuk melihat riwayat di sini!"}
+                        {searchTerm
+                          ? "Coba kata kunci lain"
+                          : "Mainkan beberapa kuis multiplayer untuk melihat riwayat di sini!"}
                       </p>
                       {!searchTerm && (
-                        <Button 
-                          onClick={() => router.push("/join")} 
+                        <Button
+                          onClick={() => router.push("/join")}
                           className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg"
                         >
                           Gabung Game
@@ -535,19 +617,27 @@ export default function HistoryPage() {
 }
 
 // History Card Component
-function HistoryCard({ game, formatDate }: { game: GameHistory, formatDate: (date: string) => string }) {
+function HistoryCard({
+  game,
+  formatDate,
+}: {
+  game: GameHistory;
+  formatDate: (date: string) => string;
+}) {
   return (
     <Card className="bg-white/90 border-none shadow-md hover:shadow-lg transition-shadow">
       <CardContent className="p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start md:items-center gap-4">
             {/* Game Type Badge */}
-            <div className={`rounded-full p-2 ${
-              game.game_type === 'solo' 
-                ? 'bg-blue-100 text-blue-600' 
-                : 'bg-purple-100 text-purple-600'
-            }`}>
-              {game.game_type === 'solo' ? (
+            <div
+              className={`rounded-full p-2 ${
+                game.game_type === "solo"
+                  ? "bg-blue-100 text-blue-600"
+                  : "bg-purple-100 text-purple-600"
+              }`}
+            >
+              {game.game_type === "solo" ? (
                 <Users className="w-5 h-5" />
               ) : (
                 <Trophy className="w-5 h-5" />
@@ -556,13 +646,18 @@ function HistoryCard({ game, formatDate }: { game: GameHistory, formatDate: (dat
 
             {/* Quiz Info */}
             <div className="flex-1">
-              <h3 className="font-semibold text-lg text-gray-900">{game.quiz.title}</h3>
+              <h3 className="font-semibold text-lg text-gray-900">
+                {game.quiz.title}
+              </h3>
               <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-600">
                 {/* Creator info if available */}
                 {game.quiz.creator && (
                   <div className="flex items-center gap-1">
                     <Avatar className="h-5 w-5">
-                      <AvatarImage src={game.quiz.creator.avatar_url || undefined} className="object-cover w-full h-full"/>
+                      <AvatarImage
+                        src={game.quiz.creator.avatar_url || undefined}
+                        className="object-cover w-full h-full"
+                      />
                       <AvatarFallback className="text-xs">
                         {game.quiz.creator.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
@@ -570,7 +665,7 @@ function HistoryCard({ game, formatDate }: { game: GameHistory, formatDate: (dat
                     <span>{game.quiz.creator.username}</span>
                   </div>
                 )}
-                
+
                 {/* Date */}
                 <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
@@ -584,22 +679,26 @@ function HistoryCard({ game, formatDate }: { game: GameHistory, formatDate: (dat
           <div className="flex items-center gap-4">
             {/* Score */}
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{game.score}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {game.score}
+              </div>
               <div className="text-xs text-gray-500">Skor</div>
             </div>
 
             {/* Rank for multiplayer games */}
-            {game.game_type === 'multiplayer' && (
+            {game.game_type === "multiplayer" && (
               <div className="text-center">
-                <div className={`text-2xl font-bold ${
-                  game.rank === 1 
-                    ? 'text-yellow-500' 
-                    : game.rank === 2 
-                      ? 'text-gray-500' 
-                      : game.rank === 3 
-                        ? 'text-amber-700' 
-                        : 'text-gray-600'
-                }`}>
+                <div
+                  className={`text-2xl font-bold ${
+                    game.rank === 1
+                      ? "text-yellow-500"
+                      : game.rank === 2
+                      ? "text-gray-500"
+                      : game.rank === 3
+                      ? "text-amber-700"
+                      : "text-gray-600"
+                  }`}
+                >
                   #{game.rank}
                 </div>
                 <div className="text-xs text-gray-500">
@@ -609,12 +708,14 @@ function HistoryCard({ game, formatDate }: { game: GameHistory, formatDate: (dat
             )}
 
             {/* Game Type Badge */}
-            <Badge className={`${
-              game.game_type === 'solo' 
-                ? 'bg-blue-100 text-blue-700 border-blue-200' 
-                : 'bg-purple-100 text-purple-700 border-purple-200'
-            }`}>
-              {game.game_type === 'solo' ? 'Solo' : 'Multiplayer'}
+            <Badge
+              className={`${
+                game.game_type === "solo"
+                  ? "bg-blue-100 text-blue-700 border-blue-200"
+                  : "bg-purple-100 text-purple-700 border-purple-200"
+              }`}
+            >
+              {game.game_type === "solo" ? "Solo" : "Multiplayer"}
             </Badge>
           </div>
         </div>

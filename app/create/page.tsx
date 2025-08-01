@@ -831,7 +831,7 @@ function CreateQuizPageContent() {
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                         size="sm"
                       >
-                        <Plus className="w-4 h-4 mr-1" /> Tambah Manual
+                        <Plus className="w-4 h-4 mr-1" /> Tambah Soal
                       </Button>
                     </div>
                   </div>
@@ -914,8 +914,11 @@ function CreateQuizPageContent() {
                               {/* Time & Points */}
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <Label htmlFor={`time-${question.id}`} className="text-sm text-gray-600">
-                                    Waktu (hanya berlaku untuk mode solo) 
+                                  <Label htmlFor={`time-${question.id}`} className="text-sm text-gray-600 hidden md:block">
+                                    Waktu (hanya berlaku untuk mode belajar)
+                                  </Label>
+                                  <Label htmlFor={`time-${question.id}`} className="text-sm text-gray-600 block md:hidden">
+                                    Waktu (mode belajar)
                                   </Label>
                                   <Input
                                     id={`time-${question.id}`}
