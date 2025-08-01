@@ -21,6 +21,9 @@ import {
   HelpCircle,
   Flag,
   AlertCircle,
+  Play,
+  Users,
+  Target,
 } from "lucide-react";
 import {
   Dialog,
@@ -31,6 +34,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { GamePageWithLoading } from "@/components/ui/page-with-loading";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 
 interface Answer {
   id: string;
@@ -979,101 +989,169 @@ function PlayActiveGamePageContent({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <header className="container mx-auto px-4 py-6">
+      <motion.header 
+        className="container mx-auto px-4 py-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="flex flex-col md:flex-row gap-2 items-center md:gap-0 md:justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+          <motion.div 
+            className="flex items-center space-x-2"
+            whileHover={{ scale: 1.02 }}
+          >
+            <motion.div 
+              className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center"
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
               <Gamepad2 className="w-6 h-6 text-white" />
-            </div>
+            </motion.div>
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               GolekQuiz
             </span>
-          </div>
-          <div className="flex items-center space-x-2">
+          </motion.div>
+          <motion.div 
+            className="flex items-center space-x-2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             {gameState.totalTimeMinutes && gameState.status === "active" && (
-              <Badge
-                variant="outline"
-                className={`${
-                  gameState.timeLeft <= 60
-                    ? "bg-red-100 text-red-800 border-red-300"
-                    : gameState.timeLeft <= 300
-                    ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                    : "bg-green-100 text-green-800 border-green-300"
-                } text-lg px-4 py-2`}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Timer className="w-4 h-4 mr-2" />
-                {formatTime(gameState.timeLeft)}
-              </Badge>
+                <Badge
+                  variant="outline"
+                  className={`${
+                    gameState.timeLeft <= 60
+                      ? "bg-red-100 text-red-800 border-red-300"
+                      : gameState.timeLeft <= 300
+                      ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                      : "bg-green-100 text-green-800 border-green-300"
+                  } text-lg px-4 py-2`}
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    <Timer className="w-4 h-4 mr-2" />
+                  </motion.div>
+                  {formatTime(gameState.timeLeft)}
+                </Badge>
+              </motion.div>
             )}
 
             {/* Game End Mode Indicator */}
-            <Badge
-              variant="outline"
-              className={`${
-                gameState.gameEndMode === "first_finish"
-                  ? "bg-orange-100 text-orange-800 border-orange-300"
-                  : "bg-blue-100 text-blue-800 border-blue-300"
-              }`}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              {gameState.gameEndMode === "first_finish" ? (
-                <Flag className="w-3 h-3 mr-1" />
-              ) : (
-                <Timer className="w-3 h-3 mr-1" />
-              )}
-              {gameState.gameEndMode === "first_finish"
-                ? "First to Finish"
-                : "Wait for Timer"}
-            </Badge>
-          </div>
+              <Badge
+                variant="outline"
+                className={`${
+                  gameState.gameEndMode === "first_finish"
+                    ? "bg-orange-100 text-orange-800 border-orange-300"
+                    : "bg-blue-100 text-blue-800 border-blue-300"
+                }`}
+              >
+                {gameState.gameEndMode === "first_finish" ? (
+                  <Flag className="w-3 h-3 mr-1" />
+                ) : (
+                  <Timer className="w-3 h-3 mr-1" />
+                )}
+                {gameState.gameEndMode === "first_finish"
+                  ? "First to Finish"
+                  : "Wait for Timer"}
+              </Badge>
+            </motion.div>
+          </motion.div>
         </div>
-      </header>
+      </motion.header>
 
-      <main className="container mx-auto px-4 py-4 md:py-8">
+      <motion.main 
+        className="container mx-auto px-4 py-4 md:py-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
         <div className="flex w-full justify-center gap-4 flex-col md:flex-row">
           {/* Soal */}
           {currentQuestion && (
-            <Card className="bg-white/90 backdrop-blur-sm mb-6 w-full md:w-[60%] shadow-xl border-0">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="w-full md:w-[60%]"
+            >
+              <Card className="bg-white/90 backdrop-blur-sm mb-6 w-full shadow-xl border-0">
               <CardHeader>
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`ml-2 ${
-                      doubtfulQuestions.has(currentQuestion.id)
-                        ? "bg-red-100 border-red-300 text-red-800 hover:bg-red-200"
-                        : "bg-gray-100 border-gray-300 text-gray-800 hover:bg-gray-200"
-                    }`}
-                    onClick={() => toggleDoubtful(currentQuestion.id)}
+                <motion.div 
+                  className="flex justify-end"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <Flag
-                      className={`w-4 h-4 mr-1 ${
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`ml-2 ${
                         doubtfulQuestions.has(currentQuestion.id)
-                          ? "text-red-600"
-                          : "text-gray-600"
+                          ? "bg-red-100 border-red-300 text-red-800 hover:bg-red-200"
+                          : "bg-gray-100 border-gray-300 text-gray-800 hover:bg-gray-200"
                       }`}
-                    />
-                    {doubtfulQuestions.has(currentQuestion.id)
-                      ? "Tandai Yakin"
-                      : "Ragu-ragu"}
-                  </Button>
-                </div>
-                <div className="flex justify-center items-center">
+                      onClick={() => toggleDoubtful(currentQuestion.id)}
+                    >
+                      <Flag
+                        className={`w-4 h-4 mr-1 ${
+                          doubtfulQuestions.has(currentQuestion.id)
+                            ? "text-red-600"
+                            : "text-gray-600"
+                        }`}
+                      />
+                      {doubtfulQuestions.has(currentQuestion.id)
+                        ? "Tandai Yakin"
+                        : "Ragu-ragu"}
+                    </Button>
+                  </motion.div>
+                </motion.div>
+                <motion.div 
+                  className="flex justify-center items-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
                   <CardTitle className="text-2xl text-gray-900">
                     {currentQuestion.question_text}
                   </CardTitle>
-                </div>
+                </motion.div>
                 {currentQuestion.image_url && (
-                  <div className="flex justify-center mt-4">
+                  <motion.div 
+                    className="flex justify-center mt-4"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
                     <img
                       src={currentQuestion.image_url}
                       alt="Gambar Soal"
                       className="max-h-64 rounded-xl shadow-md"
                     />
-                  </div>
+                  </motion.div>
                 )}
 
                 {currentAnswer && (
-                  <div className="text-center">
+                  <motion.div 
+                    className="text-center"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.7 }}
+                  >
                     <Badge
                       variant="outline"
                       className="bg-green-100 text-green-800 border-green-300"
@@ -1081,150 +1159,233 @@ function PlayActiveGamePageContent({
                       <CheckCircle className="w-3 h-3 mr-1" />
                       Sudah dijawab
                     </Badge>
-                  </div>
+                  </motion.div>
                 )}
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <motion.div 
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
                   {currentQuestion.answers.map((answer, index) => (
-                    <Button
+                    <motion.div
                       key={answer.id}
-                      onClick={() => selectAnswer(answer.id)}
-                      disabled={isSubmitting}
-                      variant={
-                        currentAnswer?.answer_id === answer.id
-                          ? "default"
-                          : "outline"
-                      }
-                      className={`p-6 h-auto text-left justify-start text-wrap border-2 ${
-                        answer.color === "red"
-                          ? "border-red-300 hover:bg-red-50"
-                          : answer.color === "blue"
-                          ? "border-blue-300 hover:bg-blue-50"
-                          : answer.color === "yellow"
-                          ? "border-yellow-300 hover:bg-yellow-50"
-                          : "border-green-300 hover:bg-green-50"
-                      } ${
-                        currentAnswer?.answer_id === answer.id
-                          ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700"
-                          : ""
-                      }`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.9 + index * 0.1 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`w-6 h-6 rounded-full ${
-                            currentAnswer?.answer_id === answer.id
-                              ? "bg-white text-purple-600"
-                              : "bg-blue-100 text-blue-600"
-                          } flex items-center justify-center font-medium`}
-                        >
-                          {String.fromCharCode(65 + index)}
-                        </div>
-                        <div className="flex flex-col w-[80%] max-h-40 overflow-y-auto pr-2">
-                          <div className="text-lg">{answer.answer_text}</div>
-                          {answer.image_url && (
-                            <img
-                              src={answer.image_url}
-                              alt="Gambar Jawaban"
-                              className="w-full max-h-48 object-contain rounded-xl border border-gray-200 mt-2"
-                            />
+                      <Button
+                        onClick={() => selectAnswer(answer.id)}
+                        disabled={isSubmitting}
+                        variant={
+                          currentAnswer?.answer_id === answer.id
+                            ? "default"
+                            : "outline"
+                        }
+                        className={`p-6 h-auto text-left justify-start text-wrap border-2 ${
+                          answer.color === "red"
+                            ? "border-red-300 hover:bg-red-50"
+                            : answer.color === "blue"
+                            ? "border-blue-300 hover:bg-blue-50"
+                            : answer.color === "yellow"
+                            ? "border-yellow-300 hover:bg-yellow-50"
+                            : "border-green-300 hover:bg-green-50"
+                        } ${
+                          currentAnswer?.answer_id === answer.id
+                            ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <motion.div
+                            className={`w-6 h-6 rounded-full ${
+                              currentAnswer?.answer_id === answer.id
+                                ? "bg-white text-purple-600"
+                                : "bg-blue-100 text-blue-600"
+                            } flex items-center justify-center font-medium`}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            {String.fromCharCode(65 + index)}
+                          </motion.div>
+                          <div className="flex flex-col w-[80%] max-h-40 overflow-y-auto pr-2">
+                            <div className="text-lg">{answer.answer_text}</div>
+                            {answer.image_url && (
+                              <motion.img
+                                src={answer.image_url}
+                                alt="Gambar Jawaban"
+                                className="w-full max-h-48 object-contain rounded-xl border border-gray-200 mt-2"
+                                whileHover={{ scale: 1.05 }}
+                              />
+                            )}
+                          </div>
+                          {currentAnswer?.answer_id === answer.id && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: "spring", stiffness: 200 }}
+                            >
+                              <CheckCircle className="w-5 h-5 ml-auto" />
+                            </motion.div>
                           )}
                         </div>
-                        {currentAnswer?.answer_id === answer.id && (
-                          <CheckCircle className="w-5 h-5 ml-auto" />
-                        )}
-                      </div>
-                    </Button>
+                      </Button>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </CardContent>
-            </Card>
+                          </Card>
+            </motion.div>
           )}
 
           {/* Navbar soal */}
-          <Card className="bg-white/90 backdrop-blur-sm mb-6 w-full md:w-[30%] shadow-xl border-0">
-            <CardContent className="flex flex-col p-6 h-full">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-medium text-gray-700">
-                  Progress Quiz
-                </span>
-                <span className="text-sm text-gray-600">
-                  Soal ke {currentQuestionIndex + 1} dari {totalQuestions}
-                </span>
-              </div>
-              <Progress
-                value={(answeredCount / totalQuestions) * 100}
-                className="w-full h-3 mb-4 bg-gray-200"
-              />
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="w-full md:w-[30%]"
+          >
+            <Card className="bg-white/90 backdrop-blur-sm mb-6 w-full shadow-xl border-0">
+              <CardContent className="flex flex-col p-6 h-full">
+                <motion.div 
+                  className="flex justify-between items-center mb-4"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <span className="text-sm font-medium text-gray-700">
+                    Progress Quiz
+                  </span>
+                  <span className="text-sm text-gray-600">
+                    Soal ke {currentQuestionIndex + 1} dari {totalQuestions}
+                  </span>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scaleX: 0 }}
+                  animate={{ opacity: 1, scaleX: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Progress
+                    value={(answeredCount / totalQuestions) * 100}
+                    className="w-full h-3 mb-4 bg-gray-200"
+                  />
+                </motion.div>
 
-              <div className="flex justify-center flex-wrap gap-2 mb-4">
-                {gameState.questions.map((question, index) => (
-                  <Button
-                    key={index}
-                    onClick={() => navigateToQuestion(index)}
-                    variant={
-                      index === currentQuestionIndex ? "default" : "outline"
-                    }
-                    size="sm"
-                    className={`w-10 h-10 p-0 rounded-full ${
-                      index === currentQuestionIndex
-                        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                        : ""
-                    } ${
-                      doubtfulQuestions.has(question.id)
-                        ? "bg-red-700 border-red-300 text-white"
-                        : playerAnswers.has(question.id)
-                        ? "bg-green-500 border-green-300 text-white"
-                        : ""
-                    }`}
-                  >
-                    {index + 1}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                <motion.div 
+                  className="flex justify-center flex-wrap gap-2 mb-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  {gameState.questions.map((question, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, delay: 0.8 + index * 0.05 }}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Button
+                        onClick={() => navigateToQuestion(index)}
+                        variant={
+                          index === currentQuestionIndex ? "default" : "outline"
+                        }
+                        size="sm"
+                        className={`w-10 h-10 p-0 rounded-full ${
+                          index === currentQuestionIndex
+                            ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                            : ""
+                        } ${
+                          doubtfulQuestions.has(question.id)
+                            ? "bg-red-700 border-red-300 text-white"
+                            : playerAnswers.has(question.id)
+                            ? "bg-green-500 border-green-300 text-white"
+                            : ""
+                        }`}
+                      >
+                        {index + 1}
+                      </Button>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
-        <div className="flex w-full justify-center items-center">
+        <motion.div 
+          className="flex w-full justify-center items-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+        >
           <Card className="flex justify-center items-center bg-white/90 backdrop-blur-sm shadow-xl border-0">
             <CardContent className="flex items-center justify-center p-4">
               <div className="flex justify-between items-center gap-4">
-                <Button
-                  onClick={() => navigateToQuestion(currentQuestionIndex - 1)}
-                  disabled={currentQuestionIndex === 0}
-                  variant="outline"
-                  className="border-2 border-gray-200"
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Prev
-                </Button>
+                  <Button
+                    onClick={() => navigateToQuestion(currentQuestionIndex - 1)}
+                    disabled={currentQuestionIndex === 0}
+                    variant="outline"
+                    className="border-2 border-gray-200"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Prev
+                  </Button>
+                </motion.div>
 
                 {answeredCount === totalQuestions ? (
-                  <Button
-                    onClick={handleFinishClick}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6"
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    Selesai
-                  </Button>
+                    <Button
+                      onClick={handleFinishClick}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6"
+                    >
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        Selesai
+                      </motion.div>
+                    </Button>
+                  </motion.div>
                 ) : (
-                  <span className="text-sm text-purple-600 font-medium">
+                  <motion.span 
+                    className="text-sm text-purple-600 font-medium"
+                    animate={{ opacity: [1, 0.7, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
                     Dijawab: {answeredCount} dari {totalQuestions} pertanyaan
-                  </span>
+                  </motion.span>
                 )}
 
-                <Button
-                  onClick={() => navigateToQuestion(currentQuestionIndex + 1)}
-                  disabled={currentQuestionIndex === totalQuestions - 1}
-                  variant="outline"
-                  className="border-2 border-gray-200"
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
+                  <Button
+                    onClick={() => navigateToQuestion(currentQuestionIndex + 1)}
+                    disabled={currentQuestionIndex === totalQuestions - 1}
+                    variant="outline"
+                    className="border-2 border-gray-200"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </motion.div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       </main>
 
       {/* Dialog Konfirmasi Selesai */}
