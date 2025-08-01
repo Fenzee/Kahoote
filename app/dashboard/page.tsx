@@ -1272,7 +1272,7 @@ function DashboardContent() {
                                 : "bg-orange-100 text-orange-700"
                             }`}
                           >
-                            {quiz.is_public ? "Publik" : "Privat"}
+                            {quiz.is_public ? "Publik" : "Private"}
                           </Badge>
                           {renderCategoryBadge(quiz.category)}
                           {renderLanguageBadge(quiz.language)}
