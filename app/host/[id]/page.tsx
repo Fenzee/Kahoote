@@ -888,7 +888,7 @@ function HostGamePageContent({
                 {quiz.title}
               </CardTitle>
               {quiz.description && (
-                <p className="text-gray-600 text-sm">{quiz.description}</p>
+                <p className="text-gray-600 text-sm max-h-14 overflow-y-scroll">{quiz.description}</p>
               )}
             </CardHeader>
             <CardContent className="px-0 pb-0 space-y-4">

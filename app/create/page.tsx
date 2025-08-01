@@ -821,7 +821,7 @@ function CreateQuizPageContent() {
             </TabsContent>
 
             <TabsContent value="questions">
-              <Card className="shadow-lg border-blue-200">
+              <Card className="shadow-lg border-blue-200 min-h-[90vh]">
                 <CardHeader className="bg-blue-50/50 border-b border-blue-100 rounded-t-lg">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-blue-800">Pertanyaan Quiz</CardTitle>
@@ -838,7 +838,7 @@ function CreateQuizPageContent() {
                 </CardHeader>
                 <CardContent className="p-6">
                   {/* Questions List */}
-                  <ScrollArea className="h-[400px] pr-4">
+                  <ScrollArea className="h-[80vh] pr-4">
                     <div className="space-y-8">
                       {questions.length === 0 ? (
                         <div className="text-center py-10">

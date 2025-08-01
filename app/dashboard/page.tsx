@@ -829,35 +829,34 @@ function DashboardContent() {
               <h2 className="text-2xl font-bold text-gray-900">
                 Jelajahi Kuis
               </h2>
+            </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 border-gray-300"
-                  onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-                >
-                  <Filter className="h-4 w-4" />
+            <div className="flex items-center gap-2 w-full">
+              {/* Modern Search Bar */}
+              <div className="h-[4.5rem] w-[85%]">
+                <ActionSearchBar
+                  actions={categoryActions}
+                  onActionSelect={handleCategorySelect}
+                  onSearch={handleSearch}
+                  placeholder="Cari kuis berdasarkan judul, pembuat, atau deskripsi..."
+                  label="Cari atau pilih kategori"
+                />
+              </div>
+
+              <div className="w-[15%] h-[2.25rem] flex mt-auto items-center justify-center gap-1 border-gray-300 bg-sky-300 rounded-lg px-2 py-1">
+                {categoryFilter !== "all"
+                  ? categories.find((c) => c.value === categoryFilter)?.icon
+                  : categories.find((c) => c.value === categoryFilter)?.icon}
+                <div className="text-sm md:block hidden">
                   {categoryFilter !== "all"
                     ? categories.find((c) => c.value === categoryFilter)?.label
-                    : "Filter Kategori"}
-                </Button>
+                    : "Semua Kategori"}
+                </div>
               </div>
             </div>
 
-            {/* Modern Search Bar */}
-            <div className="h-[4.5rem]">
-              <ActionSearchBar
-                actions={categoryActions}
-                onActionSelect={handleCategorySelect}
-                onSearch={handleSearch}
-                placeholder="Cari kuis berdasarkan judul, pembuat, atau deskripsi..."
-                label="Cari atau pilih kategori"
-              />
-            </div>
-
             {/* Category Filters */}
-            {showCategoryFilter && (
+            {/* {showCategoryFilter && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -884,7 +883,7 @@ function DashboardContent() {
                       }`}
                       onClick={() => {
                         setCategoryFilter(category.value);
-                        setShowCategoryFilter(false); // Hide filter after selection
+                        setShowCategoryFilter(false);
                       }}
                     >
                       {category.icon}
@@ -893,10 +892,10 @@ function DashboardContent() {
                   ))}
                 </div>
               </motion.div>
-            )}
+            )} */}
 
             {/* Spacer div to ensure content below has proper spacing when filter is shown */}
-            {showCategoryFilter && <div className="h-20"></div>}
+            {/* {showCategoryFilter && <div className="h-20"></div>} */}
           </div>
 
           {/* Stats Cards */}
@@ -1597,7 +1596,7 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <DashboardPageWithLoading 
+    <DashboardPageWithLoading
       animation="fade"
       customLoadingMessage="Memuat dashboard..."
     >

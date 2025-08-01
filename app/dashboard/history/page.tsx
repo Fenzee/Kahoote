@@ -310,8 +310,10 @@ export default function HistoryPage() {
               onClick={() => router.push("/dashboard")}
               className="border-2 border-gray-200"
             >
-              <ArrowLeft className="w-4 h-4 mr-1" />
+              <ArrowLeft className="w-4 h-4 mr-0 md:mr-1" />
+              <span className="hidden md:block">
               Dashboard
+              </span>
             </Button>
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Slack className="w-6 h-6 text-white" />
