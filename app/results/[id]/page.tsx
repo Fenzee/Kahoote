@@ -742,7 +742,7 @@ function ResultsPageContent({
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 md:px-6 lg:px-8 border-b">
+      <header className="flex flex-col gap-4 md:gap-0 md:flex-row items-center justify-between px-4 py-4 md:px-6 lg:px-8 border-b">
         <div className="flex items-center gap-2">
           <Trophy className="h-6 w-6 text-purple-600 animate-bounce" />
           <div className="flex flex-col">
@@ -1200,7 +1200,7 @@ function ResultsPageContent({
         )}
 
         {personalStats && !isHost && (
-          <Card className="bg-white shadow-lg rounded-xl p-6 transform transition-all hover:shadow-xl hover:-translate-y-1">
+          <Card className="bg-white shadow-lg rounded-xl p-2 md:p-6 transform transition-all hover:shadow-xl hover:-translate-y-1">
             <CardHeader className="text-center">
               {/* <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                 <Trophy className="w-10 h-10 text-white animate-bounce" />
@@ -1210,7 +1210,7 @@ function ResultsPageContent({
               </CardTitle>
               <p className="text-gray-600">Selamat telah menyelesaikan game!</p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-2 md:p-6">
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-purple-50 rounded-lg transform transition-all hover:scale-105 hover:bg-purple-100">
                   <div className="text-3xl font-bold text-purple-600 animate-number-pop">
@@ -1289,7 +1289,7 @@ function ResultsPageContent({
                               }`}
                             >
                               <div className="flex justify-between items-center mb-2">
-                                <h4 className="font-medium flex items-center flex-wrap">
+                                <h4 className="font-medium flex items-center ">
                                   <span
                                     className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs flex-shrink-0 ${
                                       question.is_correct

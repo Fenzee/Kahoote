@@ -249,11 +249,6 @@ function JoinGamePageContent() {
                     Buat quiz sendiri
                   </Link>
                 </p>
-                <div className="mt-4">
-                  <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium">
-                    ← Kembali ke beranda
-                  </Link>
-                </div>
               </div>
             </CardContent>
           </Card>

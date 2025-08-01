@@ -69,7 +69,7 @@ interface GameState {
   totalTimeMinutes: number | null;
   gameStartTime: Date | null;
   timeLeft: number;
-  gameEndMode?: 'first_finish' | 'wait_timer'; // New: Game end mode
+  gameEndMode?: "first_finish" | "wait_timer"; // New: Game end mode
 }
 
 function PlayActiveGamePageContent({
@@ -199,7 +199,9 @@ function PlayActiveGamePageContent({
       // Get game session
       const { data: session, error: sessionError } = await supabase
         .from("game_sessions")
-        .select("id, status, quiz_id, total_time_minutes, started_at, game_end_mode")
+        .select(
+          "id, status, quiz_id, total_time_minutes, started_at, game_end_mode"
+        )
         .eq("id", resolvedParams.id)
         .single();
 
@@ -310,7 +312,7 @@ function PlayActiveGamePageContent({
         totalTimeMinutes: session.total_time_minutes,
         gameStartTime: gameStartTime,
         timeLeft: timeLeft,
-        gameEndMode: session.game_end_mode || 'wait_timer', // Add game end mode
+        gameEndMode: session.game_end_mode || "wait_timer", // Add game end mode
       };
 
       setGameState(initialGameState);
@@ -561,8 +563,12 @@ function PlayActiveGamePageContent({
           }
 
           // Redirect to results page
-          console.log(`Game ended - redirecting to results (mode: ${gameState.gameEndMode})`);
-          router.push(`/results/${resolvedParams.id}?participant=${participantId}`);
+          console.log(
+            `Game ended - redirecting to results (mode: ${gameState.gameEndMode})`
+          );
+          router.push(
+            `/results/${resolvedParams.id}?participant=${participantId}`
+          );
         }
       } catch (error) {
         console.error("Error in game status check:", error);
@@ -853,10 +859,10 @@ function PlayActiveGamePageContent({
 
     try {
       // Check game end mode and handle accordingly
-      if (gameState.gameEndMode === 'first_finish') {
+      if (gameState.gameEndMode === "first_finish") {
         // First to Finish mode: End game for ALL players when one finishes
-        console.log('First player finished - ending game for all players');
-        
+        console.log("First player finished - ending game for all players");
+
         // Mark session as finished for everyone
         await supabase
           .from("game_sessions")
@@ -877,17 +883,22 @@ function PlayActiveGamePageContent({
                   session_id_input: gameState.sessionId,
                   participant_id_input: participant.id,
                 });
-                console.log(`Score calculated for participant ${participant.id}`);
+                console.log(
+                  `Score calculated for participant ${participant.id}`
+                );
               } catch (error) {
-                console.error(`Error calculating score for participant ${participant.id}:`, error);
+                console.error(
+                  `Error calculating score for participant ${participant.id}:`,
+                  error
+                );
               }
             })
           );
         }
       } else {
         // Wait for Timer mode: Only mark this player as finished
-        console.log('Player finished - wait for timer mode');
-        
+        console.log("Player finished - wait for timer mode");
+
         // Only calculate score for this participant
         const { data, error } = await supabase.rpc("calculate_score", {
           session_id_input: gameState.sessionId,
@@ -895,7 +906,7 @@ function PlayActiveGamePageContent({
         });
 
         if (error) console.error("Error kalkulasi skor:", error);
-        
+
         // Don't end the session - let timer handle it
       }
     } catch (error) {
@@ -969,7 +980,7 @@ function PlayActiveGamePageContent({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-2 items-center md:gap-0 md:justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Gamepad2 className="w-6 h-6 text-white" />
@@ -999,48 +1010,31 @@ function PlayActiveGamePageContent({
             <Badge
               variant="outline"
               className={`${
-                gameState.gameEndMode === 'first_finish'
+                gameState.gameEndMode === "first_finish"
                   ? "bg-orange-100 text-orange-800 border-orange-300"
                   : "bg-blue-100 text-blue-800 border-blue-300"
               }`}
             >
-              {gameState.gameEndMode === 'first_finish' ? (
+              {gameState.gameEndMode === "first_finish" ? (
                 <Flag className="w-3 h-3 mr-1" />
               ) : (
                 <Timer className="w-3 h-3 mr-1" />
               )}
-              {gameState.gameEndMode === 'first_finish' ? 'First to Finish' : 'Wait for Timer'}
-            </Badge>
-
-            <Badge
-              variant="outline"
-              className={`${
-                isConnected
-                  ? "bg-green-100 text-green-800 border-green-300"
-                  : "bg-red-100 text-red-800 border-red-300"
-              }`}
-            >
-              {isConnected ? (
-                <Wifi className="w-3 h-3 mr-1" />
-              ) : (
-                <WifiOff className="w-3 h-3 mr-1" />
-              )}
-              {isConnected ? "Online" : "Offline"}
+              {gameState.gameEndMode === "first_finish"
+                ? "First to Finish"
+                : "Wait for Timer"}
             </Badge>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4 md:py-8">
         <div className="flex w-full justify-center gap-4 flex-col md:flex-row">
           {/* Soal */}
           {currentQuestion && (
             <Card className="bg-white/90 backdrop-blur-sm mb-6 w-full md:w-[60%] shadow-xl border-0">
               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-2xl text-gray-900">
-                    {currentQuestion.question_text}
-                  </CardTitle>
+                <div className="flex justify-end">
                   <Button
                     variant="outline"
                     size="sm"
@@ -1062,6 +1056,11 @@ function PlayActiveGamePageContent({
                       ? "Tandai Yakin"
                       : "Ragu-ragu"}
                   </Button>
+                </div>
+                <div className="flex justify-center items-center">
+                  <CardTitle className="text-2xl text-gray-900">
+                    {currentQuestion.question_text}
+                  </CardTitle>
                 </div>
                 {currentQuestion.image_url && (
                   <div className="flex justify-center mt-4">
@@ -1299,7 +1298,7 @@ export default function PlayActiveGamePage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <GamePageWithLoading 
+    <GamePageWithLoading
       animation="zoom"
       customLoadingMessage="Memuat permainan aktif..."
     >
