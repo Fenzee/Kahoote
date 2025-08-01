@@ -157,6 +157,10 @@ export type Database = {
           created_at: string
           started_at: string | null
           ended_at: string | null
+          total_time_minutes: number | null
+          countdown_started_at: string | null
+          game_end_mode: 'first_finish' | 'wait_timer' | null
+          allow_join_after_start: boolean | null
         }
         Insert: {
           id?: string
@@ -168,6 +172,10 @@ export type Database = {
           created_at?: string
           started_at?: string | null
           ended_at?: string | null
+          total_time_minutes?: number | null
+          countdown_started_at?: string | null
+          game_end_mode?: 'first_finish' | 'wait_timer' | null
+          allow_join_after_start?: boolean | null
         }
         Update: {
           id?: string
@@ -179,6 +187,10 @@ export type Database = {
           created_at?: string
           started_at?: string | null
           ended_at?: string | null
+          total_time_minutes?: number | null
+          countdown_started_at?: string | null
+          game_end_mode?: 'first_finish' | 'wait_timer' | null
+          allow_join_after_start?: boolean | null
         }
       }
       game_participants: {
