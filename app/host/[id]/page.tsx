@@ -32,13 +32,14 @@ import {
   Lock,
   Clock,
   ArrowBigLeft,
-
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GamePageWithLoading } from "@/components/ui/page-with-loading";
+import { GameSettingsCard } from "@/components/ui/game-settings-card";
 
 interface Quiz {
   id: string;
@@ -143,6 +144,8 @@ function HostGamePageContent({
     username: string;
     avatar_url: string | null;
   } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [allowJoinAfterStart, setAllowJoinAfterStart] = useState(false);
 
 
   useEffect(() => {
@@ -866,15 +869,20 @@ function HostGamePageContent({
           <Play className="h-6 w-6 text-purple-600" />
           <span>GolekQuiz</span>
         </div>
-        
-        <Button
-          onClick={endSession}
-          variant="outline"
-          className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-transparent"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back & end session
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="icon" variant="ghost" onClick={() => setShowSettings(true)}>
+            <Settings className="w-6 h-6 text-gray-500 hover:text-purple-600 transition" />
+            <span className="sr-only">Pengaturan Permainan</span>
+          </Button>
+          <Button
+            onClick={endSession}
+            variant="outline"
+            className="border-gray-300 text-gray-700 hover:bg-gray-100 bg-transparent"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back & end session
+          </Button>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -948,121 +956,6 @@ function HostGamePageContent({
             </CardContent>
           </Card>
 
-          {/* Time Setup Card */}
-          <Card className="bg-white shadow-lg rounded-xl p-6">
-            {/* Countdown sedang berlangsung */}
-            {countdownLeft !== null && countdownLeft > 0 ? (
-              <CardContent className="p-8 text-center">
-                <h2 className="text-4xl font-bold text-purple-700 mb-2">
-                  Mulai dalam {countdownLeft} detik...
-                </h2>
-                <p className="text-gray-600">Bersiaplah!</p>
-              </CardContent>
-            ) : (
-              <>
-                <CardHeader className="pb-4 px-0 pt-0 flex flex-row items-center gap-2">
-                  <Clock className="w-5 h-5 text-purple-600" />
-                  <CardTitle className="text-xl font-semibold">
-                    Set Quiz Time Limit
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-0 pb-0 space-y-4">
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="totalTime"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Total Quiz Time (minutes)
-                    </Label>
-                    <Input
-                      id="totalTime"
-                      type="number"
-                      min="1"
-                      max="120"
-                      value={totalTimeMinutes}
-                      onChange={(e) =>
-                        setTotalTimeMinutes(
-                          Number.parseInt(e.target.value) || 1
-                        )
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                  
-                  {/* Game End Mode Selection */}
-                  <div className="space-y-3">
-                    <Label className="block text-sm font-medium text-gray-700">
-                      Game End Mode
-                    </Label>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="radio"
-                          id="wait_timer"
-                          name="gameEndMode"
-                          value="wait_timer"
-                          checked={gameEndMode === 'wait_timer'}
-                          onChange={(e) => setGameEndMode(e.target.value as 'first_finish' | 'wait_timer')}
-                          className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                        />
-                        <label htmlFor="wait_timer" className="text-sm text-gray-700 cursor-pointer">
-                          <span className="font-medium">Wait for Timer</span> - Semua pemain menunggu hingga waktu habis
-                        </label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="radio"
-                          id="first_finish"
-                          name="gameEndMode"
-                          value="first_finish"
-                          checked={gameEndMode === 'first_finish'}
-                          onChange={(e) => setGameEndMode(e.target.value as 'first_finish' | 'wait_timer')}
-                          className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                        />
-                        <label htmlFor="first_finish" className="text-sm text-gray-700 cursor-pointer">
-                          <span className="font-medium">First to Finish</span> - Game berakhir ketika satu pemain selesai
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
-                    <Button
-                      onClick={startCountdownBeforeGame}
-                      className="bg-purple-600 hover:bg-purple-700 text-white flex-1"
-                      disabled={
-                        gameSession.participants.length === 0 ||
-                        !totalTimeMinutes ||
-                        totalTimeMinutes < 1
-                      }
-                      size="lg"
-                    >
-                      <Play className="w-5 h-5 mr-2" />
-                      Mulai Game
-                    </Button>
-                    {gameSession?.status === "waiting" &&
-                      !gameSession?.countdown_started_at && (
-                        <Button
-                          onClick={joinAsHostAndStartCountdown}
-                          disabled={isJoining}
-                          size="lg"
-                          variant="outline"
-                          className="border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700 bg-transparent flex-1"
-                        >
-                          {isJoining
-                            ? "Memulai..."
-                            : "Ikut Bermain sebagai Host"}
-                        </Button>
-                      )}
-                  </div>
-
-                </CardContent>
-              </>
-            )}
-          </Card>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-8">
           {/* Game PIN Card */}
           <Card className="bg-white shadow-lg rounded-xl p-6 text-center">
             <CardHeader className="pb-4 px-0 pt-0">
@@ -1216,6 +1109,16 @@ function HostGamePageContent({
           isHost={true}
         />
       )}
+      <GameSettingsCard
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        totalTimeMinutes={totalTimeMinutes}
+        setTotalTimeMinutes={setTotalTimeMinutes}
+        gameEndMode={gameEndMode}
+        setGameEndMode={setGameEndMode}
+        allowJoinAfterStart={allowJoinAfterStart}
+        setAllowJoinAfterStart={setAllowJoinAfterStart}
+      />
     </div>
   );
 }
