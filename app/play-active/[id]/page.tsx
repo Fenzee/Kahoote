@@ -70,6 +70,7 @@ interface GameState {
   gameStartTime: Date | null;
   timeLeft: number;
   gameEndMode?: "first_finish" | "wait_timer"; // New: Game end mode
+  allowJoinAfterStart?: boolean; // New: Allow join after start setting
 }
 
 function PlayActiveGamePageContent({
@@ -200,7 +201,7 @@ function PlayActiveGamePageContent({
       const { data: session, error: sessionError } = await supabase
         .from("game_sessions")
         .select(
-          "id, status, quiz_id, total_time_minutes, started_at, game_end_mode"
+          "id, status, quiz_id, total_time_minutes, started_at, game_end_mode, allow_join_after_start"
         )
         .eq("id", resolvedParams.id)
         .single();
@@ -313,6 +314,7 @@ function PlayActiveGamePageContent({
         gameStartTime: gameStartTime,
         timeLeft: timeLeft,
         gameEndMode: session.game_end_mode || "wait_timer", // Add game end mode
+        allowJoinAfterStart: session.allow_join_after_start || false, // Add allow join after start setting
       };
 
       setGameState(initialGameState);
